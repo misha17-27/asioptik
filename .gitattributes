@@ -1,0 +1,6 @@
+# Одинаковые концы строк на любом компьютере
+* text=auto eol=lf
+*.ico binary
+*.png binary
+*.jpg binary
+*.webp binary

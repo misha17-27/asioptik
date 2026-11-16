@@ -1,0 +1,241 @@
+"""Защита сайта и админ-панели: закрытые папки, заголовки, вход, CSRF, приём заказов, загрузка файлов."""
+import http.client, io, json, os, pathlib, re, struct, subprocess, tempfile, time, urllib.parse, zlib
+from PIL import Image
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+HOST, PORT = '127.0.0.1', 8771
+PW = 'Test-Admin-2026'      # пароль только для локальной тестовой базы
+FAILS = []
+
+def sql(q):
+    return subprocess.run(['mariadb', '--socket=/tmp/mysql-run/mysqld.sock', '-uroot', 'asioptik_test', '-N', '-e', q], capture_output=True, text=True).stdout.strip()
+
+def req(method, path, body=None, headers=None, cookie=None):
+    c = http.client.HTTPConnection(HOST, PORT, timeout=30)
+    h = dict(headers or {})
+    if cookie: h['Cookie'] = cookie
+    if isinstance(body, dict):
+        body = urllib.parse.urlencode(body, doseq=True); h.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+    if isinstance(body, str): body = body.encode('utf-8')
+    c.request(method, path, body=body, headers=h)
+    r = c.getresponse(); data = r.read(); c.close()
+    return r.status, {k.lower(): v for k, v in r.getheaders()}, data.decode('utf-8', 'replace'), r.getheaders()
+
+def check(name, ok, info=''):
+    print(('ok   ' if ok else 'FAIL ') + name + (' | ' + str(info) if info != '' else ''))
+    if not ok: FAILS.append(name)
+
+def cookie_of(raw):
+    for k, v in raw:
+        if k.lower() == 'set-cookie' and v.startswith('ao_admin='): return v
+    return ''
+
+def login(password=PW, user='admin'):
+    s, h, t, raw = req('GET', '/admin/?p=login')
+    ck = cookie_of(raw).split(';')[0]
+    csrf = re.search(r'name="csrf" value="([a-f0-9]+)"', t).group(1)
+    s, h, t, raw = req('POST', '/admin/?p=login', {'csrf': csrf, 'login': user, 'password': password}, cookie=ck)
+    new = cookie_of(raw)
+    return s, h, t, (new.split(';')[0] if new else ck), ck, new
+
+def csrf_of(cookie, path='/admin/'):
+    return re.search(r'name="csrf" value="([a-f0-9]+)"', req('GET', path, cookie=cookie)[2]).group(1)
+
+def multipart(fields, files):
+    b = '----aotest7f3a'; out = io.BytesIO()
+    for k, v in fields.items():
+        out.write(f'--{b}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode('utf-8'))
+    for k, (fn, data, ct) in files.items():
+        out.write(f'--{b}\r\nContent-Disposition: form-data; name="{k}"; filename="{fn}"\r\nContent-Type: {ct}\r\n\r\n'.encode('utf-8')); out.write(data); out.write(b'\r\n')
+    out.write(f'--{b}--\r\n'.encode()); return out.getvalue(), {'Content-Type': f'multipart/form-data; boundary={b}'}
+
+sql('DELETE FROM ao_logins')
+print('--- закрытые папки и файлы')
+for p in ['/app/', '/app/core/bootstrap.php', '/app/core/db.php', '/app/data/seed.json', '/app/site/shell.html', '/app/admin/admin.php', '/storage/', '/storage/config.php', '/storage/cache/site.json',
+          '/storage/logs/php-errors.log', '/.htaccess', '/app/.htaccess', '/uploads/.htaccess', '/.git/config', '/.env', '/README.md', '/composer.json', '/backup.sql', '/dump.sqlite', '/uploads/', '/assets/', '/assets/css/']:
+    s = req('GET', p)[0]; check('closed ' + p, s in (403, 404), s)
+for p in ['/', '/catalog', '/about', '/blog', '/contacts', '/checkout', '/robots.txt', '/sitemap.xml', '/assets/js/app.js', '/assets/css/app.css', '/favicon.ico', '/admin/?p=login']:
+    s = req('GET', p)[0]; check('open ' + p, s == 200, s)
+
+print('--- заголовки')
+s, h, t, raw = req('GET', '/')
+for k, want in [('x-content-type-options', 'nosniff'), ('x-frame-options', 'SAMEORIGIN'), ('referrer-policy', 'strict-origin-when-cross-origin'), ('content-security-policy', "default-src 'self'"), ('permissions-policy', 'camera=()')]:
+    check('site header ' + k, want in h.get(k, ''), h.get(k, '')[:60])
+check('site: no PHP version leak', 'x-powered-by' not in h or 'PHP' not in h.get('x-powered-by', ''), h.get('x-powered-by', 'нет'))
+s, h, t, raw = req('GET', '/admin/?p=login')
+for k, want in [('x-frame-options', 'DENY'), ('cache-control', 'no-store'), ('x-robots-tag', 'noindex'), ('content-security-policy', "script-src 'self'"), ('referrer-policy', 'same-origin')]:
+    check('admin header ' + k, want in h.get(k, ''), h.get(k, '')[:60])
+ck = cookie_of(raw)
+check('admin cookie HttpOnly, SameSite, path', 'HttpOnly' in ck and 'SameSite=Lax' in ck and 'path=/admin/' in ck, ck.split(';', 1)[1].strip())
+s, h, t, raw = req('GET', '/admin/?p=login', headers={'X-Forwarded-Proto': 'https'})
+check('admin cookie Secure over https', 'secure' in cookie_of(raw).lower(), cookie_of(raw).split(';', 1)[1].strip())
+check('HSTS over https', 'max-age' in req('GET', '/', headers={'X-Forwarded-Proto': 'https'})[1].get('strict-transport-security', ''))
+
+s, h, t, raw = req('GET', '/admin/?p=login', headers={'Host': 'asioptik.az'}); check('admin over plain http shows a warning', 'без шифрования' in t)
+s, h, t, raw = req('GET', '/admin/?p=login', headers={'Host': 'asioptik.az', 'X-Forwarded-Proto': 'https'}); check('no warning over https', 'без шифрования' not in t)
+check('no warning on a local test address', 'без шифрования' not in req('GET', '/admin/?p=login')[2])
+
+print('--- вход')
+for p in ['/admin/', '/admin/?p=list&type=product', '/admin/?p=orders', '/admin/?p=doc&name=config', '/admin/?p=order&id=1']:
+    s, h, t, raw = req('GET', p); check('guest ' + p, s == 302 and 'p=login' in h.get('location', ''), f"{s} {h.get('location', '')}")
+pid = sql("SELECT id FROM ao_items WHERE type='product' AND slug='f-verona'")
+s, h, t, raw = req('POST', f'/admin/?p=delete&type=product&id={pid}', {'csrf': 'x'})
+check('guest cannot delete', s == 302 and sql(f'SELECT COUNT(*) FROM ao_items WHERE id={pid}') == '1', s)
+s, h, t, raw = req('POST', '/admin/?p=login', {'login': 'admin', 'password': PW})
+check('login without form token rejected', s == 400, s)
+s, h, t, raw = req('POST', '/admin/?p=login', {'login': 'admin', 'password': PW, 'csrf': ''})
+check('login with empty token rejected', s == 400, s)
+for inj in ["admin' OR '1'='1", "admin'--", "' UNION SELECT 1,2,3,4 -- ", 'admin"; DROP TABLE ao_users; --']:
+    s, h, t, ck, old, new = login('x', inj); check('sql injection in login: ' + inj[:22], s == 200 and 'Неверный логин или пароль' in t, s)
+check('users table intact', sql('SELECT COUNT(*) FROM ao_users') == '1')
+sql('DELETE FROM ao_logins')
+s, h, t, ck, old, new = login()
+check('login ok', s == 302 and 'p=login' not in h.get('location', ''), h.get('location'))
+check('session id changes on login', new != '' and new.split(';')[0] != old, 'new cookie issued' if new else 'same cookie')
+check('old session id is not logged in', req('GET', '/admin/', cookie=old)[0] == 302)
+ADMIN = ck
+s, h, t, raw = req('GET', '/admin/', cookie=ADMIN); check('admin page with session', s == 200 and 'Заказы и заявки' in t, s)
+
+for weak in ['12345678', 'password', 'aaaaaaaa', 'admin']:
+    s, h, t, raw = req('POST', '/admin/?p=password', {'csrf': csrf_of(ADMIN), 'old': PW, 'new': weak, 'new2': weak}, cookie=ADMIN)
+    check('weak password refused: ' + weak, s == 200 and ('Слишком простой пароль' in t or 'не короче 8' in t), s)
+check('password unchanged after weak attempts', login()[0] == 302)
+
+print('--- подделка запросов (CSRF)')
+before = sql(f"SELECT data FROM ao_items WHERE id={pid}")
+for label, body in [('no token', {'f[price]': '1'}), ('wrong token', {'csrf': 'a' * 40, 'f[price]': '1'})]:
+    s, h, t, raw = req('POST', f'/admin/?p=edit&type=product&id={pid}', body, cookie=ADMIN); check('edit, ' + label, s == 400 and sql(f"SELECT data FROM ao_items WHERE id={pid}") == before, s)
+s, h, t, raw = req('POST', f'/admin/?p=delete&type=product&id={pid}', {}, cookie=ADMIN); check('delete without token', s == 400 and sql(f'SELECT COUNT(*) FROM ao_items WHERE id={pid}') == '1', s)
+s, h, t, raw = req('GET', f'/admin/?p=delete&type=product&id={pid}', cookie=ADMIN); check('delete by GET link does nothing', sql(f'SELECT COUNT(*) FROM ao_items WHERE id={pid}') == '1', s)
+s, h, t, raw = req('GET', '/admin/?p=logout', cookie=ADMIN); check('logout by GET link does nothing', req('GET', '/admin/', cookie=ADMIN)[0] == 200)
+s, h, t, raw = req('POST', '/admin/?p=password', {'old': PW, 'new': 'hacked-123456', 'new2': 'hacked-123456'}, cookie=ADMIN); check('password change without token', s == 400, s)
+s, h, t, raw = req('POST', f'/admin/?p=edit&type=product&id={pid}', 'x' * 100, headers={'Content-Type': 'multipart/form-data; boundary=zz'}, cookie=ADMIN); check('empty form body gets a clear answer', s in (400, 413), s)
+
+print('--- приём заказов с сайта')
+tok = re.search(r'"apiToken":"([a-f0-9]+)"', req('GET', '/')[2]).group(1)
+def api(payload, headers=None, raw_body=None):
+    s, h, t, raw = req('POST', '/api/order', raw_body if raw_body is not None else json.dumps(payload), headers={'Content-Type': 'application/json', **(headers or {})})
+    try: return s, json.loads(t)
+    except ValueError: return s, t[:80]
+good = {'kind': 'order', 'token': tok, 'lang': 'ru', 'name': 'Проверка', 'phone': '+994 50 000 00 00', 'total': 10, 'text': 'текст заказа'}
+n0 = int(sql('SELECT COUNT(*) FROM ao_orders'))
+check('GET not allowed', req('GET', '/api/order')[0] == 405)
+check('no token', api({**good, 'token': ''})[0] == 403)
+check('wrong token', api({**good, 'token': 'f' * 32})[0] == 403)
+check('foreign origin', api(good, {'Origin': 'https://evil.example'})[0] == 403)
+check('broken json', api(None, raw_body='{oops')[0] == 400)
+check('unknown kind', api({**good, 'kind': 'admin'})[0] == 400)
+check('empty name', api({**good, 'name': ''})[0] == 422)
+check('bad phone', api({**good, 'phone': 'abc'})[0] == 422)
+check('too large', api({**good, 'text': 'x' * 70000})[0] == 413)
+check('nothing saved by rejected requests', int(sql('SELECT COUNT(*) FROM ao_orders')) == n0, sql('SELECT COUNT(*) FROM ao_orders'))
+evil = {**good, 'name': '<script>alert(1)</script>', 'phone': '+994 50 111 11 11"><img src=x onerror=alert(2)>', 'number': 'OP-<b>-1', 'total': '1e99', 'status': 'done', 'id': 1,
+        'text': '</pre><script>alert(3)</script>',
+        'details': {'comment': '<img src=x onerror=alert(4)>', 'evil': {'a': 1}, 'delivery': ['x'], 'subtotal': 'NaN', 'address': 'A' * 5000,
+                    'items': [{'name': '<svg onload=alert(5)>', 'lines': [['nested'], '<i>line</i>', 7], 'qty': '-5', 'price': {'x': 1}, 'sum': '12.5', 'extra': 'x'}, 'not-an-item'] + [{'name': 'n'}] * 100}}
+s, r = api(evil, {'Origin': f'http://{HOST}:{PORT}'}); check('order with hostile content accepted and cleaned', s == 200 and r.get('ok'), r)
+row = sql("SELECT CONCAT(number, '|', status, '|', IFNULL(total, 'NULL'), '|', data) FROM ao_orders ORDER BY id DESC LIMIT 1")
+num, st, total, data = row.split('|', 3); d = json.loads(data)['details']
+check('number replaced, status forced, total dropped', re.match(r'^OP-\d{4}-\d{4}$', num) and st == 'new' and total == 'NULL', f'{num} {st} {total}')
+check('details: unknown keys dropped, types fixed', set(d) <= {'comment', 'address', 'items'} and len(d['address']) == 300 and len(d['items']) == 59 and d['items'][0]['qty'] == 0 and d['items'][0]['price'] is None and d['items'][0]['sum'] == 12.5 and d['items'][0]['lines'] == ['<i>line</i>', '7'], sorted(d))
+oid = sql('SELECT id FROM ao_orders ORDER BY id DESC LIMIT 1')
+s, h, t, raw = req('GET', f'/admin/?p=order&id={oid}', cookie=ADMIN)
+check('admin order page escapes everything', s == 200 and '<script>alert' not in t and 'onerror=alert' not in t.replace('onerror=alert(2)&gt;', '').replace('&lt;img src=x onerror=alert(4)&gt;', '') and '<svg' not in t and '&lt;script&gt;alert(1)&lt;/script&gt;' in t, s)
+s, h, t, raw = req('GET', '/admin/?p=orders', cookie=ADMIN); check('admin orders list escapes everything', '<script>alert' not in t and '<img src=x' not in t)
+sql("DELETE FROM ao_orders WHERE name = 'Проверка' OR name LIKE '<script>%'")
+codes = [api({**good, 'name': 'Поток'})[0] for _ in range(22)]
+check('rate limit: 20 an hour from one address', codes.count(200) + int(sql("SELECT COUNT(*) FROM ao_orders WHERE name <> 'Поток'")) == 20 and codes[-1] == 429, f'{codes.count(200)} accepted, then {codes[-1]}')
+sql("DELETE FROM ao_orders WHERE name = 'Поток'")
+
+print('--- адреса страниц')
+first = sql('SELECT CONCAT(id, " ", number) FROM ao_orders ORDER BY id LIMIT 1').split(' ')
+s, h, t, raw = req('GET', f'/admin/?p=order&id={first[0]}%20OR%201=1', cookie=ADMIN); check('sql text in a number field is read as a number', s == 200 and first[1] in t and 'SQL' not in t, s)
+for p in ["/product/x'%20OR%201=1--", '/product/..%2f..%2fstorage%2fconfig.php', '/blog/%3Cscript%3E', '/no-such-page']:
+    s, h, t, raw = req('GET', p); check('odd address ' + p[:34], s in (302, 400, 403, 404) and h.get('location', '/').startswith('/'), f"{s} {h.get('location', '')}")
+for p in ['/?page=//evil.example', '/?page=https://evil.example', '/?product=//evil.example', '/?page=about&post=%0d%0aSet-Cookie:x=1']:
+    s, h, t, raw = req('GET', p); loc = h.get('location', ''); check('no open redirect ' + p[:30], s == 301 and loc.startswith('/') and not loc.startswith('//') and 'set-cookie' not in h, loc)
+s, h, t, raw = req('GET', '/catalog?lang=ru&cat=%22%3E%3Cscript%3Ealert(1)%3C/script%3E'); check('query text is escaped in the page', '<script>alert(1)' not in t, s)
+s, h, t, raw = req('GET', '/about', headers={'Host': 'evil.example'}); check('foreign Host header does not reach canonical', 'evil.example' not in t, re.search(r'rel="canonical" href="([^"]*)"', t).group(1))
+s, h, t, raw = req('GET', '/no-such-page', headers={'Host': 'evil.example'}); check('redirects are relative', h.get('location', '').startswith('/'), h.get('location'))
+
+print('--- загрузка файлов')
+up = ROOT / 'site' / 'uploads' / 'p'; up.mkdir(parents=True, exist_ok=True)
+planted = {'shell.php': b'<?php echo "RUN" . (6 * 7); ?>', 'shell.phtml': b'<?php echo "RUN" . (6 * 7); ?>', 'shell.php.jpg': b'<?php echo "RUN" . (6 * 7); ?>', 'x.html': b'<script>alert(1)</script>', 'x.svg': b'<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>', '.htaccess': b'php_flag engine on'}
+for name, body in planted.items(): (up / name).write_bytes(body)
+for name in planted:
+    s, h, t, raw = req('GET', '/uploads/p/' + name); check('planted ' + name + ' is not served or run', s == 403 and 'RUN42' not in t, s)
+for name in planted: (up / name).unlink()
+edit = f'/admin/?p=edit&type=product&id={pid}'
+def upload(fn, data, ct='image/jpeg'):
+    body, hh = multipart({'csrf': csrf_of(ADMIN, edit), 'f[name][az]': '«Verona» çərçivəsi', 'f[cat]': 'frames', 'f[price]': '120', 'slug': 'f-verona', 'position': '20', 'active': '1'}, {'file[img]': (fn, data, ct)})
+    s, h, t, raw = req('POST', edit, body, headers=hh, cookie=ADMIN)
+    err = re.search(r'<p class="err">([^<]*)', t)
+    return s, (err.group(1) if err else ''), sql(f"SELECT JSON_UNQUOTE(JSON_EXTRACT(data, '$.img')) FROM ao_items WHERE id={pid}")
+buf = io.BytesIO(); Image.new('RGB', (900, 600), (240, 240, 240)).save(buf, 'JPEG', quality=85); jpg = buf.getvalue()
+img0 = sql(f"SELECT JSON_UNQUOTE(JSON_EXTRACT(data, '$.img')) FROM ao_items WHERE id={pid}")
+s, err, img = upload('photo.php', b'<?php echo 1; ?>', 'image/jpeg'); check('php renamed as image is refused', 'Подходят только картинки' in err and img == img0, err)
+s, err, img = upload('page.svg', b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', 'image/svg+xml'); check('svg is refused', 'Подходят только картинки' in err, err)
+s, err, img = upload('poly.php.jpg', jpg + b'<?php echo "RUN" . (6 * 7); ?>'); stored = (ROOT / 'site' / img).read_bytes() if img != 'NULL' else b''
+check('image with code appended is re-saved clean', s == 302 and re.match(r'^uploads/p/[a-f0-9]{16}\.jpg$', img) and b'<?php' not in stored and stored[:2] == b'\xff\xd8', img)
+s, h, t, raw = req('GET', '/' + img); check('stored image is served as an image', s == 200 and h.get('content-type') == 'image/jpeg' and h.get('x-content-type-options') == 'nosniff', f"{s} {h.get('content-type')}")
+def png_bomb(w, h):   # крошечный файл, который заявляет огромный размер
+    ihdr = struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0); chunk = lambda t, d: struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) + chunk(b'IDAT', zlib.compress(b'\x00' * 64)) + chunk(b'IEND', b'')
+s, err, img2 = upload('bomb.png', png_bomb(30000, 30000), 'image/png'); check('giant picture is refused with a clear message', 'слишком большая' in err and img2 == img, err)
+s, err, img3 = upload('broken.png', png_bomb(1100, 500), 'image/png'); check('file that only pretends to be a picture is refused, not stored as is', 'Не удалось прочитать картинку' in err and img3 == img, err or 'saved ' + img3)
+# снимок с телефона «на боку»: поворот записан пометкой EXIF, после пересохранения картинка должна стоять прямо
+ph = Image.new('RGB', (800, 400), (255, 255, 255)); ph.paste((200, 30, 30), (0, 0, 400, 400)); ex = ph.getexif(); ex[0x0112] = 6; buf = io.BytesIO(); ph.save(buf, 'JPEG', quality=92, exif=ex)
+s, err, img4 = upload('phone.jpg', buf.getvalue()); im = Image.open(ROOT / 'site' / img4).convert('RGB')
+check('phone photo is turned upright (EXIF 6)', im.size == (400, 800) and im.getpixel((200, 100))[0] > 150 and im.getpixel((200, 100))[1] < 90 and im.getpixel((200, 700))[1] > 200, f'{im.size} top={im.getpixel((200, 100))} bottom={im.getpixel((200, 700))}')
+ex[0x0112] = 8; buf = io.BytesIO(); ph.save(buf, 'JPEG', quality=92, exif=ex); s, err, img5 = upload('phone8.jpg', buf.getvalue()); im = Image.open(ROOT / 'site' / img5).convert('RGB')
+check('phone photo is turned upright (EXIF 8)', im.size == (400, 800) and im.getpixel((200, 700))[0] > 150 and im.getpixel((200, 700))[1] < 90 and im.getpixel((200, 100))[1] > 200, f'{im.size} top={im.getpixel((200, 100))} bottom={im.getpixel((200, 700))}')
+check('replaced photos are removed from disk', not (ROOT / 'site' / img).exists() and not (ROOT / 'site' / img4).exists() and (ROOT / 'site' / img5).exists(), sorted(x.name for x in up.iterdir() if x.suffix))
+big = Image.effect_noise((3300, 2500), 90).convert('RGB'); nine = b''
+for quality in (97, 98, 96, 95, 99):   # нужен файл между 8 и 10 МБ: больше предела сайта, но меньше предела хостинга
+    buf = io.BytesIO(); big.save(buf, 'JPEG', quality=quality); nine = buf.getvalue()
+    if 8.3 * 1048576 < len(nine) < 9.7 * 1048576: break
+s, err, img6 = upload('huge.jpg', nine); check('file over the 8 MB limit gets a clear message', 8 * 1048576 < len(nine) < 10 * 1048576 and 'Файл больше 8 МБ' in err and img6 == img5, f'{len(nine) / 1048576:.1f} MB | {err}')
+body, hh = multipart({'csrf': csrf_of(ADMIN, edit)}, {'file[img]': ('x.jpg', b'0' * (13 * 1048576), 'image/jpeg')})
+s, h, t, raw = req('POST', edit, body, headers=hh, cookie=ADMIN); check('upload over the hosting limit gets a clear message', s == 413 and 'слишком большой для этого хостинга' in t, s)
+log = ROOT / 'site' / 'storage' / 'logs' / 'php-errors.log'
+check('no PHP errors logged so far', not log.exists() or log.stat().st_size == 0, log.read_text()[-400:] if log.exists() else '')
+
+print('--- ограничение попыток входа')
+sql('DELETE FROM ao_logins')
+texts = [login('wrong-' + str(i))[2] for i in range(5)]
+check('five wrong passwords are answered normally', all('Неверный логин или пароль' in t for t in texts))
+s, h, t, ck2, old, new = login(); check('sixth attempt is blocked even with the right password', s == 200 and 'Слишком много попыток' in t, s)
+check('attempts are stored as a hash, not as an address', re.match(r'^[a-f0-9]{64}$', sql('SELECT ip_hash FROM ao_logins LIMIT 1') or '') is not None)
+sql('DELETE FROM ao_logins')
+check('after the pause the right password works', login()[0] == 302)
+
+print('--- выход и ошибки сервера')
+s, h, t, raw = req('POST', '/admin/?p=logout', {'csrf': csrf_of(ADMIN)}, cookie=ADMIN); check('logout', s == 302)
+check('session is dead after logout', req('GET', '/admin/', cookie=ADMIN)[0] == 302)
+conf = ROOT / 'site' / 'storage' / 'config.php'; orig = conf.read_text()
+try:
+    conf.write_text(orig.replace("'3307'", "'3999'")); (ROOT / 'site' / 'storage' / 'cache' / 'site.json').unlink(missing_ok=True)
+    time.sleep(2.6)   # сервер перечитывает изменённый файл настроек не сразу
+    s, h, t, raw = req('GET', '/'); check('database down: plain message, no details', s == 500 and 'временно недоступен' in t and 'PDO' not in t and '/home/' not in t and 'aotest' not in t, s)
+    s, r = api(good); check('database down: api answers without details', s == 500 and 'aotest' not in str(r) and '/home/' not in str(r), s)
+finally:
+    conf.write_text(orig); time.sleep(2.6)
+check('error went to the log file', log.exists() and 'PDOException' in log.read_text(), log.stat().st_size if log.exists() else 'no log')
+check('log file is not reachable from the web', req('GET', '/storage/logs/php-errors.log')[0] == 403)
+for _ in range(16):   # сервер держит прежний файл настроек в памяти ещё несколько секунд
+    if req('GET', '/')[0] == 200: break
+    time.sleep(0.5)
+check('site works again', req('GET', '/')[0] == 200)
+sql('DELETE FROM ao_logins'); log.unlink(missing_ok=True)
+
+print('--- установщик')
+with tempfile.TemporaryDirectory() as tmp:
+    site = pathlib.Path(tmp) / 'site'
+    subprocess.run(['cp', '-r', str(ROOT / 'site'), str(site)], check=True)
+    (site / 'storage' / 'config.php').unlink()
+    php = "$_SERVER['REQUEST_METHOD']='POST'; $_SERVER['REMOTE_ADDR']=$argv[1]; $_POST=['host'=>'sqlite','name'=>'','user'=>'','pass'=>'','login'=>'admin','password'=>'Test-Admin-2026','password2'=>'Test-Admin-2026']; chdir($argv[2]); require $argv[2].'/install.php';"
+    out = subprocess.run(['php', '-r', php, '203.0.113.7', str(site)], capture_output=True, text=True).stdout
+    check('installer: SQLite refused from a remote address', 'SQLite подходит только для проверки' in out and not (site / 'storage' / 'config.php').exists())
+    out = subprocess.run(['php', '-r', php, '127.0.0.1', str(site)], capture_output=True, text=True).stdout
+    check('installer: local SQLite install works and removes install.php', 'Готово: сайт установлен' in out and (site / 'storage' / 'config.php').exists() and not (site / 'install.php').exists(), 'install.php removed' if not (site / 'install.php').exists() else 'install.php still there')
+    check('installer: config is private (0640)', oct((site / 'storage' / 'config.php').stat().st_mode)[-3:] == '640', oct((site / 'storage' / 'config.php').stat().st_mode)[-3:])
+print('\nFAILED: ' + ', '.join(FAILS) if FAILS else '\nall security checks passed')

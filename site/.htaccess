@@ -1,0 +1,40 @@
+# Asioptik: адреса страниц и защита служебных папок
+Options -Indexes
+AddDefaultCharset UTF-8
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Когда на домене включён SSL-сертификат, уберите решётки в трёх строках ниже:
+# сайт всегда будет открываться по https
+# RewriteCond %{HTTPS} !=on
+# RewriteCond %{HTTP:X-Forwarded-Proto} !https
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# служебные папки и файлы с сайта не открываются
+RewriteRule ^(app|storage)(/|$) - [F,L]
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
+RewriteRule \.(md|json|log|sql|sqlite|sh|py|lock|bak|ini)$ - [F,L]
+
+# существующие файлы и папки отдаются как есть
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# всё остальное — страницы сайта
+RewriteRule ^ index.php [L]
+</IfModule>
+
+# Фото из админ-панели: где хостинг разрешает, принимаем файлы до 10 МБ (для PHP в режиме FastCGI то же самое задаёт файл .user.ini)
+<IfModule mod_php.c>
+php_value upload_max_filesize 10M
+php_value post_max_size 12M
+</IfModule>
+
+<IfModule mod_headers.c>
+Header always set X-Content-Type-Options "nosniff"
+<FilesMatch "\.(css|js|jpg|jpeg|png|webp|svg|ico|woff2)$">
+Header set Cache-Control "public, max-age=2592000"
+</FilesMatch>
+</IfModule>

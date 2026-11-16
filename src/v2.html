@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optika — оправы, солнцезащитные очки, контактные линзы и ремонт</title>
+<meta name="description" content="Оправы из ацетата и металла, солнцезащитные очки, контактные линзы и линзы по рецепту. Ремонт очков. Заказ на сайте с подтверждением в WhatsApp.">
+<meta name="theme-color" content="#E6EFEA">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%23B8742A' stroke-width='3.6'%3E%3Ccircle cx='9' cy='17' r='6'/%3E%3Ccircle cx='23' cy='17' r='6'/%3E%3Cpath d='M15 16q1-2 2 0'/%3E%3C/g%3E%3C/svg%3E">
+<script>
+/*@@DATA@@*/
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/*@@SHARED_CSS@@*/
+
+/* ===== Версия 2 — «Ацетат» ===== */
+:root{
+  --bg:#E6EFEA;--bg-2:#D7E6DE;--paper:#fff;--field:#F3F7F4;--ink:#2E1C12;--ink-2:#5B4334;--line:#CBDCD3;--line-2:#B5CABF;
+  --honey:#E3A23A;--honey-l:#F7E0B4;--rose:#F3D3CC;--sea:#2D7A69;--sea-d:#215C4F;--sea-l:#CFE6DD;--red:#B4322E;
+  --pill:999px;--display:'Unbounded',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --font:'Onest',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --wrap:1240px;--pad:clamp(16px,4vw,36px);--header:76px;--flash:rgba(227,162,58,.7);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16.5px/1.55 var(--font);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,p,ul,ol,dl,figure{margin:0}
+ul,ol{padding:0;list-style:none}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 var(--pad)}
+[id]{scroll-margin-top:calc(var(--header) + 12px)}
+.skip{position:absolute;left:12px;top:-60px;z-index:200;padding:10px 16px;border-radius:var(--pill);background:var(--ink);color:#fff;text-decoration:none}
+.skip:focus{top:12px}
+[data-icon]{display:inline-grid;place-items:center;flex:none}
+[data-icon] svg{width:20px;height:20px}
+h2{font-family:var(--display);font-size:clamp(26px,3.3vw,42px);font-weight:600;line-height:1.08;letter-spacing:-.025em}
+
+/* кнопки */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 26px;border:0;border-radius:var(--pill);font-size:16px;font-weight:600;line-height:1.2;text-align:center;text-decoration:none;transition:background-color .15s,color .15s,box-shadow .15s}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-primary:hover{background:#4a3020}
+.btn-line{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+.btn-line:hover{background:var(--ink);color:#fff}
+.btn-honey{background:var(--honey);color:var(--ink)}
+.btn-honey:hover{background:#F0B65A}
+.btn-block{width:100%}
+.btn-wa{background:var(--sea);color:#fff}
+.btn-wa:hover{background:var(--sea-d)}
+.icon-btn{display:inline-grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--ink)}
+.icon-btn:hover{background:rgba(46,28,18,.07)}
+
+/* шапка */
+.site-header{position:sticky;top:0;z-index:50;padding:10px 0;transition:background-color .2s,box-shadow .2s}
+.site-header.is-scrolled{background:rgba(230,239,234,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 1px 0 var(--line)}
+.hdr{display:flex;align-items:center;gap:24px;height:56px}
+.logo{display:inline-flex;align-items:center;gap:10px;font-family:var(--display);font-size:21px;font-weight:700;letter-spacing:-.03em;text-decoration:none;text-transform:lowercase}
+.logo-mark{width:46px;height:auto}
+.nav{display:flex;gap:2px;padding:4px;border-radius:var(--pill);background:var(--paper)}
+.nav a{padding:9px 15px;border-radius:var(--pill);font-size:15px;font-weight:500;text-decoration:none;white-space:nowrap}
+.nav a:hover{background:var(--bg)}
+.nav-phone{display:none}
+.hdr-right{display:flex;align-items:center;gap:14px;margin-left:auto}
+.hdr-phone{font-weight:600;text-decoration:none;white-space:nowrap}
+.cart-btn{display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 7px 0 18px;border:0;border-radius:var(--pill);background:var(--ink);color:#fff;font-size:15px;font-weight:600}
+.cart-btn:hover{background:#4a3020}
+.count{display:inline-grid;place-items:center;min-width:34px;height:34px;padding:0 9px;border-radius:var(--pill);background:var(--honey);color:var(--ink);font-size:14px;font-weight:700;line-height:1}
+.count.is-zero{background:rgba(255,255,255,.16);color:#fff}
+.menu-btn{display:none}
+@media (max-width:1180px){.hdr-phone{display:none}}
+@media (max-width:960px){
+  .hdr{gap:12px}
+  .menu-btn{display:inline-grid;background:var(--paper)}
+  .nav{display:none;position:absolute;top:calc(100% + 4px);left:var(--pad);right:var(--pad);flex-direction:column;gap:0;padding:10px;border-radius:24px;box-shadow:0 18px 40px rgba(46,28,18,.16)}
+  .menu-open .nav{display:flex}
+  .nav a{padding:14px 16px;border-radius:14px;font-size:17px}
+  .nav-phone{display:block;font-weight:600}
+  .cart-btn-label{display:none}
+  .cart-btn{padding-left:14px}
+}
+
+/* первый экран */
+.hero{padding:clamp(8px,2vw,24px) 0 clamp(40px,5vw,72px)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(24px,4vw,56px);align-items:center}
+.hero h1{font-family:var(--display);font-size:clamp(34px,4.9vw,66px);font-weight:700;line-height:1.04;letter-spacing:-.035em}
+.lead{max-width:30em;margin-top:22px;font-size:clamp(17px,1.4vw,19px);color:var(--ink-2)}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.stage{display:grid;justify-items:center;gap:18px;padding:clamp(24px,4vw,48px) clamp(14px,3vw,40px) clamp(22px,3vw,34px);border-radius:40px;background:var(--rose)}
+.hg{position:relative;width:100%;max-width:600px;aspect-ratio:2/1}
+.hg-layer{position:absolute;inset:0;opacity:0;transition:opacity .45s ease}
+.hg-layer.is-on{opacity:1}
+.picker{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding-top:6px}
+.ac{position:relative;width:62px;height:40px;padding:0;border:0;border-radius:11px;background:none;box-shadow:0 2px 0 rgba(46,28,18,.16),0 6px 14px rgba(46,28,18,.12);transition:transform .2s cubic-bezier(.3,.7,.2,1)}
+.ac svg{display:block;width:100%;height:100%;border-radius:inherit}
+.ac::before{content:"";position:absolute;top:50%;left:9px;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--rose);box-shadow:inset 0 1.5px 2px rgba(46,28,18,.45)}
+.ac::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 52%);box-shadow:inset 0 0 0 1px rgba(46,28,18,.1)}
+.ac[aria-pressed="true"]{transform:translateY(-7px)}
+.ac[aria-pressed="true"]::after{box-shadow:inset 0 0 0 2.5px var(--ink)}
+.picker-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 18px}
+.picker-label{font-size:15px;color:var(--ink-2)}
+.picker-label b{color:var(--ink)}
+.link-btn{padding:6px 2px;border:0;background:none;font-weight:600;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+@media (max-width:900px){
+  .hero-grid{grid-template-columns:1fr;gap:0}
+  .hero-copy{display:contents}
+  .hero h1{order:1}
+  .stage{order:2;margin-top:22px;border-radius:32px}
+  .lead{order:3}
+  .hero-cta{order:4}
+}
+@media (max-width:480px){
+  .ac{width:46px;height:32px;border-radius:9px}
+  .ac::before{left:7px;width:8px;height:8px;margin-top:-4px}
+  .picker{gap:8px}
+}
+
+/* каталог */
+.catalog{padding:clamp(20px,3vw,40px) 0 clamp(40px,5vw,72px)}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px 40px;margin-bottom:26px}
+.sec-head p{max-width:44em;margin-top:12px;color:var(--ink-2)}
+.search{position:relative;display:block;width:min(360px,100%)}
+.search [data-icon]{position:absolute;top:50%;left:18px;transform:translateY(-50%);color:var(--ink-2);pointer-events:none}
+.search input{width:100%;height:52px;padding:0 18px 0 48px;border:0;border-radius:var(--pill);background:var(--paper);font-size:16px}
+.search input:focus{outline:none;box-shadow:inset 0 0 0 2.5px var(--ink)}
+.tabs{display:flex;gap:8px;margin:0 calc(var(--pad) * -1) 26px;padding:2px var(--pad) 8px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:inline-flex;flex:none;align-items:center;gap:10px;height:48px;padding:0 18px 0 9px;border:0;border-radius:var(--pill);background:var(--paper);font-size:15px;font-weight:600;white-space:nowrap}
+.tab-chip{width:30px;height:30px;border-radius:50%;background:var(--c);box-shadow:inset 0 0 0 1px rgba(46,28,18,.14)}
+.tab-chip[data-tortoise]{background:var(--tortoise-bg)}
+.tab-n{font-size:13px;font-weight:500;color:var(--ink-2)}
+.tab.is-active{background:var(--ink);color:#fff}
+.tab.is-active .tab-n{color:rgba(255,255,255,.7)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.catalog-empty{display:grid;justify-items:start;gap:16px;padding:36px 0;color:var(--ink-2)}
+.card{position:relative;display:flex;flex-direction:column;min-width:0;padding:10px;border-radius:28px;background:var(--paper)}
+.card-stage{position:relative;border-radius:20px;background:var(--tint,#eee);transition:background-color .35s ease}
+.card-media{padding:46px 22px 22px;cursor:pointer}
+.card-badges{position:absolute;top:12px;left:12px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
+.badge{padding:6px 11px;border-radius:var(--pill);background:var(--paper);font-size:12.5px;font-weight:600;line-height:1}
+.badge.is-sale{background:var(--honey)}
+.card-body{display:flex;flex:1;flex-direction:column;gap:6px;padding:14px 8px 6px}
+.card-title{font-size:16.5px;font-weight:600;line-height:1.3}
+.card-title button{padding:0;border:0;background:none;font:inherit;line-height:inherit;text-align:left}
+.card-title button:hover{text-decoration:underline;text-underline-offset:3px}
+.card-sub{font-size:14.5px;line-height:1.4;color:var(--ink-2)}
+.card-colors{margin-top:6px}
+.card-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:14px}
+.price{display:flex;align-items:baseline;gap:8px;font-family:var(--display);font-size:18px;font-weight:600;white-space:nowrap}
+.price s{font-family:var(--font);font-size:14px;font-weight:400;color:var(--ink-2)}
+.btn-add{min-height:44px;padding:0 20px;border:0;border-radius:var(--pill);background:var(--ink);color:#fff;font-size:15px;font-weight:600}
+.btn-add:hover{background:#4a3020}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sw{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(46,28,18,.16)}
+.sw.is-active{box-shadow:inset 0 0 0 1px rgba(46,28,18,.16),0 0 0 2.5px var(--paper),0 0 0 4.5px var(--ink)}
+@media (max-width:1020px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+@media (max-width:620px){
+  .card{padding:7px;border-radius:22px}
+  .card-stage{border-radius:16px}
+  .card-media{padding:36px 8px 12px}
+  .card-body{padding:10px 5px 4px}
+  .card-title{font-size:15px}
+  .card-sub{font-size:13.5px}
+  .card-foot .btn-add{width:100%}
+  .sw{width:22px;height:22px}
+}
+
+/* рецепт */
+.rx-band{padding:clamp(56px,7vw,96px) 0;background:var(--ink);color:#F6EDE4}
+.rx-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(32px,5vw,80px);align-items:center}
+.rx-band h2{color:#fff}
+.rx-band .rx-text p{max-width:32em;margin-top:18px;color:rgba(246,237,228,.8)}
+.rx-band .btn{margin-top:28px}
+.rx-card{padding:28px 28px 24px;border-radius:26px;background:#FFFCF6;color:var(--ink);box-shadow:0 30px 60px rgba(0,0,0,.28);transform:rotate(-1.2deg)}
+.rx-card figcaption{margin-bottom:16px;font-family:var(--display);font-size:15px;font-weight:600}
+.rx-card table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.rx-card th,.rx-card td{padding:11px 8px;border-bottom:1.5px solid #EFE3D6;text-align:center}
+.rx-card thead th{font-size:13px;font-weight:600;color:var(--ink-2)}
+.rx-card tbody th{font-weight:700;text-align:left}
+.rx-card td{font-family:var(--display);font-size:18px;font-weight:600}
+.rx-card .rx-pd-line{margin-top:14px;font-weight:600}
+.rx-legend{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1.5px dashed #E6D6C5;font-size:14.5px}
+.rx-legend div{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px}
+.rx-legend dt{font-weight:700}
+.rx-legend dd{margin:0;color:var(--ink-2)}
+@media (max-width:900px){.rx-grid{grid-template-columns:1fr}.rx-card{transform:none}}
+
+/* ремонт */
+.repair{padding:clamp(48px,6vw,88px) 0}
+.repair-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,3vw,36px);align-items:start}
+.svc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.svc{display:flex;flex-direction:column;justify-content:space-between;gap:16px;width:100%;height:100%;min-height:108px;padding:16px 18px;border:0;border-radius:20px;background:var(--paper);text-align:left;transition:background-color .15s,box-shadow .15s}
+.svc:hover{box-shadow:inset 0 0 0 2px var(--line-2)}
+.svc.is-picked{background:var(--honey-l);box-shadow:inset 0 0 0 2px var(--honey)}
+.svc-name{font-size:16px;font-weight:600;line-height:1.3}
+.svc-meta{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.svc-time{font-size:14px;color:var(--ink-2)}
+.svc-price{font-family:var(--display);font-size:16px;font-weight:600;white-space:nowrap}
+.svc-note{margin-top:14px;font-size:14px;color:var(--ink-2)}
+.repair-form{position:sticky;top:calc(var(--header) + 12px);padding:26px 24px;border-radius:28px;background:var(--paper)}
+.rf-title{margin-bottom:18px;font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:-.02em}
+.form-note{margin-top:12px;font-size:13.5px;color:var(--ink-2)}
+@media (max-width:980px){.repair-grid{grid-template-columns:1fr}.repair-form{position:static}}
+@media (max-width:480px){.svc-grid{grid-template-columns:1fr}.svc{min-height:0}}
+
+/* как заказать */
+.how{padding:clamp(48px,6vw,88px) 0;background:var(--bg-2)}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:30px;counter-reset:step}
+.steps li{padding:22px 22px 24px;border-radius:24px;background:var(--paper);counter-increment:step}
+.steps li::before{content:counter(step);display:grid;place-items:center;width:50px;height:50px;margin-bottom:18px;border-radius:50%;background:var(--c,var(--honey));font-family:var(--display);font-size:20px;font-weight:700}
+.steps li:nth-child(2){--c:var(--rose)}
+.steps li:nth-child(3){--c:var(--sea-l)}
+.steps li:nth-child(4){--c:var(--honey-l)}
+.steps h3{margin-bottom:6px;font-size:17px;font-weight:700}
+.steps p{font-size:15px;color:var(--ink-2)}
+@media (max-width:960px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.steps{grid-template-columns:1fr}}
+
+/* контакты */
+.contacts{padding:clamp(48px,6vw,88px) 0}
+.contacts-card{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:10px;padding:10px;border-radius:34px;background:var(--paper)}
+.c-info{padding:26px 22px}
+.c-list{display:grid;gap:18px;margin-top:24px}
+.c-list li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;align-items:center}
+.c-list [data-icon]{width:44px;height:44px;border-radius:50%;background:var(--bg)}
+.c-list b{display:block;font-size:13.5px;font-weight:500;color:var(--ink-2)}
+.c-list a{font-weight:600;text-decoration:none}
+.c-list a:hover{text-decoration:underline;text-underline-offset:3px}
+.map{min-height:380px;overflow:hidden;border-radius:26px;background:var(--bg)}
+.map iframe{display:block;width:100%;height:100%;min-height:380px;border:0;filter:sepia(.2) saturate(.85)}
+@media (max-width:860px){.contacts-card{grid-template-columns:1fr}.map,.map iframe{min-height:300px}}
+.site-footer{padding:26px 0 100px;font-size:14px;color:var(--ink-2)}
+.ft{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+.ft a{font-weight:600;color:var(--ink);text-decoration:none}
+
+/* формы */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.field{display:grid;gap:6px;min-width:0;margin:0 0 14px;padding:0;border:0}
+.field>label,.field>legend{font-size:14px;font-weight:600}
+.field>legend{margin-bottom:8px;padding:0}
+.opt-note{font-weight:400;color:var(--ink-2)}
+.field input:not([type=radio]):not([type=checkbox]),.field textarea,.opt select,.rx input{width:100%;min-height:48px;padding:11px 14px;border:1.5px solid transparent;border-radius:14px;background:var(--field);font-size:16px;line-height:1.35}
+.field textarea{min-height:86px;resize:vertical}
+.field input:not([type=radio]):not([type=checkbox]):focus,.field textarea:focus,.opt select:focus,.rx input:focus{outline:none;border-color:var(--ink);background:#fff}
+.field.is-invalid input,.field.is-invalid textarea,.opt.is-invalid select{border-color:var(--red);background:#FFF5F3}
+.field-error,.form-error{font-size:13.5px;color:var(--red)}
+.choices{display:grid;gap:8px}
+.choices-2{grid-template-columns:1fr 1fr}
+.choices-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.choice{display:flex;align-items:flex-start;gap:10px;padding:13px 14px;border-radius:16px;background:var(--field);cursor:pointer;box-shadow:inset 0 0 0 1.5px transparent;transition:box-shadow .15s,background-color .15s}
+.choice input{flex:none;width:18px;height:18px;margin:2px 0 0;accent-color:var(--ink)}
+.choice b{display:block;font-size:15px;font-weight:600;line-height:1.3}
+.choice small{display:block;margin-top:2px;font-size:13px;line-height:1.35;color:var(--ink-2)}
+.choice:has(input:checked){background:var(--honey-l);box-shadow:inset 0 0 0 2px var(--honey)}
+.choice:has(input:focus-visible){outline:3px solid var(--ink);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip>span{display:inline-flex;align-items:center;min-height:40px;padding:7px 15px;border-radius:var(--pill);background:var(--field);font-size:14.5px;font-weight:500;line-height:1.25}
+.chip input:checked+span{background:var(--ink);color:#fff}
+.chip input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
+.hint{font-size:13.5px;color:var(--ink-2)}
+.rx{display:grid;gap:8px}
+.rx-head span{font-size:12.5px;font-weight:600;color:var(--ink-2);text-align:center}
+.rx-row>span:first-child{font-size:14px;font-weight:600}
+.rx input{min-height:44px;padding:8px 4px}
+.rx-pd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:4px;font-size:14px;font-weight:600}
+.rx-pd input:not([type=radio]):not([type=checkbox]){flex:none;width:96px}
+@media (max-width:620px){.row2,.choices-2,.choices-3{grid-template-columns:1fr}}
+
+/* корзина и окна */
+.modal-backdrop,.drawer-backdrop{background:rgba(46,28,18,.42)}
+.drawer{display:flex;justify-content:flex-end;padding:10px}
+.drawer-box{display:flex;flex-direction:column;width:min(460px,100%);height:100%;border-radius:30px;background:var(--bg);box-shadow:0 20px 60px rgba(46,28,18,.25);transform:translateX(calc(100% + 20px));transition:transform .32s cubic-bezier(.3,.7,.2,1)}
+.layer.is-open .drawer-box{transform:none}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 14px 10px 24px}
+.drawer-head h2{font-size:22px}
+.drawer-body{flex:1;overflow:auto;padding:4px 14px}
+.cart-list{display:grid;gap:8px}
+.ci{position:relative;display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;padding:10px;border-radius:22px;background:var(--paper)}
+.ci-art{align-self:start;padding:10px 4px;border-radius:16px;background:var(--bg)}
+.ci-name{padding-right:30px;font-size:15px;font-weight:600;line-height:1.3}
+.ci-opts{margin-top:3px;font-size:13px;line-height:1.35;color:var(--ink-2)}
+.ci-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.ci-price{font-family:var(--display);font-weight:600;white-space:nowrap}
+.ci-remove{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:36px;height:36px;border:0;border-radius:50%;background:none;color:var(--ink-2)}
+.ci-remove:hover{background:var(--bg);color:var(--red)}
+.ci-remove svg{width:18px;height:18px}
+.qty{display:inline-flex;align-items:center;height:46px;border-radius:var(--pill);background:var(--field)}
+.qty button{display:grid;place-items:center;width:42px;height:100%;padding:0;border:0;border-radius:50%;background:none;color:var(--ink)}
+.qty button svg{width:18px;height:18px}
+.qty output{min-width:26px;font-weight:700;text-align:center}
+.qty-sm{height:38px}
+.qty-sm button{width:36px}
+.cart-empty{display:grid;justify-items:center;gap:16px;padding:56px 12px;color:var(--ink-2);text-align:center}
+.cart-empty-icon{display:grid;place-items:center;width:72px;height:72px;border-radius:50%;background:var(--paper);color:var(--ink)}
+.cart-empty-icon svg{width:30px;height:30px}
+.drawer-foot{display:grid;gap:14px;margin:10px;padding:18px;border-radius:24px;background:var(--paper)}
+.free-ship{font-size:14px;color:var(--ink-2)}
+.free-ship .bar{height:8px;margin-top:8px;overflow:hidden;border-radius:4px;background:var(--bg)}
+.free-ship .bar i{display:block;width:0;height:100%;border-radius:4px;background:var(--honey);transition:width .4s ease}
+.cart-sum{display:flex;align-items:baseline;justify-content:space-between}
+.cart-sum b{font-family:var(--display);font-size:22px;font-weight:600}
+.modal{display:grid;place-items:center;padding:24px}
+.modal-box{width:min(100%,900px);max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);overflow:auto;border-radius:34px;background:var(--paper);box-shadow:0 30px 70px rgba(46,28,18,.28);transform:translateY(16px) scale(.985);transition:transform .28s cubic-bezier(.3,.7,.2,1)}
+.layer.is-open .modal-box{transform:none}
+.modal-x{position:absolute;top:14px;right:14px;z-index:3;background:var(--paper)}
+.pm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:10px}
+.pm-art{display:grid;place-items:center;padding:56px 28px;border-radius:26px;background:var(--bg);transition:background-color .35s ease}
+.pm-body{display:flex;flex-direction:column;gap:14px;padding:30px 24px 20px 30px}
+.pm-cat{font-size:14px;color:var(--ink-2)}
+.pm-name{padding-right:40px;font-family:var(--display);font-size:24px;font-weight:600;line-height:1.15;letter-spacing:-.02em}
+.pm-sub{color:var(--ink-2)}
+.pm-info{display:grid;gap:8px;padding:14px 16px;border-radius:18px;background:var(--field);font-size:14.5px}
+.pm-info dt{color:var(--ink-2)}
+.pm-info dd{font-weight:600}
+.pm-opts{display:grid;gap:16px}
+.opt{display:grid;gap:6px;min-width:0;margin:0;padding:0;border:0}
+.opt>legend{margin-bottom:10px;padding:0;font-size:14px;font-weight:600}
+.opt-label{font-size:14px;font-weight:600}
+.opt-fixed{display:flex;justify-content:space-between;gap:12px;font-size:14.5px}
+.opt-fixed .opt-label{font-weight:500;color:var(--ink-2)}
+.opt-value{font-weight:600}
+.opt-hint{font-size:13px;line-height:1.4;color:var(--ink-2)}
+.sw-pick .sw{display:block;width:34px;height:34px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(46,28,18,.16)}
+.sw-pick input:checked+.sw{box-shadow:inset 0 0 0 1px rgba(46,28,18,.16),0 0 0 3px var(--paper),0 0 0 5px var(--ink)}
+.sw-pick input:focus-visible+.sw{outline:3px solid var(--ink);outline-offset:6px}
+.pm-buy{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.pm-price{display:flex;align-items:baseline;gap:10px;white-space:nowrap}
+.pm-price span{font-family:var(--display);font-size:26px;font-weight:600}
+.pm-price s{color:var(--ink-2)}
+@media (max-width:760px){
+  .modal{place-items:end center;padding:0}
+  .modal-box{width:100%;max-height:94vh;max-height:94dvh;border-radius:30px 30px 0 0;transform:translateY(60px)}
+  .pm{grid-template-columns:1fr;padding:8px 8px 0}
+  .pm-art{padding:44px 20px 16px;border-radius:24px}
+  .pm-art .art{max-width:280px;margin:0 auto}
+  .pm-body{padding:18px 14px 0}
+  .pm-name{font-size:21px}
+  .pm-foot{position:sticky;bottom:0;margin:0 -22px;padding:12px 22px 16px;background:var(--paper);box-shadow:0 -10px 24px rgba(46,28,18,.08)}
+  .drawer{padding:0}
+  .drawer-box{border-radius:0}
+}
+.co{width:min(100%,1060px)}
+.co-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:18px 18px 14px 30px;background:var(--paper)}
+.co-head h2{font-size:24px}
+.co-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:10px;padding:0 10px 10px}
+.co-fields{padding:12px 20px 8px}
+.co-set{min-width:0;margin:0 0 22px;padding:0;border:0}
+.co-set>legend{margin-bottom:12px;padding:0;font-family:var(--display);font-size:16px;font-weight:600}
+.co-summary{position:sticky;top:82px;align-self:start;display:flex;flex-direction:column;gap:16px;max-height:calc(100dvh - 140px);overflow:auto;padding:24px;border-radius:26px;background:var(--bg)}
+.co-summary h3{font-family:var(--display);font-size:16px;font-weight:600}
+.co-items{display:grid;gap:12px;font-size:14.5px}
+.co-items small{margin-top:2px;font-size:12.5px;color:var(--ink-2)}
+.co-i-qty{color:var(--ink-2);white-space:nowrap}
+.co-i-sum{font-weight:600;text-align:right;white-space:nowrap}
+.co-totals{display:grid;gap:8px;padding-top:14px;border-top:1.5px solid var(--line-2)}
+.co-totals dt{color:var(--ink-2)}
+.co-totals dd{font-weight:600}
+.co-totals .co-total{padding-top:8px;font-size:19px}
+.co-totals .co-total dt{color:var(--ink);font-weight:700}
+.co-totals .co-total dd{font-family:var(--display);font-weight:600}
+.co-note{font-size:13px;line-height:1.45;color:var(--ink-2)}
+@media (max-width:900px){.co-grid{grid-template-columns:1fr}.co-summary{position:static;max-height:none}}
+@media (max-width:760px){
+  .modal-checkout .modal-box{height:100vh;height:100dvh;max-height:100dvh;border-radius:0}
+  .co-head{padding-left:22px}
+  .co-fields{padding:8px 12px 4px}
+  .co-grid{padding:0 8px 8px}
+  .co-summary{padding:20px 18px 26px}
+}
+.ok{display:grid;justify-items:center;gap:14px;width:min(100%,500px);padding:40px 30px 30px;text-align:center}
+.ok h2{font-size:22px}
+.ok p{color:var(--ink-2)}
+.ok-icon{display:grid;place-items:center;width:70px;height:70px;border-radius:50%;background:var(--honey);color:var(--ink)}
+.ok-icon svg{width:32px;height:32px}
+@media (max-width:760px){.modal-ok{place-items:center;padding:16px}.modal-ok .modal-box{border-radius:28px}}
+.toast{bottom:22px;left:50%;display:flex;align-items:center;gap:14px;max-width:min(580px,calc(100% - 120px));padding:10px 10px 10px 22px;border-radius:var(--pill);background:var(--ink);color:#fff;font-size:14.5px;box-shadow:0 14px 34px rgba(46,28,18,.3);transform:translate(-50%,calc(100% + 40px));transition:transform .3s cubic-bezier(.3,.7,.2,1),visibility 0s linear .3s}
+.toast.is-on{transform:translate(-50%,0);transition:transform .3s cubic-bezier(.3,.7,.2,1)}
+.toast button{flex:none;padding:9px 14px;border:0;border-radius:var(--pill);background:var(--honey);color:var(--ink);font-weight:600}
+@media (max-width:600px){.toast{right:84px;left:12px;max-width:none;border-radius:20px;transform:translateY(calc(100% + 40px))}.toast.is-on{transform:none}}
+.wa-float{position:fixed;right:18px;bottom:18px;z-index:60;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:var(--sea);color:#fff;box-shadow:0 10px 26px rgba(46,28,18,.28)}
+.wa-float:hover{background:var(--sea-d)}
+.wa-float svg{width:28px;height:28px}
+</style>
+</head>
+<body>
+<a class="skip" href="#catalog">Перейти к каталогу</a>
+
+<header class="site-header">
+  <div class="wrap hdr">
+    <a class="logo" href="#top">
+      <svg class="logo-mark" viewBox="0 0 46 22" aria-hidden="true"><g fill="none" stroke="url(#opt-tortoise)" stroke-width="4.6"><circle cx="11" cy="12" r="7.4"/><circle cx="35" cy="12" r="7.4"/><path d="M18.4 10.4q4.6-3.2 9.2 0"/></g></svg>
+      <span data-cfg="shopName">Optika</span>
+    </a>
+    <nav class="nav" id="siteNav" aria-label="Разделы сайта">
+      <a href="#catalog" data-goto="frames">Оправы</a>
+      <a href="#catalog" data-goto="sun">Солнцезащитные</a>
+      <a href="#catalog" data-goto="contacts">Линзы</a>
+      <a href="#repair">Ремонт</a>
+      <a href="#contacts">Контакты</a>
+      <a class="nav-phone" data-cfg-href="tel" href="#" data-cfg="phone">+994 00 000 00 00</a>
+    </nav>
+    <div class="hdr-right">
+      <a class="hdr-phone" data-cfg-href="tel" href="#" data-cfg="phone">+994 00 000 00 00</a>
+      <button type="button" class="cart-btn" data-open-cart><span data-icon="bag"></span><span class="cart-btn-label">Корзина</span><span class="count js-cart-count">0</span></button>
+      <button type="button" class="icon-btn menu-btn js-menu-toggle" aria-expanded="false" aria-controls="siteNav" aria-label="Меню"><span data-icon="menu"></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1>Какого цвета будут ваши очки?</h1>
+        <p class="lead">Оправы, солнцезащитные очки и контактные линзы с доставкой по Баку. Оформите заказ на сайте, он придёт нам в WhatsApp, и мы перезвоним, чтобы его подтвердить.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#catalog" data-goto="frames">Смотреть оправы</a>
+          <a class="btn btn-line" href="#repair">Нужен ремонт</a>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="hg" id="heroGlasses" aria-hidden="true"></div>
+        <div class="picker" id="heroPicker" role="group" aria-label="Цвет оправы"></div>
+        <div class="picker-row">
+          <p class="picker-label" aria-live="polite">Цвет оправы: <b id="heroColorName">черепаховый</b></p>
+          <button type="button" class="link-btn" id="heroColorCta">Показать очки этого цвета</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="catalog" id="catalog">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <h2>Каталог</h2>
+          <p>Цена оправы указана без линз. Линзы для очков продаются парой, контактные линзы — упаковками.</p>
+        </div>
+        <label class="search"><span class="vh">Поиск по каталогу</span><span data-icon="search"></span><input id="searchInput" type="search" placeholder="Название, цвет, тип линз" autocomplete="off"></label>
+      </div>
+      <div class="tabs" id="catTabs" role="group" aria-label="Разделы каталога"></div>
+      <div class="grid" id="productsGrid"></div>
+      <div class="catalog-empty" id="catalogEmpty" hidden>
+        <p>Ничего не нашлось. Попробуйте другое слово или посмотрите все товары.</p>
+        <button type="button" class="btn btn-line" data-reset-filter>Показать все товары</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="rx-band" id="rx">
+    <div class="wrap rx-grid">
+      <div class="rx-text">
+        <h2>Линзы по вашему рецепту</h2>
+        <p>Выберите оправу и линзы для очков. Данные рецепта можно ввести при оформлении заказа или прислать фото рецепта в WhatsApp. Если рецепта нет, отметьте, что нужна проверка зрения, и мы запишем вас в салон.</p>
+        <a class="btn btn-honey" href="#catalog" data-goto="lenses">Выбрать линзы для очков</a>
+      </div>
+      <figure class="rx-card">
+        <figcaption>Где что в рецепте</figcaption>
+        <table>
+          <thead><tr><th scope="col"><span class="vh">Глаз</span></th><th scope="col">SPH</th><th scope="col">CYL</th><th scope="col">AX</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">OD</th><td>−1.25</td><td>−0.50</td><td>90</td></tr>
+            <tr><th scope="row">OS</th><td>−1.50</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+        <p class="rx-pd-line">PD 62 мм</p>
+        <dl class="rx-legend">
+          <div><dt>OD и OS</dt><dd>правый и левый глаз</dd></div>
+          <div><dt>SPH</dt><dd>сила линзы: минус при близорукости, плюс при дальнозоркости</dd></div>
+          <div><dt>CYL, AX</dt><dd>цилиндр и ось, указываются при астигматизме</dd></div>
+          <div><dt>PD</dt><dd>расстояние между зрачками</dd></div>
+        </dl>
+      </figure>
+    </div>
+  </section>
+
+  <section class="repair" id="repair">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <h2>Ремонт очков</h2>
+          <p>Меняем винты и носоупоры при вас, паяем металлические оправы, ставим новые линзы в вашу оправу. Нажмите на услугу, чтобы добавить её в заявку.</p>
+        </div>
+      </div>
+      <div class="repair-grid">
+        <div>
+          <ul class="svc-grid" id="servicesList"></ul>
+          <p class="svc-note">Цены указаны от минимальных. Точную стоимость мастер назовёт, когда посмотрит очки.</p>
+        </div>
+        <form class="repair-form" id="repairForm" novalidate></form>
+      </div>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <div class="wrap">
+      <h2>Как сделать заказ</h2>
+      <ol class="steps">
+        <li><h3>Выберите товар</h3><p>Для оправы укажите цвет, для контактных линз — оптическую силу и радиус.</p></li>
+        <li><h3>Оформите заказ</h3><p>Имя, телефон и способ получения. Рецепт можно ввести на сайте или прислать фото.</p></li>
+        <li><h3>Отправьте сообщение</h3><p>Сайт откроет WhatsApp с готовым текстом заказа. Останется нажать «Отправить».</p></li>
+        <li><h3>Получите заказ</h3><p>Мы перезвоним, подтвердим наличие и сроки, привезём заказ или подготовим его к самовывозу.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="contacts" id="contacts">
+    <div class="wrap">
+      <div class="contacts-card">
+        <div class="c-info">
+          <h2>Контакты</h2>
+          <ul class="c-list">
+            <li><span data-icon="pin"></span><div><b>Адрес</b><a data-cfg-href="map" href="#" target="_blank" rel="noopener" data-cfg="address"></a></div></li>
+            <li><span data-icon="clock"></span><div><b>Часы работы</b><span data-cfg="hours"></span></div></li>
+            <li><span data-icon="phone"></span><div><b>Телефон</b><a data-cfg-href="tel" href="#" data-cfg="phone"></a></div></li>
+            <li><span data-icon="chat"></span><div><b>WhatsApp</b><a data-cfg-href="wa" href="#" target="_blank" rel="noopener">Написать в WhatsApp</a></div></li>
+            <li data-cfg-wrap><span data-icon="at"></span><div><b>Instagram</b><a data-cfg-href="ig" href="#" target="_blank" rel="noopener" data-cfg="instagram"></a></div></li>
+          </ul>
+        </div>
+        <div class="map"><iframe data-cfg-map title="Карта: как нас найти" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap ft">
+    <p>© <span data-cfg="year">2026</span> <span data-cfg="shopName">Optika</span>. Оправы, солнцезащитные очки, контактные линзы и ремонт очков.</p>
+    <p><a data-cfg-href="tel" href="#" data-cfg="phone"></a></p>
+  </div>
+</footer>
+
+<script>
+/* Внешний вид этой версии: карточки, разделы, услуги и выбор цвета на первом экране */
+const THEME = (function () {
+  const mix = (hex, w) => {
+    const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex || '');
+    if (!m) return null;
+    const W = [251, 246, 240];  // тёплый белый, чтобы фон не уходил в холодный серый
+    const ch = [1, 2, 3].map(i => parseInt(m[i], 16));
+    const lum = (ch[0] * 0.3 + ch[1] * 0.59 + ch[2] * 0.11) / 255;
+    const k = lum < 0.2 ? Math.max(w, 0.85) : w;
+    const f = i => Math.round(ch[i] * (1 - k) + W[i] * k);
+    return `rgb(${f(0)},${f(1)},${f(2)})`;
+  };
+  // мягкий фон под товаром — в тон выбранному цвету
+  const tintOf = (p, idx) => {
+    const c = p.colors ? p.colors[idx || 0] : null;
+    if (c && c.c === 'tortoise') return '#F2E1C8';
+    const base = (c && c.c) || p.tone || (p.cat === 'lenses' ? '#8FB1C9' : '#B9C9C1');
+    return mix(base, 0.82) || '#EEF2EF';
+  };
+  const CAT_CHIP = {
+    all: 'conic-gradient(#E3A23A 0 25%,#F3D3CC 0 50%,#5FB3C9 0 75%,#B8742A 0)', frames: 'tortoise', sun: '#E3A23A',
+    contacts: '#5FB3C9', lenses: 'linear-gradient(135deg,#fff 0 46%,#d5e3ec 47% 100%)', care: '#F3D3CC',
+  };
+  const HERO = [
+    { n: 'Черепаховый', c: 'tortoise' },
+    { n: 'Медовый', c: '#cf8f35', a: 0.92 },
+    { n: 'Пудровый', c: '#d39d94' },
+    { n: 'Тёмно-синий', c: '#23305a' },
+    { n: 'Бордовый', c: '#5c1f2b' },
+    { n: 'Чёрный', c: '#1f1f22' },
+  ];
+  return {
+    card(p) {
+      const S = Shop, idx = S.state.sel[p.id] || 0, opt = S.needsOptions(p);
+      const b = S.badges(p).map(x => `<span class="badge${x.sale ? ' is-sale' : ''}">${S.esc(x.t)}</span>`).join('');
+      return `<article class="card" data-pid="${p.id}">
+        <div class="card-stage" style="--tint:${tintOf(p, idx)}">
+          <div class="card-media js-art" data-view>${S.art(p, idx)}</div>
+          ${b ? `<div class="card-badges">${b}</div>` : ''}
+        </div>
+        <div class="card-body">
+          <h3 class="card-title"><button type="button" data-view>${S.esc(p.name)}</button></h3>
+          <p class="card-sub">${S.esc(p.sub || '')}</p>
+          ${p.colors && p.colors.length > 1 ? `<div class="card-colors">${S.swatches(p)}</div>` : ''}
+          <div class="card-foot">
+            <p class="price">${S.priceLabel(p)}${p.old ? `<s><span class="vh">Старая цена </span>${S.money(p.old)}</s>` : ''}</p>
+            <button type="button" class="btn-add" data-add aria-label="${opt ? 'Выбрать параметры' : 'В корзину'}: ${S.esc(p.name)}">${opt ? 'Выбрать' : 'В корзину'}</button>
+          </div>
+        </div>
+      </article>`;
+    },
+    onSwatch(card, p, idx) {
+      const st = card.querySelector('.card-stage');
+      if (st) st.style.setProperty('--tint', tintOf(p, idx));
+    },
+    onPM(p, sel) {
+      const a = document.getElementById('pmArt');
+      const i = p.colors ? Math.max(0, p.colors.findIndex(c => c.n === sel.color)) : 0;
+      if (a) a.style.background = tintOf(p, i);
+    },
+    tab(c, n, on) {
+      const col = CAT_CHIP[c.id] || '#ccc';
+      const chip = col === 'tortoise' ? '<span class="tab-chip" data-tortoise></span>' : `<span class="tab-chip" style="--c:${col}"></span>`;
+      return `<button type="button" class="tab${on ? ' is-active' : ''}" data-cat="${c.id}" aria-pressed="${on}">${chip}${Shop.esc(c.short || c.name)}<span class="tab-n">${n}</span></button>`;
+    },
+    service(s, price) {
+      return `<li><button type="button" class="svc" data-svc="${s.id}" aria-pressed="false"><span class="svc-name">${Shop.esc(s.name)}</span><span class="svc-meta"><span class="svc-time">${Shop.esc(s.time)}</span><span class="svc-price">${price}</span></span></button></li>`;
+    },
+    onInit() {
+      const stage = document.getElementById('heroGlasses');
+      const picker = document.getElementById('heroPicker');
+      const name = document.getElementById('heroColorName');
+      let cur = 0;
+      picker.innerHTML = HERO.map((c, i) => {
+        const fill = c.c === 'tortoise' ? 'url(#opt-tortoise)' : c.c;
+        return `<button type="button" class="ac" data-i="${i}" aria-pressed="${i === 0}" aria-label="${c.n}"><svg viewBox="0 0 62 40" preserveAspectRatio="none" aria-hidden="true"><rect width="62" height="40" fill="${fill}"${c.a ? ` fill-opacity="${c.a}"` : ''}/></svg></button>`;
+      }).join('');
+      const draw = (i, animate) => {
+        const c = HERO[i];
+        const el = document.createElement('div');
+        el.className = 'hg-layer';
+        el.innerHTML = Shop.glasses({ shape: 'trapeze', c: c.c, a: c.a, sw: 8, shadow: 0.12 });
+        stage.appendChild(el);
+        const show = () => el.classList.add('is-on');
+        if (animate && !Shop.reduced()) requestAnimationFrame(() => requestAnimationFrame(show)); else show();
+        setTimeout(() => { while (stage.children.length > 1) stage.removeChild(stage.firstChild); }, animate ? 500 : 0);
+        name.textContent = c.n.toLowerCase();
+        picker.querySelectorAll('.ac').forEach((b, j) => b.setAttribute('aria-pressed', j === i));
+        cur = i;
+      };
+      picker.addEventListener('click', e => {
+        const b = e.target.closest('.ac');
+        if (b && +b.dataset.i !== cur) draw(+b.dataset.i, true);
+      });
+      document.getElementById('heroColorCta').addEventListener('click', () => {
+        Shop.setFilter('all', HERO[cur].n);
+        document.getElementById('catalog').scrollIntoView({ behavior: Shop.reduced() ? 'auto' : 'smooth' });
+      });
+      draw(0, false);
+    },
+  };
+})();
+</script>
+<script>
+/*@@CORE@@*/
+</script>
+</body>
+</html>

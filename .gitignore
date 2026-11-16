@@ -1,0 +1,18 @@
+# То, что появляется после установки сайта: подключение к базе, входы в админ-панель, кэш, журналы, загруженные фото
+site/storage/config.php
+site/storage/*.sqlite
+site/storage/sessions/
+site/storage/cache/*
+!site/storage/cache/.gitkeep
+site/storage/logs/*
+!site/storage/logs/.gitkeep
+site/uploads/*
+!site/uploads/.htaccess
+!site/uploads/.gitkeep
+
+# Служебное
+node_modules/
+__pycache__/
+*.pyc
+shots/
+test/fake/
