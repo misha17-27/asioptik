@@ -16,8 +16,10 @@ async def main():
         pg.on('pageerror', lambda e: errors.append(str(e))); pg.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
         await pg.goto(B + '/'); print('before install / →', pg.url.replace(B, ''))
         print('checks:', await pg.locator('.checks-list li').evaluate_all("els => els.map(e => e.className + ' ' + e.firstChild.textContent)"))
+        print('local switch offered on a local address:', await pg.locator('#file_db').count(), '| MySQL fields hidden until it is unchecked:', not await pg.locator('.db-fields').is_visible())
         await pg.screenshot(path=f'{SH}/install.png', full_page=True)
         async def fill(host, name, user, dbpw, login, p1, p2):
+            if await pg.locator('#file_db').count(): await pg.uncheck('#file_db')   # на тестовом стенде проверяем установку с MySQL, как на хостинге
             for k, v in dict(host=host, name=name, user=user, **{'pass': dbpw}, login=login, password=p1, password2=p2).items():
                 await pg.fill(f'#{k}', v)
             await pg.locator('button[type=submit]').click(); await pg.wait_for_load_state()

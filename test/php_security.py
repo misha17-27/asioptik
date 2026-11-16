@@ -228,14 +228,27 @@ check('site works again', req('GET', '/')[0] == 200)
 sql('DELETE FROM ao_logins'); log.unlink(missing_ok=True)
 
 print('--- установщик')
+sql_root = lambda q: subprocess.run(['mariadb', '--socket=/tmp/mysql-run/mysqld.sock', '-uroot', '-N', '-e', q], capture_output=True, text=True).stdout.strip()
 with tempfile.TemporaryDirectory() as tmp:
     site = pathlib.Path(tmp) / 'site'
     subprocess.run(['cp', '-r', str(ROOT / 'site'), str(site)], check=True)
     (site / 'storage' / 'config.php').unlink()
-    php = "$_SERVER['REQUEST_METHOD']='POST'; $_SERVER['REMOTE_ADDR']=$argv[1]; $_POST=['host'=>'sqlite','name'=>'','user'=>'','pass'=>'','login'=>'admin','password'=>'Test-Admin-2026','password2'=>'Test-Admin-2026']; chdir($argv[2]); require $argv[2].'/install.php';"
-    out = subprocess.run(['php', '-r', php, '203.0.113.7', str(site)], capture_output=True, text=True).stdout
-    check('installer: SQLite refused from a remote address', 'SQLite подходит только для проверки' in out and not (site / 'storage' / 'config.php').exists())
-    out = subprocess.run(['php', '-r', php, '127.0.0.1', str(site)], capture_output=True, text=True).stdout
-    check('installer: local SQLite install works and removes install.php', 'Готово: сайт установлен' in out and (site / 'storage' / 'config.php').exists() and not (site / 'install.php').exists(), 'install.php removed' if not (site / 'install.php').exists() else 'install.php still there')
-    check('installer: config is private (0640)', oct((site / 'storage' / 'config.php').stat().st_mode)[-3:] == '640', oct((site / 'storage' / 'config.php').stat().st_mode)[-3:])
+    # запрос к установщику «как будто» с нужного адреса и с нужным именем сайта
+    php = "$_SERVER['REQUEST_METHOD']='POST'; $_SERVER['REMOTE_ADDR']=$argv[1]; $_SERVER['HTTP_HOST']=$argv[2]; parse_str($argv[4], $_POST); chdir($argv[3]); require $argv[3].'/install.php';"
+    def install(addr, site_host, **post):
+        post = {'login': 'admin', 'password': 'Test-Admin-2026', 'password2': 'Test-Admin-2026', 'host': '', 'name': '', 'user': '', 'pass': '', **post}
+        return subprocess.run(['php', '-r', php, addr, site_host, str(site), urllib.parse.urlencode(post)], capture_output=True, text=True).stdout
+    conf = site / 'storage' / 'config.php'
+    out = install('203.0.113.7', 'asioptik.az', file_db='1')
+    check('installer: no-MySQL mode is not offered to a remote visitor', 'Укажите имя базы данных' in out and 'file_db' not in out and not conf.exists())
+    out = install('127.0.0.1', 'asioptik.az', file_db='1')
+    check('installer: nor behind a proxy on the hosting itself', 'Укажите имя базы данных' in out and 'file_db' not in out and not conf.exists())
+    sql_root("DROP DATABASE IF EXISTS asioptik_test2; CREATE DATABASE asioptik_test2 CHARACTER SET utf8mb4; GRANT ALL ON asioptik_test2.* TO 'aotest'@'127.0.0.1'")
+    out = install('203.0.113.7', 'asioptik.az', host='127.0.0.1:3307', name='asioptik_test2', user='aotest', **{'pass': 'test-only-local'})
+    check('installer on hosting: installs into MySQL and removes install.php', 'Готово: сайт установлен' in out and 'удалён с хостинга' in out and conf.exists() and not (site / 'install.php').exists(), 'install.php removed' if not (site / 'install.php').exists() else 'install.php still there')
+    check('installer: config is private (0640)', oct(conf.stat().st_mode)[-3:] == '640', oct(conf.stat().st_mode)[-3:])
+    sql_root('DROP DATABASE asioptik_test2')
+    subprocess.run(['cp', str(ROOT / 'site' / 'install.php'), str(site / 'install.php')], check=True); conf.unlink()
+    out = install('127.0.0.1', '127.0.0.1:8088', file_db='1')
+    check('installer on own computer: file database, install.php stays', 'Готово: сайт установлен' in out and 'на вашем компьютере' in out and (site / 'storage' / 'site.sqlite').exists() and (site / 'install.php').exists())
 print('\nFAILED: ' + ', '.join(FAILS) if FAILS else '\nall security checks passed')

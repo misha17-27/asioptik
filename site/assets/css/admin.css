@@ -141,6 +141,10 @@ input.mid{width:min(100%,320px)}
 .card .btn{width:100%}
 .card p .btn{width:auto}
 .card h2{margin-top:26px}
+.file-db{width:18px;height:18px;margin:0 8px 0 0;vertical-align:-3px;accent-color:var(--accent)}
+.file-db-label{font-weight:600;cursor:pointer}
+.file-db-hint{margin:6px 0 4px}
+.file-db:checked~.db-fields{display:none}
 .card h2+.hint{margin:-6px 0 14px}
 .checks-list{display:grid;gap:8px;margin:0 0 20px;padding:0;list-style:none;font-size:15px}
 .checks-list li{padding-left:26px;background:no-repeat 0 3px/16px}

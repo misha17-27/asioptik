@@ -451,17 +451,36 @@ function admin_banners(): void
     if (!is_array($aud)) $aud = [];
     $fields = [];
     $demo = [];
-    $add = function (string $path, array $node, bool $wide) use (&$fields, &$demo) {
-        $name = tr_admin($node['title'] ?? $node['name'] ?? $path);
-        $fields[] = ['key' => $path . '.title', 'type' => 'i18n', 'label' => '«' . $name . '»: заголовок', 'req' => true];
-        $fields[] = ['key' => $path . '.text', 'type' => 'i18n', 'label' => '«' . $name . '»: текст под заголовком'];
-        $fields[] = ['key' => $path . '.img', 'type' => 'image', 'label' => '«' . $name . '»: фото', 'dir' => 'b',
-            'hint' => $wide ? 'Широкое, примерно 2000×700. Слева стоит текст, поэтому главное на фото должно быть справа.' : 'Вертикальное, примерно 800×1000. Снизу стоят заголовок и кнопка, поэтому лицо должно быть в верхней половине.'];
-        if (!empty($node['demo'])) $demo[$path] = $name;
-    };
+    $wideHint = 'Широкое, примерно 2400×900. Слева стоит текст, поэтому главное на фото должно быть справа. Обычное фото тоже подойдёт: оно встанет в правой части баннера.';
     foreach ($aud as $i => $a) {
-        $add((string) $i, $a, true);
-        foreach ($a['parts'] ?? [] as $j => $part) $add($i . '.parts.' . $j, $part, false);
+        $name = tr_admin($a['title'] ?? $a['name'] ?? (string) $i);
+        $q = '«' . $name . '»: ';
+        $fields[] = ['key' => $i . '.title', 'type' => 'i18n', 'label' => $q . 'название секции', 'req' => true,
+            'hint' => !empty($a['parts']) ? 'На баннере это первая, светлая строка заголовка.' : 'Показывается на баннере, если не заполнен заголовок ниже.'];
+        $fields[] = ['key' => $i . '.head', 'type' => 'i18n', 'label' => $q . 'заголовок на баннере', 'hint' => 'Крупная строка, например «Детская коллекция».'];
+        if (!empty($a['parts'])) {
+            // баннер с кнопками коллекций: строка под заголовком и несколько фото, которые сменяют друг друга
+            $fields[] = ['key' => $i . '.feats', 'type' => 'i18n_lines', 'label' => $q . 'строка под заголовком', 'rows' => 3, 'hint' => 'Два-три коротких слова или фразы, каждая с новой строки. На баннере они стоят в одну строку через черту.'];
+            foreach (array_values($a['slides'] ?? []) as $k => $slide) {
+                $path = $i . '.slides.' . $k;
+                $fields[] = ['key' => $path . '.img', 'type' => 'image', 'label' => $q . 'фото ' . ($k + 1) . ' на баннере', 'dir' => 'b', 'hint' => $wideHint];
+                if (!empty($slide['demo'])) $demo[$path] = $name . ', фото ' . ($k + 1);
+            }
+            foreach ($a['parts'] as $j => $part) {
+                $path = $i . '.parts.' . $j;
+                $pn = '«' . tr_admin($part['title'] ?? $part['name'] ?? $path) . '»: ';
+                $fields[] = ['key' => $path . '.col', 'type' => 'i18n', 'label' => $pn . 'кнопка на баннере', 'hint' => 'Например «Мужская коллекция». Кнопка открывает каталог с этими моделями.'];
+                $fields[] = ['key' => $path . '.title', 'type' => 'i18n', 'label' => $pn . 'заголовок блока под баннером', 'req' => true];
+                $fields[] = ['key' => $path . '.text', 'type' => 'i18n', 'label' => $pn . 'текст в блоке'];
+                $fields[] = ['key' => $path . '.img', 'type' => 'image', 'label' => $pn . 'фото в блоке', 'dir' => 'b',
+                    'hint' => 'Вертикальное, примерно 800×1000. Снизу стоят заголовок и кнопка, поэтому лицо должно быть в верхней половине. Можно не загружать: тогда в блоке стоит рисунок оправы.'];
+                if (!empty($part['demo'])) $demo[$path] = tr_admin($part['title'] ?? $path);
+            }
+        } else {
+            $fields[] = ['key' => $i . '.text', 'type' => 'i18n', 'label' => $q . 'текст на тёмной плашке'];
+            $fields[] = ['key' => $i . '.img', 'type' => 'image', 'label' => $q . 'фото на баннере', 'dir' => 'b', 'hint' => $wideHint];
+            if (!empty($a['demo'])) $demo[(string) $i] = $name;
+        }
     }
     $errors = [];
     if (is_post()) {
@@ -475,7 +494,7 @@ function admin_banners(): void
             redirect(admin_url('banners'));
         }
     }
-    $out = '<p class="note">Баннеры секций на главной странице. Пока своего фото нет, показывается временное фото из интернета или рисунок. Фото для слайдов первого экрана загружаются в разделе «Разделы каталога», фото салона — в «Странице “О нас”».</p>'
+    $out = '<p class="note">Баннеры секций «Для взрослых» и «Для детей» на главной странице: крупный заголовок слева, фото справа. Пока своего фото нет, показывается временное фото из интернета или рисунок. Фото для слайдов первого экрана загружаются в разделе «Разделы каталога», фото салона — в «Странице “О нас”».</p>'
         . ($errors ? '<p class="flash flash-err" role="alert">Не сохранено: проверьте поля, отмеченные красным.</p>' : '')
         . '<form method="post" enctype="multipart/form-data" class="form">' . csrf_field() . form_fields($fields, $aud, $errors);
     if ($demo) {

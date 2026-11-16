@@ -183,25 +183,33 @@ const AUDIENCES = [
     title: { az: 'Böyüklər üçün', ru: 'Для взрослых', en: 'For adults' },
     text: { az: 'Kişilər və qadınlar üçün çərçivələr və günəş eynəkləri.', ru: 'Оправы и солнцезащитные очки для мужчин и женщин.', en: 'Frames and sunglasses for men and women.' },
     all: { az: 'Böyüklər üçün bütün modellər', ru: 'Все модели для взрослых', en: 'All adult styles' },
-    img: 'images/banner-adults.jpg', show: [['f-florence', 2], ['f-berlin', 0], ['s-riviera', 0]],
-    // временное фото: полки с оправами, автор Ksenia Chernaya (Pexels)
-    demo: 'https://images.pexels.com/photos/5766609/pexels-photo-5766609.jpeg?auto=compress&cs=tinysrgb&w=1920', pos: '50% 45%',
+    // Баннер секции: крупный заголовок слева, фото справа, внизу кнопки мужской и женской коллекций.
+    // head — заголовок на баннере, feats — короткая строка под ним, slides — фото, которые сменяют друг друга.
+    // Фото лучше широкие (около 2400×900), главное на снимке — справа. Пока своих нет, стоят временные с Pexels:
+    // авторы cottonbro studio и Andrea Piacquadio.
+    head: { az: 'Kişi və qadın kolleksiyaları', ru: 'Мужская и женская коллекции', en: 'Men’s and women’s collections' },
+    feats: { az: ['Çərçivələr', 'Günəş eynəkləri', 'Reseptlə linzalar'], ru: ['Оправы', 'Солнцезащитные очки', 'Линзы по рецепту'], en: ['Frames', 'Sunglasses', 'Prescription lenses'] },
+    slides: [
+      { img: 'images/banner-adults-1.jpg', demo: 'https://images.pexels.com/photos/5046193/pexels-photo-5046193.jpeg?auto=compress&cs=tinysrgb&w=1600', pos: '50% 28%', flip: true },
+      { img: 'images/banner-adults-2.jpg', demo: 'https://images.pexels.com/photos/5990258/pexels-photo-5990258.jpeg?auto=compress&cs=tinysrgb&w=1400', pos: '50% 22%' },
+    ],
+    show: [['f-florence', 2], ['f-berlin', 0], ['s-riviera', 0]],
     parts: [
       { id: 'men',
         name: { az: 'Kişilər', ru: 'Мужчинам', en: 'Men' },
         title: { az: 'Kişilər üçün', ru: 'Для мужчин', en: 'For men' },
         text: { az: 'Düzbucaqlı və browline çərçivələr, günəşdən qoruyan aviatorlar.', ru: 'Прямоугольные оправы и браулайнеры, авиаторы от солнца.', en: 'Rectangular and browline frames, aviators for the sun.' },
         all: { az: 'Kişi modellərinin hamısı', ru: 'Все мужские модели', en: 'All men’s styles' },
-        // временное фото: автор cottonbro studio (Pexels)
-        demo: 'https://images.pexels.com/photos/5990258/pexels-photo-5990258.jpeg?auto=compress&cs=tinysrgb&w=900', pos: '50% 30%',
+        col: { az: 'Kişi kolleksiyası', ru: 'Мужская коллекция', en: 'Men’s collection' },
+        pos: '50% 30%',
         img: 'images/banner-men.jpg', art: { id: 'f-berlin', color: 0 }, pick: ['f-verona', 'f-berlin', 's-riviera', 'f-london'] },
       { id: 'women',
         name: { az: 'Qadınlar', ru: 'Женщинам', en: 'Women' },
         title: { az: 'Qadınlar üçün', ru: 'Для женщин', en: 'For women' },
         text: { az: '«Pişik gözü», nazik metal və iri oval formalar.', ru: '«Кошачий глаз», тонкий металл и крупные овалы.', en: 'Cat-eye, fine metal and oversized ovals.' },
         all: { az: 'Qadın modellərinin hamısı', ru: 'Все женские модели', en: 'All women’s styles' },
-        // временное фото: автор Andrea Piacquadio (Pexels)
-        demo: 'https://images.pexels.com/photos/5046193/pexels-photo-5046193.jpeg?auto=compress&cs=tinysrgb&w=1400', pos: '10% 30%',
+        col: { az: 'Qadın kolleksiyası', ru: 'Женская коллекция', en: 'Women’s collection' },
+        pos: '50% 30%',
         img: 'images/banner-women.jpg', art: { id: 'f-florence', color: 2 }, pick: ['f-florence', 'f-tokyo', 's-capri', 's-tropez'] },
     ] },
   { id: 'kids',
@@ -210,7 +218,12 @@ const AUDIENCES = [
     text: { az: 'Elastik və yüngül çərçivələr, UV400 günəş eynəkləri.', ru: 'Гибкие лёгкие оправы и солнцезащитные очки UV400.', en: 'Flexible, lightweight frames and UV400 sunglasses.' },
     panel: { az: '3 yaşdan 14 yaşadək', ru: 'От 3 до 14 лет', en: 'Ages 3 to 14' },
     all: { az: 'Uşaq modellərinin hamısı', ru: 'Все детские модели', en: 'All kids’ styles' },
-    img: 'images/banner-kids.jpg', demo: 'https://images.pexels.com/photos/6193647/pexels-photo-6193647.jpeg?auto=compress&cs=tinysrgb&w=1920', pos: '50% 12%', flip: true, show: [['f-bubble', 0], ['f-kids', 0], ['s-kids', 0]],
+    // Баннер: фото товара во всю ширину, слева заголовок и текст на плашках. Временные фото с Pexels;
+    // если первое не откроется, подставится второе.
+    head: { az: 'Uşaq kolleksiyası', ru: 'Детская коллекция', en: 'Kids’ collection' },
+    img: 'images/banner-kids.jpg', pos: '100% 50%',
+    demo: ['https://images.pexels.com/photos/13430474/pexels-photo-13430474.jpeg?auto=compress&cs=tinysrgb&w=1920', 'https://images.pexels.com/photos/6193647/pexels-photo-6193647.jpeg?auto=compress&cs=tinysrgb&w=1920'],
+    show: [['f-bubble', 0], ['f-kids', 0], ['s-kids', 0]],
     art: { id: 'f-kids', color: 0 }, pick: ['f-kids', 'f-bubble', 'f-junior', 's-kids'] },
 ];
 
@@ -963,32 +976,62 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
 }
 
 /* для кого: отдельные секции «Для взрослых» (мужчины и женщины) и «Для детей» */
-.aud{padding:clamp(48px,6vw,96px) 0;border-top:1px solid var(--line)}
+.aud{padding:0 0 clamp(48px,6vw,96px);border-top:1px solid var(--line)}
 .aud-adults{background:var(--white)}
 .aud-kids{background:linear-gradient(135deg,#E3EEFF,#FFEEE7)}
-/* баннер секции: место под фото; пока фото нет, показывается рисунок (товары или дети в очках) */
-.sb{position:relative;display:grid;grid-template-columns:minmax(0,11fr) minmax(0,9fr);align-items:center;gap:clamp(16px,3vw,40px);min-height:clamp(250px,28vw,380px);margin-bottom:16px;--sbp:clamp(28px,4vw,60px);padding:var(--sbp);border-radius:var(--r);overflow:hidden;background:linear-gradient(115deg,#F5F8FE,#E1EAFA)}
-.sb::after{content:"";position:absolute;inset:10px;z-index:3;border:1px solid rgba(29,95,209,.3);border-radius:2px;pointer-events:none}
-.sb-body{position:relative;z-index:2;display:grid;justify-items:start;gap:14px}
-.sb h2{font-size:clamp(34px,4.6vw,62px)}
-.sb p{max-width:25em;font-size:clamp(16px,1.35vw,19px);color:var(--ink-2)}
-.sb .btn{margin-top:6px}
-.sb-art{position:relative;z-index:1;display:flex;align-items:center;justify-content:center}
+/* Баннер секции во всю ширину экрана: слева крупный текст, справа фото, внизу кнопки.
+   Широкое фото (примерно 2400×900) ложится на весь баннер; обычное встаёт справа и плавно уходит в фон.
+   Пока фото нет, справа стоит рисунок из товаров. */
+.sb{--sbg:#EDF2FB;position:relative;display:grid;align-items:center;min-height:clamp(340px,37vw,560px);margin-bottom:clamp(24px,3.4vw,48px);overflow:hidden;background:var(--sbg);isolation:isolate}
+.aud-kids .sb{--sbg:#F3F6FB}
+.sb>.ph{right:0;left:auto;width:min(62%,1180px);-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30%);mask-image:linear-gradient(90deg,transparent 0,#000 30%)}
+.sb>.ph.is-flip{-webkit-mask-image:linear-gradient(270deg,transparent 0,#000 30%);mask-image:linear-gradient(270deg,transparent 0,#000 30%)}
+.sb>.ph.is-tall{width:min(42%,720px)}
+.sb>.ph.is-wide{left:0;width:100%;-webkit-mask-image:none;mask-image:none}
+.sb-wide.has-photo::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(237,242,251,.92) 0%,rgba(237,242,251,.72) 34%,rgba(237,242,251,0) 60%)}
+.sb-in{position:relative;z-index:2;display:grid;justify-items:start;gap:clamp(10px,1.3vw,18px);width:100%;padding-top:clamp(30px,4vw,60px);padding-bottom:clamp(30px,4vw,60px)}
+.sb-art{position:absolute;z-index:1;top:50%;right:max(var(--pad),calc(50% - var(--wrap)/2 + var(--pad)));display:flex;align-items:center;justify-content:center;width:min(40%,500px);transform:translateY(-50%)}
 .sb-art>span{flex:0 0 34%}
 .sb-art>span:nth-child(2){flex-basis:46%;margin:0 -7%;z-index:1}
-.sb.has-photo::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.93) 44%,rgba(255,255,255,0) 72%)}
+.sb-fig svg{display:block;width:100%;height:auto}
 .sb.has-photo .sb-art{visibility:hidden}
-/* рисунок с детьми в очках: стоит на нижнем краю баннера */
-.sb-fig{align-self:end;margin:calc(-.55*var(--sbp)) 0 calc(-1*var(--sbp))}
-.sb-fig svg{display:block;width:100%;max-width:520px;height:auto}
-.aud-kids .sb{background:linear-gradient(115deg,rgba(255,255,255,.92),rgba(255,255,255,.55))}
+/* «Для взрослых»: заголовок в две строки, строка преимуществ, кнопки коллекций; фото сменяют друг друга */
+.sb-wide.has-photo>.ph{opacity:0;transition:opacity .9s ease}
+.sb-wide.has-photo>.ph.is-on,.sb-wide.has-photo>.ph:only-of-type{opacity:1}
+.sb-wide .sb-in{padding-bottom:calc(clamp(40px,4.6vw,66px) + 96px)}
+.sb-wide h2{display:grid;gap:.06em;max-width:min(13em,56vw);font-family:var(--font);font-size:clamp(28px,4.2vw,62px);font-weight:700;line-height:1;letter-spacing:-.022em;text-transform:uppercase}
+.sb-kick{color:#6379A0}
+.sb-feats{display:flex;flex-wrap:wrap;gap:4px 0;padding:0;list-style:none;font-size:clamp(13px,1.3vw,19px);font-weight:500;letter-spacing:.03em;text-transform:uppercase}
+.sb-feats li{display:flex;align-items:center}
+.sb-feats li+li::before{content:"";width:1px;height:.95em;margin:0 .85em;background:currentColor}
+.sb-cta{position:absolute;z-index:2;left:50%;bottom:clamp(40px,4.6vw,66px);display:flex;gap:14px;transform:translateX(-50%)}
+.btn-white{min-width:230px;min-height:54px;border-color:#fff;background:#fff;color:var(--ink);font-size:13.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;box-shadow:0 10px 30px rgba(15,43,91,.14)}
+.btn-white:hover{border-color:var(--ink);background:var(--ink);color:#fff}
+.sb-dots{position:absolute;z-index:2;left:50%;bottom:10px;display:flex;gap:10px;transform:translateX(-50%)}
+.sb-dot{position:relative;width:46px;height:24px;padding:0;border:0;background:none;cursor:pointer}
+.sb-dot::before{content:"";position:absolute;right:0;left:0;top:50%;height:3px;margin-top:-1.5px;background:rgba(15,43,91,.28);transition:background .2s}
+.sb-dot.is-on::before{background:var(--ink)}
+/* «Для детей»: фото товара, слева заголовок и текст на плашках */
+.sb-boxed .sb-in{gap:clamp(12px,1.6vw,22px)}
+.sb-box-title{width:min(100%,650px);padding:clamp(20px,2.6vw,38px) clamp(20px,2.4vw,34px);background:var(--accent);color:#fff;font-family:var(--font);font-size:clamp(34px,5.4vw,80px);font-weight:300;line-height:1.03;letter-spacing:.005em;text-transform:uppercase}
+.sb-box-text{width:min(100%,650px);padding:clamp(16px,1.8vw,26px) clamp(20px,2.4vw,34px);background:var(--ink);color:#fff;font-size:clamp(16px,1.4vw,20px);line-height:1.55}
+@media (max-width:900px){
+  .btn-white{min-width:0}
+}
 @media (max-width:700px){
-  .sb{grid-template-columns:1fr;min-height:0}
-  .sb-art{width:100%;max-width:420px;margin:0 auto;padding:0 5%}
-  .sb-fig{max-width:360px;margin:6px auto calc(-1*var(--sbp));padding:0}
-  .sb.has-photo{padding-bottom:56%}
+  .sb{display:block;min-height:0}
+  .sb.has-photo{padding-bottom:64vw}
+  .sb>.ph,.sb>.ph.is-wide,.sb>.ph.is-tall,.sb>.ph.is-flip{top:auto;right:0;bottom:0;left:0;width:100%;height:70vw;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 22%);mask-image:linear-gradient(180deg,transparent 0,#000 22%)}
+  .sb-wide.has-photo::before{display:none}
+  .sb-wide h2{max-width:none}
+  .sb-feats{display:grid;gap:2px}
+  .sb-feats li+li::before{display:none}
+  .sb-wide .sb-in{padding-bottom:18px}
+  .sb-cta{position:relative;left:auto;bottom:auto;display:grid;gap:10px;padding:0 var(--pad) 22px;transform:none}
+  .sb-cta .btn{width:100%}
+  .sb-art{position:static;width:min(86%,400px);margin:0 auto 22px;transform:none}
   .sb.has-photo .sb-art{display:none}
-  .sb.has-photo::before{background:linear-gradient(180deg,rgba(255,255,255,.96) 0%,rgba(255,255,255,.86) 42%,rgba(255,255,255,0) 70%)}
+  .sb-boxed .sb-in{padding-bottom:22px}
 }
 .aud-rows{display:grid;gap:16px}
 .aud-grid{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,9fr);gap:16px}
@@ -1989,10 +2032,11 @@ const THEME = (function () {
 
   // Фото для баннера. Сначала берётся свой файл из папки images; если его нет — временное фото по ссылке (demo);
   // если не загрузилось и оно, остаётся рисунок из товаров
-  const photo = (x, lazy) => {
-    const S = Shop, src = x && (x.img || x.demo);
-    if (!src) return '';
-    return `<img class="ph" src="${S.esc(src)}"${x.img && x.demo ? ` data-demo="${S.esc(x.demo)}"` : ''}${x.pos || x.flip ? ` style="${x.pos ? 'object-position:' + S.esc(x.pos) + ';' : ''}${x.flip ? 'transform:scaleX(-1)' : ''}"` : ''} alt="" decoding="async"${lazy ? ' loading="lazy"' : ''} onload="this.parentNode.classList.add('has-photo')" onerror="if(this.dataset.demo){this.src=this.dataset.demo;this.removeAttribute('data-demo')}else{this.remove()}">`;
+  const photo = (x, lazy, cls) => {
+    const S = Shop, list = x ? [x.img].concat(x.demo || []).filter(Boolean) : [];
+    if (!list.length) return '';
+    const st = (x.pos ? 'object-position:' + S.esc(x.pos) + ';' : '') + (x.flip ? 'transform:scaleX(-1)' : '');
+    return `<img class="ph${cls ? ' ' + cls : ''}${x.flip ? ' is-flip' : ''}" src="${S.esc(list[0])}"${list.length > 1 ? ` data-next="${S.esc(list.slice(1).join(' '))}"` : ''}${st ? ` style="${st}"` : ''} alt="" decoding="async"${lazy ? ' loading="lazy"' : ''} onload="this.parentNode.classList.add('has-photo');var k=this.naturalWidth/this.naturalHeight;if(k>=1.9)this.classList.add('is-wide');else if(k<.95)this.classList.add('is-tall')" onerror="var n=(this.dataset.next||'').split(' ').filter(Boolean);if(n.length){this.src=n.shift();this.dataset.next=n.join(' ')}else{this.remove()}">`;
   };
   // Рисунок для баннера: до трёх товаров, средний крупнее
   // Баннер «Для детей»: собственный рисунок — дети в очках на фоне линзы с бликом из логотипа.
@@ -2066,6 +2110,35 @@ const THEME = (function () {
     if (hs.paused || hs.n < 2) return;
     hs.timer = setInterval(() => {
       if (!hs.hold && hs.seen && !document.hidden && !Shop.state.page) showSlide(hs.i + 1);
+    }, 6000);
+  }
+  // Баннер «Для взрослых»: фото сменяют друг друга раз в шесть секунд. Смена останавливается, когда на баннер
+  // навели указатель, перешли в него с клавиатуры или выбрали фото сами; при просьбе уменьшить движение не запускается.
+  function showBannerPhoto(sb, i) {
+    const ph = sb.querySelectorAll(':scope > .ph'), dots = sb.querySelectorAll('.sb-dot');
+    if (!ph.length) return;
+    i = ((i % ph.length) + ph.length) % ph.length;
+    ph.forEach((el, k) => el.classList.toggle('is-on', k === i));
+    dots.forEach((d, k) => { d.classList.toggle('is-on', k === i); d.setAttribute('aria-pressed', k === i); });
+    sb.dataset.sb = i;
+  }
+  function initBannerPhotos() {
+    document.addEventListener('click', e => {
+      const d = e.target.closest('[data-sb-dot]');
+      if (!d) return;
+      const sb = d.closest('[data-sb]');
+      sb.dataset.stop = '1';
+      showBannerPhoto(sb, +d.dataset.sbDot);
+    });
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    setInterval(() => {
+      if (document.hidden) return;
+      document.querySelectorAll('[data-sb]').forEach(sb => {
+        if (sb.dataset.stop || sb.matches(':hover, :focus-within') || sb.querySelectorAll(':scope > .ph').length < 2) return;
+        const r = sb.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight) return;   // баннера не видно — фото не листаем
+        showBannerPhoto(sb, (+sb.dataset.sb || 0) + 1);
+      });
     }, 6000);
   }
   function initSlider() {
@@ -2396,16 +2469,31 @@ const THEME = (function () {
           </div>
           <div class="aud-list">${x.list.map(card).join('')}</div>
         </div>`;
-      return `<section class="aud aud-${a.id}" id="${a.id}" aria-labelledby="aud-${a.id}-title">
-        <div class="wrap">
-          <div class="sb">${photo(a, true)}
-            <div class="sb-body">
-              <h2 id="aud-${a.id}-title">${S.esc(a.title)}</h2>
-              <p>${S.esc(a.text)}${a.panel ? ' ' + S.esc(a.panel) + '.' : ''}</p>
-              ${cta(a, 'btn-primary')}
+      // Баннер. У «Для взрослых» — заголовок, строка преимуществ, кнопки мужской и женской коллекций и сменяющиеся фото;
+      // у «Для детей» — фото товара и текст на плашках
+      const slides = a.slides && a.slides.length ? a.slides : (a.img || a.demo ? [a] : []);
+      const dots = slides.length > 1 ? `<div class="sb-dots" role="group" aria-label="${S.esc(S.t('sb.photos'))}">${slides.map((x, i) => `<button type="button" class="sb-dot${i ? '' : ' is-on'}" data-sb-dot="${i}" aria-pressed="${!i}" aria-label="${S.esc(S.t('sb.photo', { n: i + 1 }))}"></button>`).join('')}</div>` : '';
+      const banner = a.parts
+        ? `<div class="sb sb-wide" data-sb>${slides.map((x, i) => photo(x, true, i ? '' : 'is-on')).join('')}
+            <div class="wrap sb-in">
+              <h2 id="aud-${a.id}-title"><span class="sb-kick">${S.esc(a.title)}</span> <span>${S.esc(a.head || a.text)}</span></h2>
+              ${a.feats.length ? `<ul class="sb-feats">${a.feats.map(f => `<li>${S.esc(f)}</li>`).join('')}</ul>` : ''}
             </div>
-            <div class="sb-art${a.id === 'kids' ? ' sb-fig' : ''}" aria-hidden="true">${a.id === 'kids' ? KIDS_ART : arts(a.show)}</div>
-          </div>
+            <div class="sb-cta">${a.parts.map(x => `<a class="btn btn-white" href="#catalog" data-goto="all" data-aud="${x.id}">${S.esc(x.col || x.all)}</a>`).join('')}</div>
+            ${dots}
+            <div class="sb-art" aria-hidden="true">${arts(a.show)}</div>
+          </div>`
+        : `<div class="sb sb-boxed">${photo(a, true)}
+            <div class="wrap sb-in">
+              <h2 class="sb-box-title" id="aud-${a.id}-title">${S.esc(a.head || a.title)}</h2>
+              <p class="sb-box-text">${S.esc(a.text)}${a.panel ? ' ' + S.esc(a.panel) + '.' : ''}</p>
+              ${cta(a, 'btn-accent')}
+            </div>
+            <div class="sb-art sb-fig" aria-hidden="true">${KIDS_ART}</div>
+          </div>`;
+      return `<section class="aud aud-${a.id}" id="${a.id}" aria-labelledby="aud-${a.id}-title">
+        ${banner}
+        <div class="wrap">
           ${a.parts ? `<div class="aud-rows">${a.parts.map(row).join('')}</div>` : `<div class="aud-list aud-solo">${a.list.map(card).join('')}</div>`}
         </div>
       </section>`;
@@ -2415,6 +2503,7 @@ const THEME = (function () {
     },
     onInit() {
       initSlider();
+      initBannerPhotos();
       renderTiles();
       initLoupe();
       initChart();
@@ -2475,7 +2564,7 @@ const THEME = (function () {
       'co.summary': 'Sifarişiniz', 'co.items': 'Məhsullar', 'co.deliveryRow': 'Çatdırılma', 'co.total': 'Cəmi',
       'co.submit': 'Sifarişi WhatsApp-a göndərin', 'co.note': 'Sifarişin hazır mətni ilə WhatsApp açılacaq. Orada «Göndər» düyməsini basın, sifariş bizə çatacaq.',
       'dn.free': 'Şəhər daxilində pulsuz', 'dn.price': 'Şəhər daxilində {price}', 'dn.priceFree': 'Şəhər daxilində {price}. {lim}-dan pulsuz',
-      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'e.address': 'Çatdırılma ünvanını yazın',
+      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
       'e.svc': 'Ən azı bir xidmət seçin', 'e.pickupAddr': 'Eynəyin götürüləcəyi ünvanı yazın',
       'ok.orderTitle': 'Sifarişi göndərmək qalıb',
       'ok.orderText': '{id} sifarişinin mətni ilə WhatsApp-ı açdıq. Çatda «Göndər» düyməsini basın, menecer sifarişi və çatdırılma vaxtını təsdiqləyəcək.',
@@ -2536,7 +2625,7 @@ const THEME = (function () {
       'co.summary': 'Ваш заказ', 'co.items': 'Товары', 'co.deliveryRow': 'Доставка', 'co.total': 'Итого',
       'co.submit': 'Отправить заказ в WhatsApp', 'co.note': 'Откроется WhatsApp с готовым текстом заказа. Нажмите в нём «Отправить», и заказ придёт к нам.',
       'dn.free': 'По городу, бесплатно', 'dn.price': 'По городу, {price}', 'dn.priceFree': 'По городу, {price}. Бесплатно от {lim}',
-      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'e.address': 'Укажите адрес доставки',
+      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
       'e.svc': 'Выберите хотя бы одну услугу', 'e.pickupAddr': 'Укажите адрес, откуда забрать очки',
       'ok.orderTitle': 'Осталось отправить заказ',
       'ok.orderText': 'Мы открыли WhatsApp с текстом заказа {id}. Нажмите в чате «Отправить», и менеджер подтвердит заказ и время доставки.',
@@ -2597,7 +2686,7 @@ const THEME = (function () {
       'co.summary': 'Your order', 'co.items': 'Items', 'co.deliveryRow': 'Delivery', 'co.total': 'Total',
       'co.submit': 'Send order via WhatsApp', 'co.note': 'WhatsApp will open with your order already written. Press Send there and the order reaches us.',
       'dn.free': 'Within the city, free', 'dn.price': 'Within the city, {price}', 'dn.priceFree': 'Within the city, {price}. Free from {lim}',
-      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'e.address': 'Enter the delivery address',
+      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
       'e.svc': 'Choose at least one service', 'e.pickupAddr': 'Enter the address to collect your glasses from',
       'ok.orderTitle': 'Now send the order',
       'ok.orderText': 'We’ve opened WhatsApp with order {id}. Press Send in the chat and our manager will confirm the order and delivery time.',
@@ -3126,6 +3215,7 @@ const THEME = (function () {
     return {
       id: a.id, name: L(a.name), title: L(a.title), text: L(a.text), panel: L(a.panel), all: L(a.all), count: pool.length,
       art: ap ? art(ap, a.art.color || 0) : '', img: a.img || '', demo: a.demo || '', pos: a.pos || '', flip: !!a.flip, show: a.show || null, list,
+      head: L(a.head), col: L(a.col), feats: [].concat(L(a.feats) || []), slides: Array.isArray(a.slides) ? a.slides.filter(x => x && (x.img || x.demo)) : [],
       parts: a.parts ? a.parts.map(audView).filter(v => v.count) : null,
     };
   }

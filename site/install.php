@@ -35,30 +35,41 @@ function seed_import(PDO $pdo): void
     $pdo->commit();
 }
 
+/* Установка на своём компьютере: запрос пришёл с этой же машины, и сайт открыт по локальному адресу
+   (или запущен встроенным сервером PHP). На хостинге это всегда false. */
+$local = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true) && (PHP_SAPI === 'cli-server' || is_local());
+// Без MySQL данные можно держать в файле (SQLite) — только при проверке на своём компьютере
+$canFile = $local && extension_loaded('pdo_sqlite');
+
 if (config()) {
-    install_page('<p>Сайт уже установлен.</p><p><a class="btn" href="' . e(base_path()) . 'admin/">Открыть админ-панель</a></p>'
-        . '<p class="hint">Файл install.php больше не нужен — удалите его с хостинга. Чтобы установить сайт заново, сначала удалите файл storage/config.php.</p>');
+    install_page('<p>Сайт уже установлен.</p><p><a class="btn" href="' . e(base_path()) . 'admin/">Открыть админ-панель</a> <a href="' . e(base_path()) . '">Открыть сайт</a></p>'
+        . '<p class="hint">' . ($local ? '' : 'Файл install.php больше не нужен — удалите его с хостинга. ') . 'Чтобы установить сайт заново, сначала удалите файл storage/config.php.</p>');
 }
 
-// что нужно от хостинга
+// что нужно от хостинга: [название, состояние (ok, bad или warn), подсказка]
+$mysql = extension_loaded('pdo_mysql');
+$gd = function_exists('imagecreatetruecolor');
 $checks = [
-    ['PHP 8.0 или новее', PHP_VERSION_ID >= 80000, 'Сейчас ' . PHP_VERSION . '. Версию PHP можно сменить в панели хостинга.'],
-    ['Модуль PDO MySQL', extension_loaded('pdo_mysql'), 'Включите расширение pdo_mysql в настройках PHP на хостинге.'],
-    ['Модуль mbstring', extension_loaded('mbstring'), 'Включите расширение mbstring в настройках PHP.'],
-    ['Папка storage доступна для записи', is_writable(STORAGE), 'Дайте права на запись папке storage (обычно 755 или 775).'],
-    ['Папка uploads доступна для записи', is_writable(UPLOADS), 'Дайте права на запись папке uploads (обычно 755 или 775).'],
+    ['PHP 8.0 или новее', PHP_VERSION_ID >= 80000 ? 'ok' : 'bad', 'Сейчас ' . PHP_VERSION . '. Версию PHP можно сменить в панели хостинга.'],
+    ['Модуль PDO MySQL', $mysql ? 'ok' : ($canFile ? 'warn' : 'bad'), $canFile ? 'Нужен на хостинге. Для проверки на своём компьютере достаточно хранить данные в файле.' : 'Включите расширение pdo_mysql в настройках PHP на хостинге.'],
+    ['Модуль mbstring', extension_loaded('mbstring') ? 'ok' : 'bad', 'Включите расширение mbstring в настройках PHP.'],
+    ['Папка storage доступна для записи', is_writable(STORAGE) ? 'ok' : 'bad', 'Дайте права на запись папке storage (обычно 755 или 775).'],
+    ['Папка uploads доступна для записи', is_writable(UPLOADS) ? 'ok' : 'bad', 'Дайте права на запись папке uploads (обычно 755 или 775).'],
+    ['Модуль GD для уменьшения фото', $gd ? 'ok' : 'warn', 'Не обязателен: без него фото сохраняются как есть.'],
 ];
 $ready = true;
 $list = '<ul class="checks-list">';
 foreach ($checks as $c) {
-    $ready = $ready && $c[1];
-    $list .= '<li class="' . ($c[1] ? 'ok' : 'bad') . '">' . e($c[0]) . ($c[1] ? '' : '<small>' . e($c[2]) . '</small>') . '</li>';
+    $ready = $ready && $c[1] !== 'bad';
+    $list .= '<li class="' . $c[1] . '">' . e($c[0]) . ($c[1] === 'ok' ? '' : '<small>' . e($c[2]) . '</small>') . '</li>';
 }
-$list .= '<li class="' . (function_exists('imagecreatetruecolor') ? 'ok' : 'warn') . '">Модуль GD для уменьшения фото' . (function_exists('imagecreatetruecolor') ? '' : '<small>Не обязателен: без него фото сохраняются как есть.</small>') . '</li></ul>';
+$list .= '</ul>';
 
 $v = ['host' => 'localhost', 'name' => '', 'user' => '', 'login' => 'admin'];
+$posted = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+$useFile = $canFile && ($posted ? !empty($_POST['file_db']) : true);   // на своём компьютере по умолчанию без MySQL
 $error = '';
-if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $ready) {
+if ($posted && $ready) {
     foreach ($v as $k => $_) $v[$k] = trim((string) ($_POST[$k] ?? ''));
     $dbPass = (string) ($_POST['pass'] ?? '');
     $p1 = (string) ($_POST['password'] ?? '');
@@ -67,11 +78,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $ready) {
         if (mb_strlen($p1) < 8) throw new InvalidArgumentException('Пароль для админ-панели должен быть не короче 8 символов.');
         if (weak_password($p1, $v['login'])) throw new InvalidArgumentException('Слишком простой пароль: такие подбирают первыми. Придумайте другой.');
         if ($p1 !== (string) ($_POST['password2'] ?? '')) throw new InvalidArgumentException('Пароль и его повтор не совпадают.');
-        if ($v['host'] === 'sqlite') {   // проверка сайта на своём компьютере без MySQL
-            if (!in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)) throw new InvalidArgumentException('SQLite подходит только для проверки сайта на своём компьютере. На хостинге укажите сервер MySQL, обычно localhost.');
-            if (!extension_loaded('pdo_sqlite')) throw new InvalidArgumentException('Для проверки без MySQL нужно расширение pdo_sqlite.');
+        if ($useFile) {
             $db = ['driver' => 'sqlite', 'path' => STORAGE . '/site.sqlite'];
         } else {
+            if (!$mysql) throw new InvalidArgumentException('В PHP не включён модуль pdo_mysql, без него к базе MySQL не подключиться.');
             if ($v['name'] === '' || $v['user'] === '') throw new InvalidArgumentException('Укажите имя базы данных и пользователя.');
             $hp = explode(':', $v['host'], 2);
             $db = ['driver' => 'mysql', 'host' => $hp[0] ?: 'localhost', 'port' => $hp[1] ?? '', 'name' => $v['name'], 'user' => $v['user'], 'pass' => $dbPass];
@@ -95,12 +105,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $ready) {
         if (@file_put_contents(STORAGE . '/config.php', $code, LOCK_EX) === false) throw new RuntimeException('Не удалось записать storage/config.php. Проверьте права на папку storage.');
         @chmod(STORAGE . '/config.php', 0640);
         if (function_exists('opcache_invalidate')) @opcache_invalidate(STORAGE . '/config.php', true);
-        // Установщик больше не нужен: убираем его сами, а если хостинг не дал — просим удалить вручную
-        $removed = @unlink(__FILE__);
+        // На хостинге установщик больше не нужен: убираем его сами, а если хостинг не дал — просим удалить вручную.
+        // На своём компьютере файл остаётся: это рабочая копия проекта.
+        $removed = $local ? false : @unlink(__FILE__);
+        $after = $local
+            ? 'Это копия сайта на вашем компьютере' . ($useFile ? ', данные хранятся в файле storage/site.sqlite' : '') . '. На хостинге установка проходит так же, но с базой MySQL.'
+            : ($removed ? 'Файл install.php удалён с хостинга: он больше не нужен.' : 'Теперь удалите файл install.php с хостинга: он больше не нужен.');
         install_page('<p class="flash flash-ok">Готово: сайт установлен.</p>'
             . '<p><a class="btn" href="' . e(base_path()) . 'admin/">Войти в админ-панель</a> <a href="' . e(base_path()) . '">Открыть сайт</a></p>'
-            . '<p class="hint">Логин: <b>' . e($v['login']) . '</b>. Пароль — тот, что вы только что задали. '
-            . ($removed ? 'Файл install.php удалён с хостинга: он больше не нужен.' : 'Теперь удалите файл install.php с хостинга: он больше не нужен.') . '</p>');
+            . '<p class="hint">Логин: <b>' . e($v['login']) . '</b>. Пароль — тот, что вы только что задали. ' . $after . '</p>');
     } catch (Throwable $e) {
         $error = $e instanceof InvalidArgumentException ? $e->getMessage() : 'Установка не завершилась: ' . $e->getMessage();
     }
@@ -110,16 +123,23 @@ $f = function (string $name, string $label, string $type = 'text', string $hint 
     return '<div class="field"><label class="lbl" for="' . $name . '">' . e($label) . '</label><input id="' . $name . '" name="' . $name . '" type="' . $type . '" value="' . e($type === 'password' ? '' : ($v[$name] ?? '')) . '" autocomplete="' . $auto . '">'
         . ($hint ? '<p class="hint">' . e($hint) . '</p>' : '') . '</div>';
 };
+// Переключатель «без MySQL» виден только на своём компьютере; поля базы прячутся одним правилом CSS, без скриптов
+$fileSwitch = $canFile
+    ? '<input type="checkbox" class="file-db" id="file_db" name="file_db" value="1"' . ($useFile ? ' checked' : '') . '>'
+        . '<label class="file-db-label" for="file_db">Проверка на своём компьютере: хранить данные в файле, без MySQL</label>'
+        . '<p class="hint file-db-hint">Так можно посмотреть сайт и админ-панель у себя. На хостинге нужна база MySQL: там этого переключателя нет.</p>'
+    : '';
 install_page($list
     . ($ready ? '' : '<p class="flash flash-err">Сначала исправьте пункты, отмеченные красным, и обновите страницу.</p>')
     . ($error ? '<p class="flash flash-err" role="alert">' . e($error) . '</p>' : '')
     . '<form method="post"' . ($ready ? '' : ' hidden') . '>'
-    . '<h2>База данных MySQL</h2><p class="hint">Базу и пользователя создайте в панели хостинга (раздел «Базы данных») и впишите их сюда.</p>'
+    . $fileSwitch
+    . '<div class="db-fields"><h2>База данных MySQL</h2><p class="hint">Базу и пользователя создайте в панели хостинга (раздел «Базы данных») и впишите их сюда.</p>'
     . $f('host', 'Сервер базы данных', 'text', 'Обычно localhost.')
     . $f('name', 'Имя базы данных')
     . $f('user', 'Пользователь базы данных')
     . $f('pass', 'Пароль пользователя базы данных', 'password')
-    . '<h2>Вход в админ-панель</h2>'
+    . '</div><h2>Вход в админ-панель</h2>'
     . $f('login', 'Логин', 'text', '', 'username')
     . $f('password', 'Пароль', 'password', 'Не короче 8 символов. Придумайте новый, не используйте пароль от почты или хостинга.', 'new-password')
     . $f('password2', 'Пароль ещё раз', 'password', '', 'new-password')

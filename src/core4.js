@@ -38,7 +38,7 @@
       'co.summary': 'Sifarişiniz', 'co.items': 'Məhsullar', 'co.deliveryRow': 'Çatdırılma', 'co.total': 'Cəmi',
       'co.submit': 'Sifarişi WhatsApp-a göndərin', 'co.note': 'Sifarişin hazır mətni ilə WhatsApp açılacaq. Orada «Göndər» düyməsini basın, sifariş bizə çatacaq.',
       'dn.free': 'Şəhər daxilində pulsuz', 'dn.price': 'Şəhər daxilində {price}', 'dn.priceFree': 'Şəhər daxilində {price}. {lim}-dan pulsuz',
-      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'e.address': 'Çatdırılma ünvanını yazın',
+      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
       'e.svc': 'Ən azı bir xidmət seçin', 'e.pickupAddr': 'Eynəyin götürüləcəyi ünvanı yazın',
       'ok.orderTitle': 'Sifarişi göndərmək qalıb',
       'ok.orderText': '{id} sifarişinin mətni ilə WhatsApp-ı açdıq. Çatda «Göndər» düyməsini basın, menecer sifarişi və çatdırılma vaxtını təsdiqləyəcək.',
@@ -99,7 +99,7 @@
       'co.summary': 'Ваш заказ', 'co.items': 'Товары', 'co.deliveryRow': 'Доставка', 'co.total': 'Итого',
       'co.submit': 'Отправить заказ в WhatsApp', 'co.note': 'Откроется WhatsApp с готовым текстом заказа. Нажмите в нём «Отправить», и заказ придёт к нам.',
       'dn.free': 'По городу, бесплатно', 'dn.price': 'По городу, {price}', 'dn.priceFree': 'По городу, {price}. Бесплатно от {lim}',
-      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'e.address': 'Укажите адрес доставки',
+      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
       'e.svc': 'Выберите хотя бы одну услугу', 'e.pickupAddr': 'Укажите адрес, откуда забрать очки',
       'ok.orderTitle': 'Осталось отправить заказ',
       'ok.orderText': 'Мы открыли WhatsApp с текстом заказа {id}. Нажмите в чате «Отправить», и менеджер подтвердит заказ и время доставки.',
@@ -160,7 +160,7 @@
       'co.summary': 'Your order', 'co.items': 'Items', 'co.deliveryRow': 'Delivery', 'co.total': 'Total',
       'co.submit': 'Send order via WhatsApp', 'co.note': 'WhatsApp will open with your order already written. Press Send there and the order reaches us.',
       'dn.free': 'Within the city, free', 'dn.price': 'Within the city, {price}', 'dn.priceFree': 'Within the city, {price}. Free from {lim}',
-      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'e.address': 'Enter the delivery address',
+      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
       'e.svc': 'Choose at least one service', 'e.pickupAddr': 'Enter the address to collect your glasses from',
       'ok.orderTitle': 'Now send the order',
       'ok.orderText': 'We’ve opened WhatsApp with order {id}. Press Send in the chat and our manager will confirm the order and delivery time.',
@@ -689,6 +689,7 @@
     return {
       id: a.id, name: L(a.name), title: L(a.title), text: L(a.text), panel: L(a.panel), all: L(a.all), count: pool.length,
       art: ap ? art(ap, a.art.color || 0) : '', img: a.img || '', demo: a.demo || '', pos: a.pos || '', flip: !!a.flip, show: a.show || null, list,
+      head: L(a.head), col: L(a.col), feats: [].concat(L(a.feats) || []), slides: Array.isArray(a.slides) ? a.slides.filter(x => x && (x.img || x.demo)) : [],
       parts: a.parts ? a.parts.map(audView).filter(v => v.count) : null,
     };
   }

@@ -163,25 +163,33 @@ const AUDIENCES = [
     title: { az: 'Böyüklər üçün', ru: 'Для взрослых', en: 'For adults' },
     text: { az: 'Kişilər və qadınlar üçün çərçivələr və günəş eynəkləri.', ru: 'Оправы и солнцезащитные очки для мужчин и женщин.', en: 'Frames and sunglasses for men and women.' },
     all: { az: 'Böyüklər üçün bütün modellər', ru: 'Все модели для взрослых', en: 'All adult styles' },
-    img: 'images/banner-adults.jpg', show: [['f-florence', 2], ['f-berlin', 0], ['s-riviera', 0]],
-    // временное фото: полки с оправами, автор Ksenia Chernaya (Pexels)
-    demo: 'https://images.pexels.com/photos/5766609/pexels-photo-5766609.jpeg?auto=compress&cs=tinysrgb&w=1920', pos: '50% 45%',
+    // Баннер секции: крупный заголовок слева, фото справа, внизу кнопки мужской и женской коллекций.
+    // head — заголовок на баннере, feats — короткая строка под ним, slides — фото, которые сменяют друг друга.
+    // Фото лучше широкие (около 2400×900), главное на снимке — справа. Пока своих нет, стоят временные с Pexels:
+    // авторы cottonbro studio и Andrea Piacquadio.
+    head: { az: 'Kişi və qadın kolleksiyaları', ru: 'Мужская и женская коллекции', en: 'Men’s and women’s collections' },
+    feats: { az: ['Çərçivələr', 'Günəş eynəkləri', 'Reseptlə linzalar'], ru: ['Оправы', 'Солнцезащитные очки', 'Линзы по рецепту'], en: ['Frames', 'Sunglasses', 'Prescription lenses'] },
+    slides: [
+      { img: 'images/banner-adults-1.jpg', demo: 'https://images.pexels.com/photos/5046193/pexels-photo-5046193.jpeg?auto=compress&cs=tinysrgb&w=1600', pos: '50% 28%', flip: true },
+      { img: 'images/banner-adults-2.jpg', demo: 'https://images.pexels.com/photos/5990258/pexels-photo-5990258.jpeg?auto=compress&cs=tinysrgb&w=1400', pos: '50% 22%' },
+    ],
+    show: [['f-florence', 2], ['f-berlin', 0], ['s-riviera', 0]],
     parts: [
       { id: 'men',
         name: { az: 'Kişilər', ru: 'Мужчинам', en: 'Men' },
         title: { az: 'Kişilər üçün', ru: 'Для мужчин', en: 'For men' },
         text: { az: 'Düzbucaqlı və browline çərçivələr, günəşdən qoruyan aviatorlar.', ru: 'Прямоугольные оправы и браулайнеры, авиаторы от солнца.', en: 'Rectangular and browline frames, aviators for the sun.' },
         all: { az: 'Kişi modellərinin hamısı', ru: 'Все мужские модели', en: 'All men’s styles' },
-        // временное фото: автор cottonbro studio (Pexels)
-        demo: 'https://images.pexels.com/photos/5990258/pexels-photo-5990258.jpeg?auto=compress&cs=tinysrgb&w=900', pos: '50% 30%',
+        col: { az: 'Kişi kolleksiyası', ru: 'Мужская коллекция', en: 'Men’s collection' },
+        pos: '50% 30%',
         img: 'images/banner-men.jpg', art: { id: 'f-berlin', color: 0 }, pick: ['f-verona', 'f-berlin', 's-riviera', 'f-london'] },
       { id: 'women',
         name: { az: 'Qadınlar', ru: 'Женщинам', en: 'Women' },
         title: { az: 'Qadınlar üçün', ru: 'Для женщин', en: 'For women' },
         text: { az: '«Pişik gözü», nazik metal və iri oval formalar.', ru: '«Кошачий глаз», тонкий металл и крупные овалы.', en: 'Cat-eye, fine metal and oversized ovals.' },
         all: { az: 'Qadın modellərinin hamısı', ru: 'Все женские модели', en: 'All women’s styles' },
-        // временное фото: автор Andrea Piacquadio (Pexels)
-        demo: 'https://images.pexels.com/photos/5046193/pexels-photo-5046193.jpeg?auto=compress&cs=tinysrgb&w=1400', pos: '10% 30%',
+        col: { az: 'Qadın kolleksiyası', ru: 'Женская коллекция', en: 'Women’s collection' },
+        pos: '50% 30%',
         img: 'images/banner-women.jpg', art: { id: 'f-florence', color: 2 }, pick: ['f-florence', 'f-tokyo', 's-capri', 's-tropez'] },
     ] },
   { id: 'kids',
@@ -190,7 +198,12 @@ const AUDIENCES = [
     text: { az: 'Elastik və yüngül çərçivələr, UV400 günəş eynəkləri.', ru: 'Гибкие лёгкие оправы и солнцезащитные очки UV400.', en: 'Flexible, lightweight frames and UV400 sunglasses.' },
     panel: { az: '3 yaşdan 14 yaşadək', ru: 'От 3 до 14 лет', en: 'Ages 3 to 14' },
     all: { az: 'Uşaq modellərinin hamısı', ru: 'Все детские модели', en: 'All kids’ styles' },
-    img: 'images/banner-kids.jpg', demo: 'https://images.pexels.com/photos/6193647/pexels-photo-6193647.jpeg?auto=compress&cs=tinysrgb&w=1920', pos: '50% 12%', flip: true, show: [['f-bubble', 0], ['f-kids', 0], ['s-kids', 0]],
+    // Баннер: фото товара во всю ширину, слева заголовок и текст на плашках. Временные фото с Pexels;
+    // если первое не откроется, подставится второе.
+    head: { az: 'Uşaq kolleksiyası', ru: 'Детская коллекция', en: 'Kids’ collection' },
+    img: 'images/banner-kids.jpg', pos: '100% 50%',
+    demo: ['https://images.pexels.com/photos/13430474/pexels-photo-13430474.jpeg?auto=compress&cs=tinysrgb&w=1920', 'https://images.pexels.com/photos/6193647/pexels-photo-6193647.jpeg?auto=compress&cs=tinysrgb&w=1920'],
+    show: [['f-bubble', 0], ['f-kids', 0], ['s-kids', 0]],
     art: { id: 'f-kids', color: 0 }, pick: ['f-kids', 'f-bubble', 'f-junior', 's-kids'] },
 ];
 

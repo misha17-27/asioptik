@@ -186,10 +186,11 @@ const THEME = (function () {
 
   // Фото для баннера. Сначала берётся свой файл из папки images; если его нет — временное фото по ссылке (demo);
   // если не загрузилось и оно, остаётся рисунок из товаров
-  const photo = (x, lazy) => {
-    const S = Shop, src = x && (x.img || x.demo);
-    if (!src) return '';
-    return `<img class="ph" src="${S.esc(src)}"${x.img && x.demo ? ` data-demo="${S.esc(x.demo)}"` : ''}${x.pos || x.flip ? ` style="${x.pos ? 'object-position:' + S.esc(x.pos) + ';' : ''}${x.flip ? 'transform:scaleX(-1)' : ''}"` : ''} alt="" decoding="async"${lazy ? ' loading="lazy"' : ''} onload="this.parentNode.classList.add('has-photo')" onerror="if(this.dataset.demo){this.src=this.dataset.demo;this.removeAttribute('data-demo')}else{this.remove()}">`;
+  const photo = (x, lazy, cls) => {
+    const S = Shop, list = x ? [x.img].concat(x.demo || []).filter(Boolean) : [];
+    if (!list.length) return '';
+    const st = (x.pos ? 'object-position:' + S.esc(x.pos) + ';' : '') + (x.flip ? 'transform:scaleX(-1)' : '');
+    return `<img class="ph${cls ? ' ' + cls : ''}${x.flip ? ' is-flip' : ''}" src="${S.esc(list[0])}"${list.length > 1 ? ` data-next="${S.esc(list.slice(1).join(' '))}"` : ''}${st ? ` style="${st}"` : ''} alt="" decoding="async"${lazy ? ' loading="lazy"' : ''} onload="this.parentNode.classList.add('has-photo');var k=this.naturalWidth/this.naturalHeight;if(k>=1.9)this.classList.add('is-wide');else if(k<.95)this.classList.add('is-tall')" onerror="var n=(this.dataset.next||'').split(' ').filter(Boolean);if(n.length){this.src=n.shift();this.dataset.next=n.join(' ')}else{this.remove()}">`;
   };
   // Рисунок для баннера: до трёх товаров, средний крупнее
   // Баннер «Для детей»: собственный рисунок — дети в очках на фоне линзы с бликом из логотипа.
@@ -263,6 +264,35 @@ const THEME = (function () {
     if (hs.paused || hs.n < 2) return;
     hs.timer = setInterval(() => {
       if (!hs.hold && hs.seen && !document.hidden && !Shop.state.page) showSlide(hs.i + 1);
+    }, 6000);
+  }
+  // Баннер «Для взрослых»: фото сменяют друг друга раз в шесть секунд. Смена останавливается, когда на баннер
+  // навели указатель, перешли в него с клавиатуры или выбрали фото сами; при просьбе уменьшить движение не запускается.
+  function showBannerPhoto(sb, i) {
+    const ph = sb.querySelectorAll(':scope > .ph'), dots = sb.querySelectorAll('.sb-dot');
+    if (!ph.length) return;
+    i = ((i % ph.length) + ph.length) % ph.length;
+    ph.forEach((el, k) => el.classList.toggle('is-on', k === i));
+    dots.forEach((d, k) => { d.classList.toggle('is-on', k === i); d.setAttribute('aria-pressed', k === i); });
+    sb.dataset.sb = i;
+  }
+  function initBannerPhotos() {
+    document.addEventListener('click', e => {
+      const d = e.target.closest('[data-sb-dot]');
+      if (!d) return;
+      const sb = d.closest('[data-sb]');
+      sb.dataset.stop = '1';
+      showBannerPhoto(sb, +d.dataset.sbDot);
+    });
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    setInterval(() => {
+      if (document.hidden) return;
+      document.querySelectorAll('[data-sb]').forEach(sb => {
+        if (sb.dataset.stop || sb.matches(':hover, :focus-within') || sb.querySelectorAll(':scope > .ph').length < 2) return;
+        const r = sb.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight) return;   // баннера не видно — фото не листаем
+        showBannerPhoto(sb, (+sb.dataset.sb || 0) + 1);
+      });
     }, 6000);
   }
   function initSlider() {
@@ -593,16 +623,31 @@ const THEME = (function () {
           </div>
           <div class="aud-list">${x.list.map(card).join('')}</div>
         </div>`;
-      return `<section class="aud aud-${a.id}" id="${a.id}" aria-labelledby="aud-${a.id}-title">
-        <div class="wrap">
-          <div class="sb">${photo(a, true)}
-            <div class="sb-body">
-              <h2 id="aud-${a.id}-title">${S.esc(a.title)}</h2>
-              <p>${S.esc(a.text)}${a.panel ? ' ' + S.esc(a.panel) + '.' : ''}</p>
-              ${cta(a, 'btn-primary')}
+      // Баннер. У «Для взрослых» — заголовок, строка преимуществ, кнопки мужской и женской коллекций и сменяющиеся фото;
+      // у «Для детей» — фото товара и текст на плашках
+      const slides = a.slides && a.slides.length ? a.slides : (a.img || a.demo ? [a] : []);
+      const dots = slides.length > 1 ? `<div class="sb-dots" role="group" aria-label="${S.esc(S.t('sb.photos'))}">${slides.map((x, i) => `<button type="button" class="sb-dot${i ? '' : ' is-on'}" data-sb-dot="${i}" aria-pressed="${!i}" aria-label="${S.esc(S.t('sb.photo', { n: i + 1 }))}"></button>`).join('')}</div>` : '';
+      const banner = a.parts
+        ? `<div class="sb sb-wide" data-sb>${slides.map((x, i) => photo(x, true, i ? '' : 'is-on')).join('')}
+            <div class="wrap sb-in">
+              <h2 id="aud-${a.id}-title"><span class="sb-kick">${S.esc(a.title)}</span> <span>${S.esc(a.head || a.text)}</span></h2>
+              ${a.feats.length ? `<ul class="sb-feats">${a.feats.map(f => `<li>${S.esc(f)}</li>`).join('')}</ul>` : ''}
             </div>
-            <div class="sb-art${a.id === 'kids' ? ' sb-fig' : ''}" aria-hidden="true">${a.id === 'kids' ? KIDS_ART : arts(a.show)}</div>
-          </div>
+            <div class="sb-cta">${a.parts.map(x => `<a class="btn btn-white" href="#catalog" data-goto="all" data-aud="${x.id}">${S.esc(x.col || x.all)}</a>`).join('')}</div>
+            ${dots}
+            <div class="sb-art" aria-hidden="true">${arts(a.show)}</div>
+          </div>`
+        : `<div class="sb sb-boxed">${photo(a, true)}
+            <div class="wrap sb-in">
+              <h2 class="sb-box-title" id="aud-${a.id}-title">${S.esc(a.head || a.title)}</h2>
+              <p class="sb-box-text">${S.esc(a.text)}${a.panel ? ' ' + S.esc(a.panel) + '.' : ''}</p>
+              ${cta(a, 'btn-accent')}
+            </div>
+            <div class="sb-art sb-fig" aria-hidden="true">${KIDS_ART}</div>
+          </div>`;
+      return `<section class="aud aud-${a.id}" id="${a.id}" aria-labelledby="aud-${a.id}-title">
+        ${banner}
+        <div class="wrap">
           ${a.parts ? `<div class="aud-rows">${a.parts.map(row).join('')}</div>` : `<div class="aud-list aud-solo">${a.list.map(card).join('')}</div>`}
         </div>
       </section>`;
@@ -612,6 +657,7 @@ const THEME = (function () {
     },
     onInit() {
       initSlider();
+      initBannerPhotos();
       renderTiles();
       initLoupe();
       initChart();
@@ -670,7 +716,7 @@ const THEME = (function () {
       'co.summary': 'Sifarişiniz', 'co.items': 'Məhsullar', 'co.deliveryRow': 'Çatdırılma', 'co.total': 'Cəmi',
       'co.submit': 'Sifarişi WhatsApp-a göndərin', 'co.note': 'Sifarişin hazır mətni ilə WhatsApp açılacaq. Orada «Göndər» düyməsini basın, sifariş bizə çatacaq.',
       'dn.free': 'Şəhər daxilində pulsuz', 'dn.price': 'Şəhər daxilində {price}', 'dn.priceFree': 'Şəhər daxilində {price}. {lim}-dan pulsuz',
-      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'e.address': 'Çatdırılma ünvanını yazın',
+      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
       'e.svc': 'Ən azı bir xidmət seçin', 'e.pickupAddr': 'Eynəyin götürüləcəyi ünvanı yazın',
       'ok.orderTitle': 'Sifarişi göndərmək qalıb',
       'ok.orderText': '{id} sifarişinin mətni ilə WhatsApp-ı açdıq. Çatda «Göndər» düyməsini basın, menecer sifarişi və çatdırılma vaxtını təsdiqləyəcək.',
@@ -731,7 +777,7 @@ const THEME = (function () {
       'co.summary': 'Ваш заказ', 'co.items': 'Товары', 'co.deliveryRow': 'Доставка', 'co.total': 'Итого',
       'co.submit': 'Отправить заказ в WhatsApp', 'co.note': 'Откроется WhatsApp с готовым текстом заказа. Нажмите в нём «Отправить», и заказ придёт к нам.',
       'dn.free': 'По городу, бесплатно', 'dn.price': 'По городу, {price}', 'dn.priceFree': 'По городу, {price}. Бесплатно от {lim}',
-      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'e.address': 'Укажите адрес доставки',
+      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
       'e.svc': 'Выберите хотя бы одну услугу', 'e.pickupAddr': 'Укажите адрес, откуда забрать очки',
       'ok.orderTitle': 'Осталось отправить заказ',
       'ok.orderText': 'Мы открыли WhatsApp с текстом заказа {id}. Нажмите в чате «Отправить», и менеджер подтвердит заказ и время доставки.',
@@ -792,7 +838,7 @@ const THEME = (function () {
       'co.summary': 'Your order', 'co.items': 'Items', 'co.deliveryRow': 'Delivery', 'co.total': 'Total',
       'co.submit': 'Send order via WhatsApp', 'co.note': 'WhatsApp will open with your order already written. Press Send there and the order reaches us.',
       'dn.free': 'Within the city, free', 'dn.price': 'Within the city, {price}', 'dn.priceFree': 'Within the city, {price}. Free from {lim}',
-      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'e.address': 'Enter the delivery address',
+      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
       'e.svc': 'Choose at least one service', 'e.pickupAddr': 'Enter the address to collect your glasses from',
       'ok.orderTitle': 'Now send the order',
       'ok.orderText': 'We’ve opened WhatsApp with order {id}. Press Send in the chat and our manager will confirm the order and delivery time.',
@@ -1321,6 +1367,7 @@ const THEME = (function () {
     return {
       id: a.id, name: L(a.name), title: L(a.title), text: L(a.text), panel: L(a.panel), all: L(a.all), count: pool.length,
       art: ap ? art(ap, a.art.color || 0) : '', img: a.img || '', demo: a.demo || '', pos: a.pos || '', flip: !!a.flip, show: a.show || null, list,
+      head: L(a.head), col: L(a.col), feats: [].concat(L(a.feats) || []), slides: Array.isArray(a.slides) ? a.slides.filter(x => x && (x.img || x.demo)) : [],
       parts: a.parts ? a.parts.map(audView).filter(v => v.count) : null,
     };
   }

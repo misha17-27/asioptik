@@ -108,6 +108,11 @@ async def main():
         await pg.goto(B + '/admin/?p=banners'); print('banner fields:', await pg.locator('input[type=file]').count(), '| temp photos:', await pg.locator('input[name^=nodemo]').count())
         await pg.set_input_files('input[name="file[1.img]"]', f'{ROOT}/test/fake/product.jpg'); await pg.locator('.actions .btn').click(); print('banners:', await flash(), '|', sql("SELECT JSON_EXTRACT(value, '$[1].img') FROM ao_settings WHERE name='audiences'"))
         await pg.screenshot(path=f'{SH}/adm-banners.png')
+        # баннер «Для взрослых»: свой заголовок, строка под ним, своё фото вместо первого временного, второе временное убрано
+        await pg.fill('#f-0-head-ru', 'Коллекция осени'); await pg.fill('#f-0-feats-ru', 'Оправы\nОчки от солнца'); await pg.fill('#f-0-parts-0-col-ru', 'Мужчинам')
+        await pg.set_input_files('input[name="file[0.slides.0.img]"]', f'{ROOT}/test/fake/product.jpg'); await pg.check('input[name="nodemo[0.slides.1]"]')
+        await pg.locator('.actions .btn').click(); await pg.wait_for_load_state()
+        print('adults banner:', await flash(), '|', sql("SELECT JSON_EXTRACT(value, '$[0].head.ru', '$[0].feats.ru', '$[0].slides[0].img', '$[0].slides[1].demo', '$[0].parts[0].col.ru') FROM ao_settings WHERE name='audiences'")[:200])
         # скрытый товар, удаление товара
         kid = sql("SELECT id FROM ao_items WHERE type='product' AND slug='sprey-dlya-ochkov'")
         await pg.goto(B + f'/admin/?p=edit&type=product&id={kid}'); await pg.locator('input[name=active]').uncheck(); await pg.locator('.actions .btn').click(); print('hide product:', await flash(), '| active:', sql(f"SELECT active FROM ao_items WHERE id={kid}"))
@@ -121,6 +126,14 @@ async def main():
         mid = sql("SELECT id FROM ao_orders WHERE kind='message' ORDER BY id DESC LIMIT 1")
         await pg.goto(B + f'/admin/?p=order&id={mid}'); await pg.locator('.danger button').click(); await pg.wait_for_timeout(400); print('delete message:', await flash(), '| left:', sql("SELECT COUNT(*) FROM ao_orders"))
         print('http errors:', bad or 'none'); print('console:', errors or 'none')
+        # то же самое глазами посетителя
+        from run import setup
+        site = await (await b.new_context(viewport={'width': 1440, 'height': 900})).new_page(); await setup(site); await site.route('https://images.pexels.com/**', lambda r: r.abort())
+        await site.goto(B + '/?lang=ru'); await site.wait_for_timeout(1200); await site.locator('#adults .sb').scroll_into_view_if_needed(); await site.wait_for_timeout(1200)
+        print('site, adults banner:', await site.evaluate("""() => { const sb = document.querySelector('#adults .sb'); return { h2: sb.querySelector('h2').textContent.replace(/\\s+/g, ' ').trim(), feats: [...sb.querySelectorAll('.sb-feats li')].map(x => x.textContent), buttons: [...sb.querySelectorAll('.sb-cta a')].map(x => x.textContent), photos: [...sb.querySelectorAll(':scope > .ph')].map(x => x.getAttribute('src')), dots: sb.querySelectorAll('.sb-dot').length, shown: sb.classList.contains('has-photo') }; }"""))
+        await site.locator('#kids .sb').scroll_into_view_if_needed(); await site.wait_for_timeout(1200)
+        print('site, kids banner:', await site.evaluate("""() => { const sb = document.querySelector('#kids .sb'); return { title: sb.querySelector('h2').textContent, photo: (sb.querySelector(':scope > .ph') || { getAttribute: () => 'нет' }).getAttribute('src'), shown: sb.classList.contains('has-photo') }; }"""))
+        await site.locator('#kids .sb').screenshot(path=f'{SH}/php-kids-banner.png')
         pathlib.Path(f'{ROOT}/test/fake/evil.php').unlink(); pathlib.Path(f'{ROOT}/test/fake/fake.jpg').unlink()
         await pg.locator('.side-foot button').click(); print('logout →', tail()); await pg.goto(B + '/admin/?p=list&type=product'); print('after logout →', tail())
         await ctx.close()
