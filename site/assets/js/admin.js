@@ -1,6 +1,14 @@
 /* Админ-панель: меню на телефоне, подтверждение удаления, цвет рядом с кодом цвета, язык полей, подготовка фото к загрузке */
 (function () {
   'use strict';
+  /* Надписи на языке админ-панели приходят вместе со страницей; без них остаются русские. */
+  var T = {};
+  try { T = JSON.parse(document.getElementById('ao-i18n').textContent) || {}; } catch (err) { /* русские надписи */ }
+  function tx(key, ru, vars) {
+    var s = typeof T[key] === 'string' && T[key] ? T[key] : ru, k;
+    for (k in vars || {}) s = s.split('{' + k + '}').join(vars[k]);
+    return s;
+  }
   var side = document.querySelector('.side'), btn = document.querySelector('.menu-btn');
   if (side && btn) {
     btn.addEventListener('click', function () {
@@ -29,19 +37,20 @@
   });
 
   /* Язык текстов в формах: видны поля одного языка, выбор держится до закрытия вкладки.
-     Если форма вернулась с ошибкой в поле другого языка, открывается он. */
+     Сначала открыт язык админ-панели. Если форма вернулась с ошибкой в поле другого языка, открывается он. */
   var LG = ['ru', 'az', 'en'];
+  var UI = LG.indexOf(document.documentElement.lang) < 0 ? 'ru' : document.documentElement.lang, KEEP = 'ao-lg-' + UI;
   function setLang(l) {
-    if (LG.indexOf(l) < 0) l = 'ru';
+    if (LG.indexOf(l) < 0) l = UI;
     document.documentElement.setAttribute('data-lg', l);
     [].forEach.call(document.querySelectorAll('[data-lg-set]'), function (b) {
       b.setAttribute('aria-pressed', b.getAttribute('data-lg-set') === l ? 'true' : 'false');
     });
-    try { sessionStorage.setItem('ao-lg', l); } catch (err) { /* без памяти вкладки просто не запоминаем */ }
+    try { sessionStorage.setItem(KEEP, l); } catch (err) { /* без памяти вкладки просто не запоминаем */ }
   }
   if (document.querySelector('.lang[data-lg]') && document.querySelector('[data-lg-set]')) {
-    var first = 'ru';
-    try { first = sessionStorage.getItem('ao-lg') || 'ru'; } catch (err) { /* ничего */ }
+    var first = UI;
+    try { first = sessionStorage.getItem(KEEP) || UI; } catch (err) { /* ничего */ }
     var bad = document.querySelector('.field.is-invalid .lang .err');
     bad = bad ? bad.closest('.lang') : null;
     if (!bad) {
@@ -64,7 +73,7 @@
      большой снимок с телефона проходит любой хостинг и загружается за секунды. Сервер всё равно проверяет и пересохраняет файл. */
   var MAX_SIDE = 2000, KEEP_UNDER = 1500000;
   function size(n) {
-    return n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' МБ' : Math.max(1, Math.round(n / 1024)) + ' КБ';
+    return n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' ' + tx('mb', 'МБ') : Math.max(1, Math.round(n / 1024)) + ' ' + tx('kb', 'КБ');
   }
   function note(input, text, bad) {
     var p = input.parentNode.querySelector('.file-note');
@@ -117,10 +126,10 @@
     if (!file) return note(input, '');
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
       input.value = '';
-      return note(input, 'Файл «' + file.name + '» не подходит: нужна картинка JPG, PNG или WebP.', true);
+      return note(input, tx('fileBad', 'Файл «{name}» не подходит: нужна картинка JPG, PNG или WebP.', { name: file.name }), true);
     }
     var max = parseInt(input.getAttribute('data-max'), 10) || 0;
-    note(input, 'Готовлю фото…');
+    note(input, tx('filePrep', 'Готовлю фото…'));
     input._prep = shrink(file).then(function (out) {
       input._prep = null;
       if (out !== file) {
@@ -133,14 +142,13 @@
         } catch (err) { out = file; }
       }
       preview(input, out);
-      if (max && out.size > max) return note(input, 'Файл ' + size(out.size) + ' — больше, чем принимает хостинг (' + size(max) + '). Уменьшите фото и выберите его снова.', true);
-      note(input, out !== file ? 'Фото уменьшено: ' + size(file.size) + ' → ' + size(out.size) + '. Нажмите «Сохранить».' : 'Фото выбрано: ' + size(out.size) + '. Нажмите «Сохранить».');
+      if (max && out.size > max) return note(input, tx('fileBig', 'Файл {size} — больше, чем принимает хостинг ({max}). Уменьшите фото и выберите его снова.', { size: size(out.size), max: size(max) }), true);
+      note(input, out !== file ? tx('fileSmall', 'Фото уменьшено: {from} → {to}. Нажмите «Сохранить».', { from: size(file.size), to: size(out.size) })
+        : tx('fileOk', 'Фото выбрано: {size}. Нажмите «Сохранить».', { size: size(out.size) }));
     });
   });
-})();
 
-/* Счётчик знаков у SEO-полей: что длиннее нормы, поисковик обрежет. Пустое поле считает текст, который сайт поставит сам. */
-(function () {
+  /* Счётчик знаков у SEO-полей: что длиннее нормы, поисковик обрежет. Пустое поле считает текст, который сайт поставит сам. */
   [].forEach.call(document.querySelectorAll('[data-count]'), function (el) {
     var max = parseInt(el.getAttribute('data-count'), 10) || 0;
     var out = document.createElement('span');
@@ -149,7 +157,7 @@
     function update() {
       var own = el.value.replace(/^\s+|\s+$/g, '').length;
       var n = own || (el.getAttribute('placeholder') || '').length;
-      out.textContent = n + ' из ' + max + ' знаков' + (own ? '' : n ? ' — текст сайта' : '');
+      out.textContent = own || !n ? tx('count', '{n} из {max} знаков', { n: n, max: max }) : tx('countAuto', '{n} из {max} знаков — текст сайта', { n: n, max: max });
       out.className = 'count' + (n > max ? ' is-long' : '');
     }
     el.addEventListener('input', update);

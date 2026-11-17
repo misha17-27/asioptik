@@ -279,36 +279,36 @@ function save_upload(array $file, string $dir, ?string &$error = null): ?string
     $code = $file['error'] ?? UPLOAD_ERR_NO_FILE;
     if ($code === UPLOAD_ERR_NO_FILE) return null;
     $limit = upload_limit();
-    $mb = rtrim(rtrim(number_format($limit / 1048576, 1, ',', ''), '0'), ',') . ' МБ';
+    $mb = rtrim(rtrim(number_format($limit / 1048576, 1, ',', ''), '0'), ',') . ' ' . __('МБ');
     if ($code === UPLOAD_ERR_INI_SIZE || $code === UPLOAD_ERR_FORM_SIZE || ($code === UPLOAD_ERR_OK && $file['size'] > $limit)) {
-        $error = 'Файл больше ' . $mb . ': столько хостинг принимает за один раз. Уменьшите фото и загрузите снова.';
+        $error = __('Файл больше {size}: столько хостинг принимает за один раз. Уменьшите фото и загрузите снова.', ['size' => $mb]);
         return null;
     }
     if ($code !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) {
-        $error = 'Файл не загрузился. Попробуйте ещё раз.';
+        $error = __('Файл не загрузился. Попробуйте ещё раз.');
         return null;
     }
     $info = @getimagesize($file['tmp_name']);
     $types = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
     if (!$info || !isset($types[$info[2]])) {
-        $error = 'Подходят только картинки JPG, PNG или WebP.';
+        $error = __('Подходят только картинки JPG, PNG или WebP.');
         return null;
     }
     $ext = $types[$info[2]];
     $w = (int) $info[0];
     $h = (int) $info[1];
     if ($w < 1 || $h < 1 || $w > 12000 || $h > 12000 || $w * $h > 50000000) {
-        $error = 'Картинка слишком большая: ' . $w . '×' . $h . ' точек. Уменьшите её до 6000 точек по длинной стороне и загрузите снова.';
+        $error = __('Картинка слишком большая: {w}×{h} точек. Уменьшите её до 6000 точек по длинной стороне и загрузите снова.', ['w' => $w, 'h' => $h]);
         return null;
     }
     if (function_exists('imagecreatetruecolor') && !upload_memory_ok($w, $h)) {
-        $error = 'Серверу не хватает памяти для картинки ' . $w . '×' . $h . ' точек. Уменьшите её до 4000 точек по длинной стороне и загрузите снова.';
+        $error = __('Серверу не хватает памяти для картинки {w}×{h} точек. Уменьшите её до 4000 точек по длинной стороне и загрузите снова.', ['w' => $w, 'h' => $h]);
         return null;
     }
     $dir = preg_replace('~[^a-z0-9]~', '', $dir) ?: 'img';
     $target = UPLOADS . '/' . $dir;
     if (!is_dir($target) && !@mkdir($target, 0775, true)) {
-        $error = 'Не удалось создать папку для картинок. Проверьте права на папку uploads.';
+        $error = __('Не удалось создать папку для картинок. Проверьте права на папку uploads.');
         return null;
     }
     $name = bin2hex(random_bytes(8));
@@ -319,7 +319,7 @@ function save_upload(array $file, string $dir, ?string &$error = null): ?string
         if ($ext === 'png' && function_exists('imagecreatefrompng')) $src = @imagecreatefrompng($file['tmp_name']);
         if ($ext === 'webp' && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($file['tmp_name']);
         if (!$src) {
-            $error = 'Не удалось прочитать картинку. Откройте её на компьютере, сохраните заново как JPG или PNG и загрузите снова.';
+            $error = __('Не удалось прочитать картинку. Откройте её на компьютере, сохраните заново как JPG или PNG и загрузите снова.');
             return null;
         }
         if ($src) {
@@ -349,7 +349,7 @@ function save_upload(array $file, string $dir, ?string &$error = null): ?string
     // без модуля GD картинку нечем пересохранить — кладём как есть (тип проверен, имя и расширение задаёт сайт)
     if (!$saved && !function_exists('imagecreatetruecolor')) $saved = move_uploaded_file($file['tmp_name'], "$target/$name.$ext");
     if (!$saved) {
-        $error = 'Не удалось сохранить картинку. Проверьте права на папку uploads.';
+        $error = __('Не удалось сохранить картинку. Проверьте права на папку uploads.');
         return null;
     }
     return "uploads/$dir/$name.$ext";

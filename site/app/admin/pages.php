@@ -95,34 +95,34 @@ function order_summary(array $r): array
     };
     if ($r['kind'] === 'order') {
         $items = array_values(array_filter(is_array($d['items'] ?? null) ? $d['items'] : [], 'is_array'));
-        if (!$items) return ['Заказ', ''];
+        if (!$items) return [__('Заказ'), ''];
         $more = count($items) - 1;
         $lines = array_filter(array_map($s, array_slice(is_array($items[0]['lines'] ?? null) ? $items[0]['lines'] : [], 0, 3)));
-        return [$s($items[0]['name'] ?? '') . ($more > 0 ? ' и ещё ' . $more . ' ' . plural($more, 'товар', 'товара', 'товаров') : ''), implode(' · ', $lines)];
+        return [$s($items[0]['name'] ?? '') . ($more > 0 ? ' ' . __('и ещё {n} {word}', ['n' => $more, 'word' => n__($more, 'товар', 'товара', 'товаров')]) : ''), implode(' · ', $lines)];
     }
     if ($r['kind'] === 'repair') {
         $sv = array_values(array_filter(array_map($s, is_array($d['services'] ?? null) ? $d['services'] : [])));
-        return ['Ремонт' . ($sv ? ': ' . $sv[0] : ''), implode(' · ', array_slice($sv, 1, 3))];
+        return [__('Ремонт') . ($sv ? ': ' . $sv[0] : ''), implode(' · ', array_slice($sv, 1, 3))];
     }
     $text = $s($d['comment'] ?? '');
-    return ['Сообщение' . ($s($d['topic'] ?? '') !== '' ? ': ' . $s($d['topic']) : ''), mb_strlen($text) > 90 ? mb_substr($text, 0, 90) . '…' : $text];
+    return [__('Сообщение') . ($s($d['topic'] ?? '') !== '' ? ': ' . $s($d['topic']) : ''), mb_strlen($text) > 90 ? mb_substr($text, 0, 90) . '…' : $text];
 }
 
 /** Таблица заказов и заявок: номер и дата, клиент, что заказали, сумма, статус. */
 function orders_table(array $rows): string
 {
-    $how = ['pickup' => 'самовывоз', 'courier' => 'доставка курьером', 'salon' => 'принесёт в салон'];
-    $out = '<div class="table-wrap"><table class="table"><thead><tr><th>Заказ</th><th>Клиент</th><th>Что заказали</th><th>Сумма</th><th>Статус</th></tr></thead><tbody>';
+    $how = ['pickup' => __('самовывоз'), 'courier' => __('доставка курьером'), 'salon' => __('принесёт в салон')];
+    $out = '<div class="table-wrap"><table class="table"><thead><tr><th>' . __('Заказ') . '</th><th>' . __('Клиент') . '</th><th>' . __('Что заказали') . '</th><th>' . __('Сумма') . '</th><th>' . __('Статус') . '</th></tr></thead><tbody>';
     foreach ($rows as $r) {
         [$what, $sub] = order_summary($r);
         $d = json_decode((string) ($r['data'] ?? ''), true);
         $way = is_array($d) ? (string) ($d['details']['delivery'] ?? ($d['details']['handover'] ?? '')) : '';
-        $way = $way === 'courier' && $r['kind'] === 'repair' ? 'нужен курьер' : ($how[$way] ?? '');
+        $way = $way === 'courier' && $r['kind'] === 'repair' ? __('нужен курьер') : ($how[$way] ?? '');
         $out .= '<tr><td><a class="strong" href="' . e(admin_url('order', ['id' => $r['id']])) . '">' . e($r['number']) . '</a><small>' . e(fmt_date($r['created_at'])) . '</small></td>'
             . '<td><span class="strong">' . e($r['name']) . '</span><small>' . e($r['phone']) . '</small></td>'
             . '<td>' . e($what) . ($sub !== '' ? '<small>' . e($sub) . '</small>' : '') . '</td>'
             . '<td class="nowrap">' . ($r['total'] !== null ? e(fmt_money($r['total'])) : '—') . ($way !== '' ? '<small>' . e($way) . '</small>' : '') . '</td>'
-            . '<td><span class="st st-' . e($r['status']) . '">' . e(ORDER_STATUSES[$r['status']] ?? $r['status']) . '</span></td></tr>';
+            . '<td><span class="st st-' . e($r['status']) . '">' . e(__(ORDER_STATUSES[$r['status']] ?? $r['status'])) . '</span></td></tr>';
     }
     return $out . '</tbody></table></div>';
 }
@@ -132,12 +132,12 @@ function admin_home(): void
 {
     $c = admin_counts();
     $tiles = [
-        [$c['new'], plural($c['new'], 'новое обращение', 'новых обращения', 'новых обращений'), admin_url('orders', ['status' => 'new']), true],
-        [$c['sales'], plural($c['sales'], 'заказ всего', 'заказа всего', 'заказов всего'), admin_url('orders', ['kind' => 'order']), false],
-        [$c['clients'], plural($c['clients'], 'клиент', 'клиента', 'клиентов'), admin_url('clients'), false],
-        [$c['product'] ?? 0, plural($c['product'] ?? 0, 'товар', 'товара', 'товаров'), admin_url('list', ['type' => 'product']), false],
-        [$c['category'] ?? 0, plural($c['category'] ?? 0, 'раздел', 'раздела', 'разделов'), admin_url('list', ['type' => 'category']), false],
-        [$c['brand'] ?? 0, plural($c['brand'] ?? 0, 'бренд', 'бренда', 'брендов'), admin_url('list', ['type' => 'brand']), false],
+        [$c['new'], n__($c['new'], 'новое обращение', 'новых обращения', 'новых обращений'), admin_url('orders', ['status' => 'new']), true],
+        [$c['sales'], n__($c['sales'], 'заказ всего', 'заказа всего', 'заказов всего'), admin_url('orders', ['kind' => 'order']), false],
+        [$c['clients'], n__($c['clients'], 'клиент', 'клиента', 'клиентов'), admin_url('clients'), false],
+        [$c['product'] ?? 0, n__($c['product'] ?? 0, 'товар', 'товара', 'товаров'), admin_url('list', ['type' => 'product']), false],
+        [$c['category'] ?? 0, n__($c['category'] ?? 0, 'раздел', 'раздела', 'разделов'), admin_url('list', ['type' => 'category']), false],
+        [$c['brand'] ?? 0, n__($c['brand'] ?? 0, 'бренд', 'бренда', 'брендов'), admin_url('list', ['type' => 'brand']), false],
     ];
     $out = '<div class="tiles">';
     foreach ($tiles as [$n, $label, $url, $hot]) {
@@ -145,10 +145,10 @@ function admin_home(): void
     }
     $out .= '</div>';
     $rows = q('SELECT id, number, kind, status, created_at, name, phone, total, data FROM ao_orders ORDER BY created_at DESC, id DESC LIMIT 8')->fetchAll();
-    $out .= '<section class="card">' . card_head('Последние заказы', '<a href="' . e(admin_url('orders')) . '">Все →</a>')
-        . ($rows ? orders_table($rows) : '<p class="empty">Заказов пока нет. Когда покупатель оформит заказ, оставит заявку на ремонт или напишет с сайта, запись появится здесь.</p>')
+    $out .= '<section class="card">' . card_head(__('Последние заказы'), '<a href="' . e(admin_url('orders')) . '">' . __('Все →') . '</a>')
+        . ($rows ? orders_table($rows) : '<p class="empty">' . __('Заказов пока нет. Когда покупатель оформит заказ, оставит заявку на ремонт или напишет с сайта, запись появится здесь.') . '</p>')
         . '</section>';
-    admin_page('Обзор', $out, 'home');
+    admin_page(__('Обзор'), $out, 'home');
 }
 
 /* ---------- клиенты: все, кто оставлял заказ, заявку или сообщение ---------- */
@@ -156,21 +156,21 @@ function admin_clients(): void
 {
     $rows = q("SELECT phone, MAX(name) AS name, COUNT(*) AS n, SUM(CASE WHEN kind = 'order' AND status <> 'cancel' THEN total ELSE 0 END) AS spent, MAX(created_at) AS last
         FROM ao_orders GROUP BY phone ORDER BY last DESC LIMIT 500")->fetchAll();
-    $out = '<section class="card">' . card_head('Клиенты', '<span class="muted">все, кто оставлял заказ, заявку на ремонт или сообщение</span>');
+    $out = '<section class="card">' . card_head(__('Клиенты'), '<span class="muted">' . __('все, кто оставлял заказ, заявку на ремонт или сообщение') . '</span>');
     if (!$rows) {
-        $out .= '<p class="empty">Клиентов пока нет: список соберётся сам из заказов и заявок.</p>';
+        $out .= '<p class="empty">' . __('Клиентов пока нет: список соберётся сам из заказов и заявок.') . '</p>';
     } else {
-        $out .= '<div class="table-wrap"><table class="table"><thead><tr><th>Клиент</th><th>Обращений</th><th>Сумма заказов</th><th>Последнее обращение</th><th></th></tr></thead><tbody>';
+        $out .= '<div class="table-wrap"><table class="table"><thead><tr><th>' . __('Клиент') . '</th><th>' . __('Обращений') . '</th><th>' . __('Сумма заказов') . '</th><th>' . __('Последнее обращение') . '</th><th></th></tr></thead><tbody>';
         foreach ($rows as $r) {
             $tel = preg_replace('~[^0-9+]~', '', (string) $r['phone']);
             $out .= '<tr><td><span class="strong">' . e($r['name']) . '</span><small><a href="tel:' . e($tel) . '">' . e($r['phone']) . '</a></small></td>'
                 . '<td>' . (int) $r['n'] . '</td><td class="nowrap">' . ((float) $r['spent'] > 0 ? e(fmt_money($r['spent'])) : '—') . '</td>'
                 . '<td class="nowrap">' . e(fmt_date((string) $r['last'])) . '</td>'
-                . '<td class="acts"><a class="btn btn-line btn-sm" href="' . e(admin_url('orders', ['q' => $r['phone']])) . '">Заказы</a></td></tr>';
+                . '<td class="acts"><a class="btn btn-line btn-sm" href="' . e(admin_url('orders', ['q' => $r['phone']])) . '">' . __('Заказы') . '</a></td></tr>';
         }
         $out .= '</tbody></table></div>';
     }
-    admin_page('Клиенты', $out . '</section>', 'clients');
+    admin_page(__('Клиенты'), $out . '</section>', 'clients');
 }
 
 /* ---------- страницы: список ---------- */
@@ -179,8 +179,8 @@ function admin_pages(): void
     $tx = setting('texts', []);
     $seo = setting('seo', []);
     $base = base_path();
-    $out = '<section class="card">' . card_head('Страницы сайта', '<span class="muted">адрес, надписи и заголовки для поисковиков на трёх языках</span>')
-        . '<div class="table-wrap"><table class="table"><thead><tr><th>Страница</th><th>Адрес</th><th>Надписи</th><th>SEO</th><th></th></tr></thead><tbody>';
+    $out = '<section class="card">' . card_head(__('Страницы сайта'), '<span class="muted">' . __('адрес, надписи и заголовки для поисковиков на трёх языках') . '</span>')
+        . '<div class="table-wrap"><table class="table"><thead><tr><th>' . __('Страница') . '</th><th>' . __('Адрес') . '</th><th>' . __('Надписи') . '</th><th>SEO</th><th></th></tr></thead><tbody>';
     foreach (SITE_PAGES as $id => $page) {
         $keys = array_merge([], ...array_values(page_blocks($id)));
         $changed = 0;
@@ -194,16 +194,16 @@ function admin_pages(): void
             if (own_text($seo[$id]['title'] ?? null, $l) !== '' || own_text($seo[$id]['desc'] ?? null, $l) !== '') $own++;
         }
         $n = count($keys);
-        $out .= '<tr><td><a class="strong" href="' . e(admin_url('page', ['id' => $id])) . '">' . e($page['title']) . '</a><small>' . $n . ' ' . plural($n, 'надпись', 'надписи', 'надписей') . '</small></td>'
-            . '<td class="nowrap">' . ($page['path'] === null ? '<span class="muted">на всех страницах</span>' : '<code>/' . e($page['path']) . '</code>') . '</td>'
-            . '<td class="nowrap"><span class="dot dot-ok"></span>' . ($changed ? 'изменено: ' . $changed : 'стандартные') . '</td>'
-            . '<td class="nowrap">' . (!$page['seo'] ? '<span class="muted">' . ($id === 'product' ? 'в карточке товара' : '—') . '</span>'
-                : '<span class="dot ' . ($own === count(LANGS) ? 'dot-ok' : 'dot-auto') . '"></span>' . ($own === count(LANGS) ? 'заполнено' : ($own ? 'заполнено: ' . $own . ' из 3 языков' : 'автоматически'))) . '</td>'
-            . '<td class="acts"><a class="btn btn-line btn-sm" href="' . e(admin_url('page', ['id' => $id])) . '" title="Редактировать">' . icon('edit') . '<span class="lb">Редактировать</span></a>'
-            . ($page['path'] !== null && strpos($page['path'], '…') === false ? '<a class="btn btn-line btn-sm" href="' . e($base . $page['path']) . '" target="_blank" rel="noopener" title="Открыть на сайте">' . icon('ext') . '<span class="lb">Открыть</span></a>' : '')
+        $out .= '<tr><td><a class="strong" href="' . e(admin_url('page', ['id' => $id])) . '">' . e(__($page['title'])) . '</a><small>' . $n . ' ' . n__($n, 'надпись', 'надписи', 'надписей') . '</small></td>'
+            . '<td class="nowrap">' . ($page['path'] === null ? '<span class="muted">' . __('на всех страницах') . '</span>' : '<code>/' . e($page['path']) . '</code>') . '</td>'
+            . '<td class="nowrap"><span class="dot dot-ok"></span>' . ($changed ? __('изменено: {n}', ['n' => $changed]) : __('стандартные')) . '</td>'
+            . '<td class="nowrap">' . (!$page['seo'] ? '<span class="muted">' . ($id === 'product' ? __('в карточке товара') : '—') . '</span>'
+                : '<span class="dot ' . ($own === count(LANGS) ? 'dot-ok' : 'dot-auto') . '"></span>' . ($own === count(LANGS) ? __('заполнено') : ($own ? __('заполнено: {n} из 3 языков', ['n' => $own]) : __('автоматически')))) . '</td>'
+            . '<td class="acts"><a class="btn btn-line btn-sm" href="' . e(admin_url('page', ['id' => $id])) . '" title="' . e(__('Редактировать')) . '">' . icon('edit') . '<span class="lb">' . __('Редактировать') . '</span></a>'
+            . ($page['path'] !== null && strpos($page['path'], '…') === false ? '<a class="btn btn-line btn-sm" href="' . e($base . $page['path']) . '" target="_blank" rel="noopener" title="' . e(__('Открыть на сайте')) . '">' . icon('ext') . '<span class="lb">' . __('Открыть') . '</span></a>' : '')
             . '</td></tr>';
     }
-    admin_page('Страницы', $out . '</tbody></table></div></section>', 'pages');
+    admin_page(__('Страницы'), $out . '</tbody></table></div></section>', 'pages');
 }
 
 /* ---------- страницы: надписи и заголовки одной страницы на трёх языках ---------- */
@@ -235,7 +235,7 @@ function admin_page_edit(): void
                     // слова в фигурных скобках сайт подставляет сам (имя, сумма, номер) — они должны остаться в тексте
                     preg_match_all('~\{\w+\}~', $base, $need);
                     foreach (array_unique($need[0]) as $ph) {
-                        if ($val !== '' && strpos($val, $ph) === false) $errors[$key][$l] = 'В тексте должно остаться ' . $ph . ': сайт подставит на это место нужное слово или число.';
+                        if ($val !== '' && strpos($val, $ph) === false) $errors[$key][$l] = __('В тексте должно остаться {word}: сайт подставит на это место нужное слово или число.', ['word' => $ph]);
                     }
                     if ($val === '' || $val === $base) unset($tx[$l][$key]);
                     else $tx[$l][$key] = $val;
@@ -256,7 +256,7 @@ function admin_page_edit(): void
         if (!$errors) {
             set_setting('texts', array_filter($tx) ?: new stdClass());
             set_setting('seo', $seo ?: new stdClass());
-            flash('Сохранено. Изменения уже на сайте.');
+            flash(__('Сохранено. Изменения уже на сайте.'));
             redirect(admin_url('page', ['id' => $id]));
         }
     }
@@ -278,12 +278,12 @@ function admin_page_edit(): void
     };
 
     $base = base_path();
-    $out = form_open($page['title'], '<a href="' . e(admin_url('pages')) . '">← Все страницы</a>', 'page-form');
+    $out = form_open(__($page['title']), '<a href="' . e(admin_url('pages')) . '">' . __('← Все страницы') . '</a>', 'page-form');
     if ($page['path'] !== null) {
         $open = strpos($page['path'], '…') === false;
-        $out .= '<div class="field"><span class="lbl">Адрес страницы</span><div class="addr"><input type="text" value="/' . e($page['path']) . '" readonly aria-label="Адрес страницы">'
-            . ($open ? '<a class="btn btn-line" href="' . e($base . $page['path']) . '" target="_blank" rel="noopener">Открыть' . icon('ext') . '</a>' : '') . '</div>'
-            . '<p class="hint">' . ($open ? 'Адрес не меняется: на нём держатся позиции страницы в поиске.' : 'У каждого товара свой адрес: /product/ и код товара.') . '</p></div>';
+        $out .= '<div class="field"><span class="lbl">' . __('Адрес страницы') . '</span><div class="addr"><input type="text" value="/' . e($page['path']) . '" readonly aria-label="' . e(__('Адрес страницы')) . '">'
+            . ($open ? '<a class="btn btn-line" href="' . e($base . $page['path']) . '" target="_blank" rel="noopener">' . __('Открыть') . icon('ext') . '</a>' : '') . '</div>'
+            . '<p class="hint">' . ($open ? __('Адрес не меняется: на нём держатся позиции страницы в поиске.') : __('У каждого товара свой адрес: /product/ и код товара.')) . '</p></div>';
     }
     if ($page['seo']) {
         $cur = ['title' => [], 'desc' => []];
@@ -294,23 +294,23 @@ function admin_page_edit(): void
                 $cur[$part][$l] = $post !== null ? (string) ($post['seo'][$part][$l] ?? '') : own_text($seo[$id][$part] ?? null, $l);
             }
         }
-        $out .= '<h3 class="block">SEO — для поисковиков</h3>'
-            . $field('seo[title]', 'SEO-заголовок (title)', $cur['title'], $auto['title'], false, [], '', 60)
-            . $field('seo[desc]', 'SEO-описание (description)', $cur['desc'], $auto['desc'], true, [], '', 160)
-            . '<p class="hint hint-block">Заголовок виден на вкладке браузера и в результатах поиска, описание — под ним. Пока поле пустое, сайт ставит текст, который показан в нём серым.</p>';
+        $out .= '<h3 class="block">' . __('SEO — для поисковиков') . '</h3>'
+            . $field('seo[title]', __('SEO-заголовок (title)'), $cur['title'], $auto['title'], false, [], '', 60)
+            . $field('seo[desc]', __('SEO-описание (description)'), $cur['desc'], $auto['desc'], true, [], '', 160)
+            . '<p class="hint hint-block">' . __('Заголовок виден на вкладке браузера и в результатах поиска, описание — под ним. Пока поле пустое, сайт ставит текст, который показан в нём серым.') . '</p>';
     }
     if ($page['more']) {
-        $out .= '<p class="more">Ещё на этой странице: ';
+        $out .= '<p class="more">' . __('Ещё на этой странице:') . ' ';
         foreach ($page['more'] as $i => [$key, $label]) {
             $p = explode(':', $key);
             $url = $p[0] === 'list' ? admin_url('list', ['type' => $p[1]]) : ($p[0] === 'doc' ? admin_url('doc', ['name' => $p[1]]) : admin_url($p[0]));
-            $out .= ($i ? ', ' : '') . '<a href="' . e($url) . '">' . e($label) . '</a>';
+            $out .= ($i ? ', ' : '') . '<a href="' . e($url) . '">' . e(__($label)) . '</a>';
         }
         $out .= '.</p>';
     }
-    if ($blocks) $out .= '<p class="note note-in">Ниже — все надписи страницы. Слова в фигурных скобках, например {name}, сайт подставляет сам: их нужно оставить. Чтобы вернуть прежний текст, сотрите поле и сохраните.</p>';
+    if ($blocks) $out .= '<p class="note note-in">' . __('Ниже — все надписи страницы. Слова в фигурных скобках, например {name}, сайт подставляет сам: их нужно оставить. Чтобы вернуть прежний текст, сотрите поле и сохраните.') . '</p>';
     foreach ($blocks as $block => $keys) {
-        $out .= '<h3 class="block">' . e($block) . '</h3>';
+        $out .= '<h3 class="block">' . e(__($block)) . '</h3>';
         foreach ($keys as $key) {
             $vals = [];
             $long = false;
@@ -318,11 +318,11 @@ function admin_page_edit(): void
                 $vals[$l] = $post !== null && isset($post['t'][$key][$l]) && is_string($post['t'][$key][$l]) ? $post['t'][$key][$l] : (string) ($tx[$l][$key] ?? ($def[$key][$l] ?? ''));
                 $long = $long || mb_strlen((string) ($def[$key][$l] ?? '')) > 70 || mb_strlen($vals[$l]) > 70;
             }
-            $ru = (string) ($def[$key]['ru'] ?? $key);
-            $out .= $field('t[' . $key . ']', mb_strlen($ru) > 64 ? mb_substr($ru, 0, 64) . '…' : $ru, $vals, $def[$key] ?? [], $long, $errors[$key] ?? [], $key);
+            $name = (string) ($def[$key][ui_lang()] ?? $def[$key]['ru'] ?? $key);   // подпись поля — сама надпись на языке админ-панели
+            $out .= $field('t[' . $key . ']', mb_strlen($name) > 64 ? mb_substr($name, 0, 64) . '…' : $name, $vals, $def[$key] ?? [], $long, $errors[$key] ?? [], $key);
         }
     }
-    $out .= form_close('<a href="' . e(admin_url('pages')) . '">Отмена</a>');
-    if ($errors) $out = '<p class="flash flash-err" role="alert">Не сохранено: проверьте поля, отмеченные красным, на всех трёх языках.</p>' . $out;
-    admin_page('Страницы', $out, 'pages');
+    $out .= form_close('<a href="' . e(admin_url('pages')) . '">' . __('Отмена') . '</a>');
+    if ($errors) $out = '<p class="flash flash-err" role="alert">' . __('Не сохранено: проверьте поля, отмеченные красным, на всех трёх языках.') . '</p>' . $out;
+    admin_page(__('Страницы'), $out, 'pages');
 }

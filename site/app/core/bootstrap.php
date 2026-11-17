@@ -156,6 +156,7 @@ function dunset(array &$a, string $key): void
     unset($ref[$last]);
 }
 
+require APP . '/core/i18n.php';
 require APP . '/core/db.php';
 require APP . '/core/store.php';
 require APP . '/core/captcha.php';

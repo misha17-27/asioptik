@@ -31,9 +31,9 @@ function csrf_check(): void
     http_response_code($tooBig ? 413 : 400);
     header('Content-Type: text/html; charset=utf-8');
     $msg = $tooBig
-        ? 'Файл слишком большой для этого хостинга: за один раз он принимает не больше ' . e((string) ini_get('post_max_size')) . '. Уменьшите фото и загрузите снова.'
-        : 'Страница устарела. Вернитесь назад, обновите её и повторите действие.';
-    exit('<!doctype html><meta charset="utf-8"><title>Не сохранено</title><p style="font:16px/1.5 sans-serif;margin:40px">' . $msg . '</p>');
+        ? __('Файл слишком большой для этого хостинга: за один раз он принимает не больше {size}. Уменьшите фото и загрузите снова.', ['size' => e((string) ini_get('post_max_size'))])
+        : __('Страница устарела. Вернитесь назад, обновите её и повторите действие.');
+    exit('<!doctype html><meta charset="utf-8"><title>' . __('Не сохранено') . '</title><p style="font:16px/1.5 sans-serif;margin:40px">' . $msg . '</p>');
 }
 
 function is_post(): bool
@@ -50,6 +50,14 @@ function admin_run(): void
     header('Cache-Control: no-store');
     header('X-Robots-Tag: noindex, nofollow');
     $p = (string) ($_GET['p'] ?? '');
+    // Переключатель языка админ-панели: выбор запоминается на год и действует и на странице входа
+    $ui = $_GET['ui'] ?? null;
+    if (is_string($ui) && isset(UI_LANGS[$ui]) && !is_post()) {
+        setcookie('ao_ui', $ui, ['expires' => time() + 31536000, 'path' => base_path() . 'admin/', 'httponly' => true, 'samesite' => 'Lax', 'secure' => is_https()]);
+        $q = $_GET;
+        unset($q['ui'], $q['p']);
+        redirect(admin_url($p, $q));
+    }
     // Адрес Cloudflare разрешён только там, где стоит проверка «не робот»: на странице входа и в разделе «Безопасность»
     $cf = ($p === 'login' && captcha_on('login')) || ($p === 'security' && captcha_cfg()['site'] !== '') ? ' ' . TURNSTILE_ORIGIN : '';
     header("Content-Security-Policy: default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'$cf;"
@@ -98,10 +106,10 @@ function admin_login(): void
         $login = mb_substr(trim((string) ($_POST['login'] ?? '')), 0, 60);
         $pass = (string) ($_POST['password'] ?? '');
         if ($tries >= 5) {
-            $error = 'Слишком много попыток входа. Подождите 15 минут и попробуйте снова.';
+            $error = __('Слишком много попыток входа. Подождите 15 минут и попробуйте снова.');
         } elseif ($cap && !captcha_pass(is_string($_POST['cf-turnstile-response'] ?? null) ? $_POST['cf-turnstile-response'] : '')) {
             // пароль не проверяем и попытку не считаем: человек мог просто не дождаться отметки
-            $error = 'Подтвердите, что вы не робот: дождитесь зелёной отметки под паролем и нажмите «Войти» ещё раз.';
+            $error = __('Подтвердите, что вы не робот: дождитесь зелёной отметки под паролем и нажмите «Войти» ещё раз.');
         } else {
             $u = q('SELECT * FROM ao_users WHERE login = ?', [$login])->fetch();
             // проверяем пароль и для несуществующего логина, чтобы по времени ответа нельзя было подобрать логин
@@ -116,16 +124,16 @@ function admin_login(): void
                 redirect(admin_url());
             }
             q('INSERT INTO ao_logins (ip_hash, created_at) VALUES (?, ?)', [$ip, now()]);
-            $error = 'Неверный логин или пароль.';
+            $error = __('Неверный логин или пароль.');
         }
     }
-    admin_bare('Вход в админ-панель',
+    admin_bare(__('Вход в админ-панель'),
         ($error ? '<p class="flash flash-err" role="alert">' . e($error) . '</p>' : '')
         . '<form method="post" action="' . e(admin_url('login')) . '">' . csrf_field()
-        . '<div class="field"><label class="lbl" for="login">Логин</label><input id="login" name="login" type="text" value="' . e($login) . '" autocomplete="username" required autofocus></div>'
-        . '<div class="field"><label class="lbl" for="password">Пароль</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>'
+        . '<div class="field"><label class="lbl" for="login">' . __('Логин') . '</label><input id="login" name="login" type="text" value="' . e($login) . '" autocomplete="username" required autofocus></div>'
+        . '<div class="field"><label class="lbl" for="password">' . __('Пароль') . '</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>'
         . ($cap ? captcha_widget() : '')
-        . '<button type="submit" class="btn">Войти</button></form>');
+        . '<button type="submit" class="btn">' . __('Войти') . '</button></form>');
 }
 
 function admin_logout(): void
@@ -143,24 +151,24 @@ function admin_password(): void
         $u = q('SELECT * FROM ao_users WHERE id = ?', [(int) $_SESSION['uid']])->fetch();
         $old = (string) ($_POST['old'] ?? '');
         $new = (string) ($_POST['new'] ?? '');
-        if (!$u || !password_verify($old, $u['pass_hash'])) $error = 'Текущий пароль указан неверно.';
-        elseif (mb_strlen($new) < 8) $error = 'Новый пароль должен быть не короче 8 символов.';
-        elseif (weak_password($new, (string) $u['login'])) $error = 'Слишком простой пароль: такие подбирают первыми. Придумайте другой.';
-        elseif ($new !== (string) ($_POST['new2'] ?? '')) $error = 'Новый пароль и его повтор не совпадают.';
+        if (!$u || !password_verify($old, $u['pass_hash'])) $error = __('Текущий пароль указан неверно.');
+        elseif (mb_strlen($new) < 8) $error = __('Новый пароль должен быть не короче 8 символов.');
+        elseif (weak_password($new, (string) $u['login'])) $error = __('Слишком простой пароль: такие подбирают первыми. Придумайте другой.');
+        elseif ($new !== (string) ($_POST['new2'] ?? '')) $error = __('Новый пароль и его повтор не совпадают.');
         else {
             q('UPDATE ao_users SET pass_hash = ? WHERE id = ?', [password_hash($new, PASSWORD_DEFAULT), $u['id']]);
             session_regenerate_id(true);
-            flash('Пароль изменён.');
+            flash(__('Пароль изменён.'));
             redirect(admin_url('password'));
         }
     }
-    admin_page('Пароль',
+    admin_page(__('Пароль'),
         ($error ? '<p class="flash flash-err" role="alert">' . e($error) . '</p>' : '')
         . '<form method="post" class="form narrow">' . csrf_field()
-        . '<div class="field"><label class="lbl" for="old">Текущий пароль</label><input id="old" name="old" type="password" autocomplete="current-password" required></div>'
-        . '<div class="field"><label class="lbl" for="new">Новый пароль</label><input id="new" name="new" type="password" autocomplete="new-password" required minlength="8"><p class="hint">Не короче 8 символов.</p></div>'
-        . '<div class="field"><label class="lbl" for="new2">Новый пароль ещё раз</label><input id="new2" name="new2" type="password" autocomplete="new-password" required></div>'
-        . '<button type="submit" class="btn">Изменить пароль</button></form>', 'password');
+        . '<div class="field"><label class="lbl" for="old">' . __('Текущий пароль') . '</label><input id="old" name="old" type="password" autocomplete="current-password" required></div>'
+        . '<div class="field"><label class="lbl" for="new">' . __('Новый пароль') . '</label><input id="new" name="new" type="password" autocomplete="new-password" required minlength="8"><p class="hint">' . __('Не короче 8 символов.') . '</p></div>'
+        . '<div class="field"><label class="lbl" for="new2">' . __('Новый пароль ещё раз') . '</label><input id="new2" name="new2" type="password" autocomplete="new-password" required></div>'
+        . '<button type="submit" class="btn">' . __('Изменить пароль') . '</button></form>', 'password');
 }
 
 /* ---------- заказы, заявки и сообщения ---------- */
@@ -196,15 +204,16 @@ function admin_orders(): void
         $on = ($q['kind'] ?? '') === $kind && ($q['status'] ?? '') === $status;
         return '<a href="' . e(admin_url('orders', array_filter($q + ['q' => $find]))) . '"' . ($on ? ' aria-current="true"' : '') . '>' . e($label) . '</a>';
     };
-    $out = '<section class="card"><div class="card-tools"><div class="tabs">' . $tab('Все', ['status' => $status]);
-    foreach (ORDER_KINDS as $k => $l) $out .= $tab($l === 'Заказ' ? 'Заказы' : ($l === 'Ремонт' ? 'Ремонт' : 'Сообщения'), ['kind' => $k, 'status' => $status]);
-    $out .= '</div><div class="tabs tabs-sub">' . $tab('Любой статус', ['kind' => $kind]);
-    foreach (ORDER_STATUSES as $k => $l) $out .= $tab($l, ['kind' => $kind, 'status' => $k]);
+    $out = '<section class="card"><div class="card-tools"><div class="tabs">' . $tab(__('Все'), ['status' => $status]);
+    $kinds = ['order' => __('Заказы'), 'repair' => __('Ремонт'), 'message' => __('Сообщения')];
+    foreach (ORDER_KINDS as $k => $l) $out .= $tab($kinds[$k] ?? __($l), ['kind' => $k, 'status' => $status]);
+    $out .= '</div><div class="tabs tabs-sub">' . $tab(__('Любой статус'), ['kind' => $kind]);
+    foreach (ORDER_STATUSES as $k => $l) $out .= $tab(__($l), ['kind' => $kind, 'status' => $k]);
     $out .= '</div><form method="get" class="filter"><input type="hidden" name="p" value="orders">'
         . ($kind ? '<input type="hidden" name="kind" value="' . e($kind) . '">' : '') . ($status ? '<input type="hidden" name="status" value="' . e($status) . '">' : '')
-        . '<input type="search" name="q" value="' . e($find) . '" placeholder="Имя, телефон или номер заказа…" aria-label="Поиск по имени, телефону или номеру"><button type="submit" class="btn btn-line">Найти</button></form></div>';
+        . '<input type="search" name="q" value="' . e($find) . '" placeholder="' . e(__('Имя, телефон или номер заказа…')) . '" aria-label="' . e(__('Поиск по имени, телефону или номеру')) . '"><button type="submit" class="btn btn-line">' . __('Найти') . '</button></form></div>';
     if (!$rows) {
-        $out .= '<p class="empty">' . ($kind || $status || $find !== '' ? 'С такими условиями ничего нет.' : 'Заказов пока нет. Когда покупатель оформит заказ, оставит заявку на ремонт или напишет с сайта, запись появится здесь.') . '</p>';
+        $out .= '<p class="empty">' . ($kind || $status || $find !== '' ? __('С такими условиями ничего нет.') : __('Заказов пока нет. Когда покупатель оформит заказ, оставит заявку на ремонт или напишет с сайта, запись появится здесь.')) . '</p>';
     } else {
         $out .= orders_table($rows);
         if ($total > $per) {
@@ -213,7 +222,7 @@ function admin_orders(): void
             $out .= '</p>';
         }
     }
-    admin_page('Заказы', $out . '</section>', 'orders');
+    admin_page(__('Заказы'), $out . '</section>', 'orders');
 }
 
 function admin_order(): void
@@ -224,29 +233,29 @@ function admin_order(): void
     if (is_post()) {
         if (isset($_POST['delete'])) {
             q('DELETE FROM ao_orders WHERE id = ?', [$id]);
-            flash('Запись ' . $o['number'] . ' удалена.');
+            flash(__('Запись {n} удалена.', ['n' => $o['number']]));
             redirect(admin_url('orders'));
         }
         $st = (string) ($_POST['status'] ?? '');
         if (isset(ORDER_STATUSES[$st])) {
             q('UPDATE ao_orders SET status = ? WHERE id = ?', [$st, $id]);
-            flash('Статус изменён: ' . ORDER_STATUSES[$st] . '.');
+            flash(__('Статус изменён: {status}.', ['status' => __(ORDER_STATUSES[$st])]));
         }
         redirect(admin_url('order', ['id' => $id]));
     }
     $d = json_decode((string) $o['data'], true) ?: [];
     $det = is_array($d['details'] ?? null) ? $d['details'] : [];
     $digits = preg_replace('/\D/', '', (string) $o['phone']);
-    $out = '<p class="back"><a href="' . e(admin_url('orders')) . '">Все заказы и заявки</a></p>';
+    $out = '<p class="back"><a href="' . e(admin_url('orders')) . '">' . __('Все заказы и заявки') . '</a></p>';
     $out .= '<div class="cols"><div><dl class="dl">'
-        . '<dt>Тип</dt><dd>' . e(ORDER_KINDS[$o['kind']] ?? $o['kind']) . '</dd>'
-        . '<dt>Дата</dt><dd>' . e(fmt_date($o['created_at'])) . '</dd>'
-        . '<dt>Имя</dt><dd>' . e($o['name']) . '</dd>'
-        . '<dt>Телефон</dt><dd><a href="tel:+' . e($digits) . '">' . e($o['phone']) . '</a> · <a href="https://wa.me/' . e($digits) . '" target="_blank" rel="noopener">написать в WhatsApp</a></dd>'
-        . ($o['total'] !== null ? '<dt>Сумма</dt><dd><b>' . e(fmt_money($o['total'])) . '</b><small>Сумму считает страница покупателя. Перед подтверждением заказа сверьте цены с каталогом.</small></dd>' : '')
+        . '<dt>' . __('Тип') . '</dt><dd>' . e(__(ORDER_KINDS[$o['kind']] ?? $o['kind'])) . '</dd>'
+        . '<dt>' . __('Дата') . '</dt><dd>' . e(fmt_date($o['created_at'])) . '</dd>'
+        . '<dt>' . __('Имя') . '</dt><dd>' . e($o['name']) . '</dd>'
+        . '<dt>' . __('Телефон') . '</dt><dd><a href="tel:+' . e($digits) . '">' . e($o['phone']) . '</a> · <a href="https://wa.me/' . e($digits) . '" target="_blank" rel="noopener">' . __('написать в WhatsApp') . '</a></dd>'
+        . ($o['total'] !== null ? '<dt>' . __('Сумма') . '</dt><dd><b>' . e(fmt_money($o['total'])) . '</b><small>' . __('Сумму считает страница покупателя. Перед подтверждением заказа сверьте цены с каталогом.') . '</small></dd>' : '')
         . '</dl>';
     if (!empty($det['items']) && is_array($det['items'])) {
-        $out .= '<h2>Товары</h2><div class="table-wrap"><table class="table"><thead><tr><th>Товар</th><th class="num">Кол-во</th><th class="num">Цена</th><th class="num">Сумма</th></tr></thead><tbody>';
+        $out .= '<h2>' . __('Товары') . '</h2><div class="table-wrap"><table class="table"><thead><tr><th>' . __('Товар') . '</th><th class="num">' . __('Кол-во') . '</th><th class="num">' . __('Цена') . '</th><th class="num">' . __('Сумма') . '</th></tr></thead><tbody>';
         foreach ($det['items'] as $it) {
             if (!is_array($it)) continue;
             $lines = '';
@@ -255,12 +264,13 @@ function admin_order(): void
         }
         $out .= '</tbody></table></div>';
     }
-    $out .= '<h2>Текст, который покупатель отправляет в WhatsApp</h2><pre class="msg">' . e((string) ($d['text'] ?? '')) . '</pre></div>';
-    $out .= '<aside class="panel"><form method="post">' . csrf_field() . '<div class="field"><label class="lbl" for="status">Статус</label><select id="status" name="status">';
-    foreach (ORDER_STATUSES as $k => $l) $out .= '<option value="' . $k . '"' . ($o['status'] === $k ? ' selected' : '') . '>' . e($l) . '</option>';
-    $out .= '</select></div><button type="submit" class="btn">Сохранить статус</button></form>'
-        . '<form method="post" class="danger" data-confirm="Удалить запись ' . e($o['number']) . '? Вернуть её будет нельзя.">' . csrf_field() . '<button type="submit" name="delete" value="1" class="link link-danger">Удалить запись</button></form></aside></div>';
-    admin_page(($o['kind'] === 'message' ? 'Сообщение ' : ($o['kind'] === 'repair' ? 'Заявка ' : 'Заказ ')) . $o['number'], $out, 'orders');
+    $out .= '<h2>' . __('Текст, который покупатель отправляет в WhatsApp') . '</h2><pre class="msg">' . e((string) ($d['text'] ?? '')) . '</pre></div>';
+    $out .= '<aside class="panel"><form method="post">' . csrf_field() . '<div class="field"><label class="lbl" for="status">' . __('Статус') . '</label><select id="status" name="status">';
+    foreach (ORDER_STATUSES as $k => $l) $out .= '<option value="' . $k . '"' . ($o['status'] === $k ? ' selected' : '') . '>' . e(__($l)) . '</option>';
+    $out .= '</select></div><button type="submit" class="btn">' . __('Сохранить статус') . '</button></form>'
+        . '<form method="post" class="danger" data-confirm="' . e(__('Удалить запись {n}? Вернуть её будет нельзя.', ['n' => $o['number']])) . '">' . csrf_field() . '<button type="submit" name="delete" value="1" class="link link-danger">' . __('Удалить запись') . '</button></form></aside></div>';
+    $n = ['n' => $o['number']];
+    admin_page($o['kind'] === 'message' ? __('Сообщение {n}', $n) : ($o['kind'] === 'repair' ? __('Заявка {n}', $n) : __('Заказ {n}', $n)), $out, 'orders');
 }
 
 /* ---------- товары, разделы, бренды, статьи, услуги ---------- */
@@ -305,11 +315,11 @@ function admin_list(): void
         $chip = function (string $label, string $cat) use ($fc, $fq): string {
             return '<a href="' . e(admin_url('list', array_filter(['type' => 'product', 'cat' => $cat, 'q' => $fq]))) . '"' . ($fc === $cat ? ' aria-current="true"' : '') . '>' . e($label) . '</a>';
         };
-        $tools = '<div class="tabs">' . $chip('Все', '');
+        $tools = '<div class="tabs">' . $chip(__('Все'), '');
         foreach ($cats as $k => $l) $tools .= $chip($l, (string) $k);
         $tools .= '</div><form method="get" class="filter"><input type="hidden" name="p" value="list"><input type="hidden" name="type" value="product">'
             . ($fc !== '' ? '<input type="hidden" name="cat" value="' . e($fc) . '">' : '')
-            . '<input type="search" name="q" value="' . e($fq) . '" placeholder="Поиск по названию или коду…" aria-label="Поиск по названию или коду"><button type="submit" class="btn btn-line">Найти</button></form>';
+            . '<input type="search" name="q" value="' . e($fq) . '" placeholder="' . e(__('Поиск по названию или коду…')) . '" aria-label="' . e(__('Поиск по названию или коду')) . '"><button type="submit" class="btn btn-line">' . __('Найти') . '</button></form>';
         $rows = array_values(array_filter($rows, function ($r) use ($fc, $fq) {
             if ($fc !== '' && ($r['data']['cat'] ?? '') !== $fc) return false;
             if ($fq === '') return true;
@@ -318,17 +328,17 @@ function admin_list(): void
     }
     if (!empty($S['note'])) $tools = '<p class="note">' . e($S['note']) . '</p>' . $tools;
     if ($tools !== '') $out .= '<div class="card-tools">' . $tools . '</div>';
-    if (!$rows) admin_page($S['title'], $out . '<p class="empty">Здесь пока пусто.</p></section>', 'list:' . $type, $actions);
+    if (!$rows) admin_page($S['title'], $out . '<p class="empty">' . __('Здесь пока пусто.') . '</p></section>', 'list:' . $type, $actions);
 
     $hasPage = $type === 'product' || $type === 'post';   // у товара и статьи есть своя страница на сайте
     $catRows = category_rows();
-    $head = $type === 'product' ? ['', 'Название', 'Раздел', 'Цена'] : ['Название'];
-    if ($type === 'service') $head[] = 'Цена';
-    if ($type === 'post') $head[] = 'Дата';
+    $head = $type === 'product' ? ['', __('Название'), __('Раздел'), __('Цена')] : [__('Название')];
+    if ($type === 'service') $head[] = __('Цена');
+    if ($type === 'post') $head[] = __('Дата');
     if ($hasPage) $head[] = 'SEO';
-    $head[] = 'Изменено';
+    $head[] = __('Изменено');
     $out .= '<div class="table-wrap"><table class="table"><thead><tr>';
-    foreach ($head as $h) $out .= '<th' . ($h === 'Изменено' ? ' class="c-date"' : '') . '>' . e($h) . '</th>';
+    foreach ($head as $h) $out .= '<th' . ($h === __('Изменено') ? ' class="c-date"' : '') . '>' . e($h) . '</th>';
     $out .= '<th></th></tr></thead><tbody>';
     foreach ($rows as $r) {
         $d = $r['data'];
@@ -338,13 +348,13 @@ function admin_list(): void
         $path = $type === 'product' ? 'product/' . rawurlencode($r['slug']) : ($type === 'post' ? 'blog/' . rawurlencode($r['slug']) : '');
         $sub = $path !== '' ? '/' . $path : $r['slug'];
         if ($type === 'product' && isset($brands[$d['brand'] ?? ''])) $sub .= ' · ' . $brands[$d['brand']];
-        $cells = '<td><a class="strong" href="' . e($edit) . '">' . e($name) . '</a>' . ($r['active'] ? '' : ' <span class="st st-cancel">скрыт</span>') . '<small>' . e($sub) . '</small></td>';
+        $cells = '<td><a class="strong" href="' . e($edit) . '">' . e($name) . '</a>' . ($r['active'] ? '' : ' <span class="st st-cancel">' . __('скрыт') . '</span>') . '<small>' . e($sub) . '</small></td>';
         if ($type === 'product') {
-            $cells = '<td class="pic">' . (!empty($d['img']) ? img_preview((string) $d['img']) : '<span class="nopic">рисунок</span>') . '</td>' . $cells
+            $cells = '<td class="pic">' . (!empty($d['img']) ? img_preview((string) $d['img']) : '<span class="nopic">' . __('рисунок') . '</span>') . '</td>' . $cells
                 . '<td><span class="pill">' . e($cats[$d['cat'] ?? ''] ?? '—') . '</span></td>'
                 . '<td class="nowrap">' . e(fmt_money($d['price'] ?? null)) . (!empty($d['old']) ? '<small><s>' . e(fmt_money($d['old'])) . '</s></small>' : '') . '</td>';
         }
-        if ($type === 'service') $cells .= '<td class="nowrap">' . (!empty($d['from']) ? 'от ' : '') . e(fmt_money($d['price'] ?? null)) . '</td>';
+        if ($type === 'service') $cells .= '<td class="nowrap">' . (!empty($d['from']) ? __('от') . ' ' : '') . e(fmt_money($d['price'] ?? null)) . '</td>';
         if ($type === 'post') $cells .= '<td class="nowrap">' . e((string) ($d['date'] ?? '')) . '</td>';
         if ($hasPage) {
             // длина заголовка и описания страницы на основном языке: зелёная точка, когда оба укладываются в привычные для поиска рамки
@@ -355,14 +365,14 @@ function admin_list(): void
             $tl = mb_strlen($t);
             $dl = mb_strlen($ds);
             $ok = $tl >= 15 && $tl <= 65 && $dl >= 50 && $dl <= 170;
-            $cells .= '<td class="nowrap" title="Длина заголовка и описания страницы. Хорошо: заголовок 15–65 знаков, описание 50–170."><span class="dot ' . ($ok ? 'dot-ok' : 'dot-warn') . '"></span>' . $tl . ' / ' . $dl . '</td>';
+            $cells .= '<td class="nowrap" title="' . e(__('Длина заголовка и описания страницы. Хорошо: заголовок 15–65 знаков, описание 50–170.')) . '"><span class="dot ' . ($ok ? 'dot-ok' : 'dot-warn') . '"></span>' . $tl . ' / ' . $dl . '</td>';
         }
         $cells .= '<td class="nowrap c-date">' . e(substr(fmt_date((string) $r['updated_at']), 0, 10)) . '</td>';
-        $acts = ($path !== '' && $r['active'] ? '<a class="btn btn-line btn-sm" href="' . e($base . $path) . '" target="_blank" rel="noopener" title="Открыть на сайте">' . icon('ext') . '<span class="lb">Открыть</span></a>' : '')
-            . '<a class="btn btn-line btn-sm" href="' . e($edit) . '" title="Изменить">' . icon('edit') . '<span class="lb">Изменить</span></a>';
+        $acts = ($path !== '' && $r['active'] ? '<a class="btn btn-line btn-sm" href="' . e($base . $path) . '" target="_blank" rel="noopener" title="' . e(__('Открыть на сайте')) . '">' . icon('ext') . '<span class="lb">' . __('Открыть') . '</span></a>' : '')
+            . '<a class="btn btn-line btn-sm" href="' . e($edit) . '" title="' . e(__('Изменить')) . '">' . icon('edit') . '<span class="lb">' . __('Изменить') . '</span></a>';
         if (empty($S['fixed'])) {
-            $acts .= '<form method="post" action="' . e(admin_url('delete', ['type' => $type, 'id' => $r['id']])) . '" data-confirm="Удалить «' . e($name) . '»? Вернуть будет нельзя.">' . csrf_field()
-                . '<button type="submit" class="btn btn-line btn-sm btn-del" title="Удалить">' . icon('trash') . '<span class="lb">Удалить</span></button></form>';
+            $acts .= '<form method="post" action="' . e(admin_url('delete', ['type' => $type, 'id' => $r['id']])) . '" data-confirm="' . e(__('Удалить «{name}»? Вернуть будет нельзя.', ['name' => $name])) . '">' . csrf_field()
+                . '<button type="submit" class="btn btn-line btn-sm btn-del" title="' . e(__('Удалить')) . '">' . icon('trash') . '<span class="lb">' . __('Удалить') . '</span></button></form>';
         }
         $out .= '<tr' . ($r['active'] ? '' : ' class="off"') . '>' . $cells . '<td class="acts">' . $acts . '</td></tr>';
     }
@@ -406,10 +416,10 @@ function admin_edit(): void
         $cats = opt_categories();
         $cat = (string) ($_GET['cat'] ?? '');
         if (!isset($cats[$cat])) {
-            $out = '<section class="card">' . card_head('Новый товар', '<a href="' . e($listUrl) . '">← Все товары</a>') . '<div class="card-body card-pad">'
-                . '<p class="note">Выберите раздел. От него зависит, как товар выбирают на сайте: оправу можно заказать с линзами, у контактных линз выбирают параметры для каждого глаза, у линз для очков вводят рецепт.</p><div class="choose">';
+            $out = '<section class="card">' . card_head(__('Новый товар'), '<a href="' . e($listUrl) . '">' . __('← Все товары') . '</a>') . '<div class="card-body card-pad">'
+                . '<p class="note">' . __('Выберите раздел. От него зависит, как товар выбирают на сайте: оправу можно заказать с линзами, у контактных линз выбирают параметры для каждого глаза, у линз для очков вводят рецепт.') . '</p><div class="choose">';
             foreach ($cats as $k => $l) $out .= '<a class="btn btn-line" href="' . e(admin_url('edit', ['type' => 'product', 'cat' => $k])) . '">' . e($l) . '</a>';
-            $out .= '</div><p class="hint">Чтобы завести товар, похожий на уже существующий, откройте этот товар и нажмите «Создать копию товара» внизу страницы.</p></div></section>';
+            $out .= '</div><p class="hint">' . __('Чтобы завести товар, похожий на уже существующий, откройте этот товар и нажмите «Создать копию товара» внизу страницы.') . '</p></div></section>';
             admin_page($S['title'], $out, 'list:product', '', $S['add']);
         }
         $data = ['cat' => $cat] + product_template($cat);
@@ -446,13 +456,13 @@ function admin_edit(): void
         $active = !empty($_POST['active']);
         if (!$errors) {
             item_save($item['id'] ?? null, $type, $slug, $position, $active, $data);
-            flash('Сохранено: ' . ($type === 'brand' ? (string) ($data['name'] ?? $slug) : tr_admin($data['name'] ?? $data['title'] ?? $slug)) . '.');
+            flash(__('Сохранено: {name}.', ['name' => $type === 'brand' ? (string) ($data['name'] ?? $slug) : tr_admin($data['name'] ?? $data['title'] ?? $slug)]));
             redirect($listUrl);
         }
     }
     $view = isset($S['load']) ? $S['load']($data) : $data;
     $own = $type === 'brand' ? (string) ($data['name'] ?? '') : tr_admin($data['name'] ?? $data['title'] ?? '');
-    $head = $item && $own !== '' ? $own : ($item ? $slug : ($copyOf ? 'Копия товара' : ($S['add'] ?? $S['one'])));
+    $head = $item && $own !== '' ? $own : ($item ? $slug : ($copyOf ? __('Копия товара') : ($S['add'] ?? $S['one'])));
     $fields = $S['fields'];
     if ($type === 'product' || $type === 'post') {   // в пустых полях SEO серым показан текст, который сайт поставит сам
         $catRows = category_rows();
@@ -463,24 +473,24 @@ function admin_edit(): void
         }
     }
     $out = '';
-    if ($errors) $out .= '<p class="flash flash-err" role="alert">Не сохранено: проверьте поля, отмеченные красным.</p>';
-    if ($copyOf) $out .= '<p class="note">Это копия товара. Измените название, код и цену, загрузите фото и сохраните — появится новый товар.</p>';
-    $out .= form_open($head, '<a href="' . e($listUrl) . '">← К списку</a>') . form_fields($fields, $view, $errors);
+    if ($errors) $out .= '<p class="flash flash-err" role="alert">' . __('Не сохранено: проверьте поля, отмеченные красным.') . '</p>';
+    if ($copyOf) $out .= '<p class="note">' . __('Это копия товара. Измените название, код и цену, загрузите фото и сохраните — появится новый товар.') . '</p>';
+    $out .= form_open($head, '<a href="' . e($listUrl) . '">' . __('← К списку') . '</a>') . form_fields($fields, $view, $errors);
     if ($type === 'category' && !empty($data['banner']['demo'])) {
-        $out .= '<div class="field"><label class="check"><input type="checkbox" name="nodemo" value="1"> <span>Убрать временное фото со слайда</span></label>'
-            . '<p class="hint">Сейчас на слайде стоит временное фото с бесплатного фотостока. Загрузите своё, и временное уберётся само. Без фото на слайде показывается рисунок из товаров.</p></div>';
+        $out .= '<div class="field"><label class="check"><input type="checkbox" name="nodemo" value="1"> <span>' . __('Убрать временное фото со слайда') . '</span></label>'
+            . '<p class="hint">' . __('Сейчас на слайде стоит временное фото с бесплатного фотостока. Загрузите своё, и временное уберётся само. Без фото на слайде показывается рисунок из товаров.') . '</p></div>';
     }
-    $out .= '<h3 class="block">' . (empty($S['fixed']) ? 'Адрес и показ на сайте' : 'Показ на сайте') . '</h3><div class="field-row">';
+    $out .= '<h3 class="block">' . (empty($S['fixed']) ? __('Адрес и показ на сайте') : __('Показ на сайте')) . '</h3><div class="field-row">';
     if (empty($S['fixed'])) {
         $out .= '<div class="field"><label class="lbl" for="slug">' . e($S['slug']) . '</label><input id="slug" type="text" name="slug" value="' . e($copyOf ? '' : $slug) . '" class="mid" pattern="[a-z0-9\-]*"><p class="hint">' . e($S['slug_hint']) . '</p></div>';
     }
-    $out .= '<div class="field"><label class="lbl" for="position">Порядок на сайте</label><input id="position" type="text" inputmode="numeric" name="position" value="' . e((string) $position) . '" class="short"><p class="hint">Чем меньше число, тем выше в списке.</p></div></div>'
-        . '<div class="field"><label class="check"><input type="checkbox" name="active" value="1"' . ($active ? ' checked' : '') . '> <span>Показывать на сайте</span></label></div>'
-        . form_close('<a href="' . e($listUrl) . '">Отмена</a>');
+    $out .= '<div class="field"><label class="lbl" for="position">' . __('Порядок на сайте') . '</label><input id="position" type="text" inputmode="numeric" name="position" value="' . e((string) $position) . '" class="short"><p class="hint">' . __('Чем меньше число, тем выше в списке.') . '</p></div></div>'
+        . '<div class="field"><label class="check"><input type="checkbox" name="active" value="1"' . ($active ? ' checked' : '') . '> <span>' . __('Показывать на сайте') . '</span></label></div>'
+        . form_close('<a href="' . e($listUrl) . '">' . __('Отмена') . '</a>');
     if ($item && empty($S['fixed'])) {
-        if ($type === 'product') $out .= '<p class="danger"><a class="btn btn-line btn-sm" href="' . e(admin_url('edit', ['type' => 'product', 'copy' => $item['id']])) . '">' . icon('copy') . 'Создать копию товара</a></p>';
-        $out .= '<form method="post" action="' . e(admin_url('delete', ['type' => $type, 'id' => $item['id']])) . '" class="danger" data-confirm="Удалить «' . e($type === 'brand' ? (string) ($data['name'] ?? $slug) : tr_admin($data['name'] ?? $data['title'] ?? $slug)) . '»? Вернуть будет нельзя.">'
-            . csrf_field() . '<button type="submit" class="link link-danger">Удалить</button></form>';
+        if ($type === 'product') $out .= '<p class="danger"><a class="btn btn-line btn-sm" href="' . e(admin_url('edit', ['type' => 'product', 'copy' => $item['id']])) . '">' . icon('copy') . __('Создать копию товара') . '</a></p>';
+        $out .= '<form method="post" action="' . e(admin_url('delete', ['type' => $type, 'id' => $item['id']])) . '" class="danger" data-confirm="' . e(__('Удалить «{name}»? Вернуть будет нельзя.', ['name' => $type === 'brand' ? (string) ($data['name'] ?? $slug) : tr_admin($data['name'] ?? $data['title'] ?? $slug)])) . '">'
+            . csrf_field() . '<button type="submit" class="link link-danger">' . __('Удалить') . '</button></form>';
     }
     admin_page($S['title'], $out, 'list:' . $type, '', $item ? $S['one'] . ': ' . $head : ($S['add'] ?? $S['one']));
 }
@@ -493,7 +503,7 @@ function admin_delete(): void
     delete_upload($item['data']['img'] ?? null);
     foreach ($item['data']['colors'] ?? [] as $c) delete_upload($c['img'] ?? null);
     item_delete($item['id']);
-    flash('Удалено.');
+    flash(__('Удалено.'));
     redirect(admin_url('list', ['type' => $type]));
 }
 
@@ -511,19 +521,19 @@ function admin_doc(): void
         $data = form_parse($S['fields'], $data, $_POST, $errors);
         if ($name === 'config') {
             $data['whatsapp'] = preg_replace('/\D/', '', (string) ($data['whatsapp'] ?? ''));
-            if (strlen($data['whatsapp']) < 9) $errors['whatsapp'] = 'Укажите номер полностью, с кодом страны: 994501234567.';
+            if (strlen($data['whatsapp']) < 9) $errors['whatsapp'] = __('Укажите номер полностью, с кодом страны: 994501234567.');
             $data['instagram'] = ltrim((string) ($data['instagram'] ?? ''), '@');
             foreach (['deliveryPrice', 'freeDeliveryFrom'] as $k) $data[$k] = $data[$k] ?? 0;
-            if (!empty($data['siteUrl']) && !preg_match('~^https?://~i', (string) $data['siteUrl'])) $errors['siteUrl'] = 'Адрес должен начинаться с https://';
+            if (!empty($data['siteUrl']) && !preg_match('~^https?://~i', (string) $data['siteUrl'])) $errors['siteUrl'] = __('Адрес должен начинаться с https://');
         }
         if (!$errors) {
             set_setting($name, $data);
-            flash('Сохранено.');
+            flash(__('Сохранено.'));
             redirect(admin_url('doc', ['name' => $name]));
         }
     }
     $out = (!empty($S['note']) ? '<p class="note">' . e($S['note']) . '</p>' : '')
-        . ($errors ? '<p class="flash flash-err" role="alert">Не сохранено: проверьте поля, отмеченные красным.</p>' : '')
+        . ($errors ? '<p class="flash flash-err" role="alert">' . __('Не сохранено: проверьте поля, отмеченные красным.') . '</p>' : '')
         . form_open($S['head'] ?? $S['title'], isset($S['back']) ? '<a href="' . e(admin_url($S['back'][0], $S['back'][1])) . '">' . e($S['back'][2]) . '</a>' : '')
         . form_fields($S['fields'], $data, $errors) . form_close();
     admin_page($S['title'], $out, $name === 'about' ? 'pages' : 'doc:' . $name);
@@ -536,34 +546,34 @@ function admin_banners(): void
     if (!is_array($aud)) $aud = [];
     $fields = [];
     $demo = [];
-    $wideHint = 'Широкое, примерно 2400×900. Слева стоит текст, поэтому главное на фото должно быть справа. Обычное фото тоже подойдёт: оно встанет в правой части баннера.';
+    $wideHint = __('Широкое, примерно 2400×900. Слева стоит текст, поэтому главное на фото должно быть справа. Обычное фото тоже подойдёт: оно встанет в правой части баннера.');
     foreach ($aud as $i => $a) {
         $name = tr_admin($a['title'] ?? $a['name'] ?? (string) $i);
-        $fields[] = ['key' => '_h' . $i, 'type' => 'head', 'label' => 'Баннер «' . $name . '»'];
-        $fields[] = ['key' => $i . '.title', 'type' => 'i18n', 'label' => 'Название секции', 'req' => true,
-            'hint' => !empty($a['parts']) ? 'На баннере это первая, светлая строка заголовка.' : 'Показывается на баннере, если не заполнен заголовок ниже.'];
-        $fields[] = ['key' => $i . '.head', 'type' => 'i18n', 'label' => 'Заголовок на баннере', 'hint' => 'Крупная строка, например «Детская коллекция».'];
+        $fields[] = ['key' => '_h' . $i, 'type' => 'head', 'label' => __('Баннер «{name}»', ['name' => $name])];
+        $fields[] = ['key' => $i . '.title', 'type' => 'i18n', 'label' => __('Название секции'), 'req' => true,
+            'hint' => !empty($a['parts']) ? __('На баннере это первая, светлая строка заголовка.') : __('Показывается на баннере, если не заполнен заголовок ниже.')];
+        $fields[] = ['key' => $i . '.head', 'type' => 'i18n', 'label' => __('Заголовок на баннере'), 'hint' => __('Крупная строка, например «Детская коллекция».')];
         if (!empty($a['parts'])) {
             // баннер с кнопками коллекций: строка под заголовком и несколько фото, которые сменяют друг друга
-            $fields[] = ['key' => $i . '.feats', 'type' => 'i18n_lines', 'label' => 'Строка под заголовком', 'rows' => 3, 'hint' => 'Два-три коротких слова или фразы, каждая с новой строки. На баннере они стоят в одну строку через черту.'];
+            $fields[] = ['key' => $i . '.feats', 'type' => 'i18n_lines', 'label' => __('Строка под заголовком'), 'rows' => 3, 'hint' => __('Два-три коротких слова или фразы, каждая с новой строки. На баннере они стоят в одну строку через черту.')];
             foreach (array_values($a['slides'] ?? []) as $k => $slide) {
                 $path = $i . '.slides.' . $k;
-                $fields[] = ['key' => $path . '.img', 'type' => 'image', 'label' => 'Фото ' . ($k + 1) . ' на баннере', 'dir' => 'b', 'hint' => $wideHint];
-                if (!empty($slide['demo'])) $demo[$path] = $name . ', фото ' . ($k + 1);
+                $fields[] = ['key' => $path . '.img', 'type' => 'image', 'label' => __('Фото {n} на баннере', ['n' => $k + 1]), 'dir' => 'b', 'hint' => $wideHint];
+                if (!empty($slide['demo'])) $demo[$path] = __('{name}, фото {n}', ['name' => $name, 'n' => $k + 1]);
             }
             foreach ($a['parts'] as $j => $part) {
                 $path = $i . '.parts.' . $j;
-                $fields[] = ['key' => '_h' . $i . '_' . $j, 'type' => 'head', 'label' => 'Блок «' . tr_admin($part['title'] ?? $part['name'] ?? $path) . '» под баннером'];
-                $fields[] = ['key' => $path . '.col', 'type' => 'i18n', 'label' => 'Кнопка на баннере', 'hint' => 'Например «Мужская коллекция». Кнопка открывает каталог с этими моделями.'];
-                $fields[] = ['key' => $path . '.title', 'type' => 'i18n', 'label' => 'Заголовок блока', 'req' => true];
-                $fields[] = ['key' => $path . '.text', 'type' => 'i18n', 'label' => 'Текст в блоке'];
-                $fields[] = ['key' => $path . '.img', 'type' => 'image', 'label' => 'Фото в блоке', 'dir' => 'b',
-                    'hint' => 'Вертикальное, примерно 800×1000. Снизу стоят заголовок и кнопка, поэтому лицо должно быть в верхней половине. Можно не загружать: тогда в блоке стоит рисунок оправы.'];
+                $fields[] = ['key' => '_h' . $i . '_' . $j, 'type' => 'head', 'label' => __('Блок «{name}» под баннером', ['name' => tr_admin($part['title'] ?? $part['name'] ?? $path)])];
+                $fields[] = ['key' => $path . '.col', 'type' => 'i18n', 'label' => __('Кнопка на баннере'), 'hint' => __('Например «Мужская коллекция». Кнопка открывает каталог с этими моделями.')];
+                $fields[] = ['key' => $path . '.title', 'type' => 'i18n', 'label' => __('Заголовок блока'), 'req' => true];
+                $fields[] = ['key' => $path . '.text', 'type' => 'i18n', 'label' => __('Текст в блоке')];
+                $fields[] = ['key' => $path . '.img', 'type' => 'image', 'label' => __('Фото в блоке'), 'dir' => 'b',
+                    'hint' => __('Вертикальное, примерно 800×1000. Снизу стоят заголовок и кнопка, поэтому лицо должно быть в верхней половине. Можно не загружать: тогда в блоке стоит рисунок оправы.')];
                 if (!empty($part['demo'])) $demo[$path] = tr_admin($part['title'] ?? $path);
             }
         } else {
-            $fields[] = ['key' => $i . '.text', 'type' => 'i18n', 'label' => 'Текст на тёмной плашке'];
-            $fields[] = ['key' => $i . '.img', 'type' => 'image', 'label' => 'Фото на баннере', 'dir' => 'b', 'hint' => $wideHint];
+            $fields[] = ['key' => $i . '.text', 'type' => 'i18n', 'label' => __('Текст на тёмной плашке')];
+            $fields[] = ['key' => $i . '.img', 'type' => 'image', 'label' => __('Фото на баннере'), 'dir' => 'b', 'hint' => $wideHint];
             if (!empty($a['demo'])) $demo[(string) $i] = $name;
         }
     }
@@ -577,18 +587,18 @@ function admin_banners(): void
         }
         if (!$errors) {
             set_setting('audiences', $aud);
-            flash('Сохранено.');
+            flash(__('Сохранено.'));
             redirect(admin_url('banners'));
         }
     }
-    $out = '<p class="note">Баннеры секций «Для взрослых» и «Для детей» на главной странице: крупный заголовок слева, фото справа. Пока своего фото нет, показывается временное фото из интернета или рисунок. Фото для слайдов первого экрана загружаются в разделе «Разделы каталога», фото салона — в «Странице “О нас”».</p>'
-        . ($errors ? '<p class="flash flash-err" role="alert">Не сохранено: проверьте поля, отмеченные красным.</p>' : '')
-        . form_open('Баннеры секций на главной') . form_fields($fields, $aud, $errors);
+    $out = '<p class="note">' . __('Баннеры секций «Для взрослых» и «Для детей» на главной странице: крупный заголовок слева, фото справа. Пока своего фото нет, показывается временное фото из интернета или рисунок. Фото для слайдов первого экрана загружаются в разделе «Разделы каталога», фото салона — в «Странице “О нас”».') . '</p>'
+        . ($errors ? '<p class="flash flash-err" role="alert">' . __('Не сохранено: проверьте поля, отмеченные красным.') . '</p>' : '')
+        . form_open(__('Баннеры секций на главной')) . form_fields($fields, $aud, $errors);
     if ($demo) {
-        $out .= '<h3 class="block">Временные фото из интернета</h3><div class="field"><div class="checks">';
-        foreach ($demo as $path => $name) $out .= '<label class="check"><input type="checkbox" name="nodemo[' . e($path) . ']" value="1"> <span>Убрать временное фото у «' . e($name) . '»</span></label>';
-        $out .= '</div><p class="hint">Временные фото взяты с бесплатного фотостока. Перед запуском сайта замените их своими.</p></div>';
+        $out .= '<h3 class="block">' . __('Временные фото из интернета') . '</h3><div class="field"><div class="checks">';
+        foreach ($demo as $path => $name) $out .= '<label class="check"><input type="checkbox" name="nodemo[' . e($path) . ']" value="1"> <span>' . e(__('Убрать временное фото у «{name}»', ['name' => $name])) . '</span></label>';
+        $out .= '</div><p class="hint">' . __('Временные фото взяты с бесплатного фотостока. Перед запуском сайта замените их своими.') . '</p></div>';
     }
     $out .= form_close();
-    admin_page('Баннеры и фото', $out, 'banners');
+    admin_page(__('Баннеры и фото'), $out, 'banners');
 }

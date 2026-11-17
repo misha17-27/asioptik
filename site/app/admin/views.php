@@ -23,8 +23,8 @@ function flash(?string $msg = null, string $kind = 'ok'): ?array
 function https_note(): string
 {
     if (is_https() || is_local()) return '';
-    return '<p class="flash flash-warn" role="alert">Админ-панель открыта по http, без шифрования: пароль и данные покупателей передаются открыто. '
-        . 'Включите сертификат SSL в панели хостинга и уберите решётки в трёх строках файла .htaccess — после этого сайт всегда открывается по https.</p>';
+    return '<p class="flash flash-warn" role="alert">' . __('Админ-панель открыта по http, без шифрования: пароль и данные покупателей передаются открыто.') . ' '
+        . __('Включите сертификат SSL в панели хостинга и уберите решётки в трёх строках файла .htaccess — после этого сайт всегда открывается по https.') . '</p>';
 }
 
 function csrf_field(): string
@@ -55,25 +55,45 @@ function icon(string $name): string
         'edit' => '<path d="m3 17 .800-3.700 9.700-9.700a1.400 1.400 0 0 1 2 0l.900.900a1.400 1.400 0 0 1 0 2l-9.700 9.700z"/>',
         'trash' => '<path d="M4 6h12M8 6V3.500h4V6M5.500 6l.700 11h7.600l.700-11"/>',
         'plus' => '<path d="M10 4v12M4 10h12"/>',
+        'globe' => '<circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2.200 2 3.300 4.300 3.300 7s-1.100 5-3.300 7c-2.200-2-3.300-4.300-3.300-7S7.800 5 10 3z"/>',
         'copy' => '<rect x="7" y="7" width="10" height="10" rx="1.500"/><path d="M13 7V4.500A1.500 1.500 0 0 0 11.500 3h-7A1.500 1.500 0 0 0 3 4.500v7A1.500 1.500 0 0 0 4.500 13H7"/>',
     ];
     return '<svg class="ic" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.600" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($paths[$name] ?? '') . '</svg>';
 }
 
-/** «1 товар, 2 товара, 5 товаров»: слово в нужной форме для числа. */
-function plural(int $n, string $one, string $few, string $many): string
+/** Переключатель языка админ-панели: ссылки на эту же страницу, выбор запоминается (см. admin_run). */
+function ui_switch(): string
 {
-    $a = abs($n) % 100;
-    $b = $a % 10;
-    if ($a > 10 && $a < 20) return $many;
-    if ($b === 1) return $one;
-    return $b >= 2 && $b <= 4 ? $few : $many;
+    $q = $_GET;
+    $p = is_string($q['p'] ?? null) ? $q['p'] : '';
+    unset($q['ui'], $q['p']);
+    $out = '<div class="uis" role="group" aria-label="' . e(__('Язык админ-панели')) . '">' . icon('globe');
+    foreach (UI_LANGS as $l => $name) {
+        $out .= '<a href="' . e(admin_url($p, $q + ['ui' => $l])) . '" lang="' . $l . '" hreflang="' . $l . '" title="' . e($name) . '"' . ($l === ui_lang() ? ' aria-current="true"' : '') . '>' . strtoupper($l) . '</a>';
+    }
+    return $out . '</div>';
+}
+
+/** Надписи, которые показывает скрипт админ-панели (assets/js/admin.js), на языке интерфейса. */
+function admin_js_texts(): array
+{
+    return [
+        'fileBad' => __('Файл «{name}» не подходит: нужна картинка JPG, PNG или WebP.'),
+        'filePrep' => __('Готовлю фото…'),
+        'fileBig' => __('Файл {size} — больше, чем принимает хостинг ({max}). Уменьшите фото и выберите его снова.'),
+        'fileSmall' => __('Фото уменьшено: {from} → {to}. Нажмите «Сохранить».'),
+        'fileOk' => __('Фото выбрано: {size}. Нажмите «Сохранить».'),
+        'count' => __('{n} из {max} знаков'),
+        'countAuto' => __('{n} из {max} знаков — текст сайта'),
+        'mb' => __('МБ'),
+        'kb' => __('КБ'),
+    ];
 }
 
 /** Переключатель языка для форм: показывает поля одного языка за раз. Без скриптов видны все три. */
 function lang_switch(): string
 {
-    $out = '<div class="lgs" role="group" aria-label="Язык текстов">';
+    $out = '<div class="lgs" role="group" aria-label="' . e(__('Язык текстов')) . '">';
     foreach (['ru', 'az', 'en'] as $l) $out .= '<button type="button" class="lg-btn" data-lg-set="' . $l . '" aria-pressed="false">' . strtoupper($l) . '</button>';
     return $out . '</div>';
 }
@@ -113,7 +133,7 @@ function form_open(string $title, string $right = '', string $class = ''): strin
 /** Конец формы: кнопка «Сохранить» остаётся внизу экрана, пока листают поля. */
 function form_close(string $after = ''): string
 {
-    return '</div><div class="actions actions-sticky"><button type="submit" class="btn">Сохранить</button>' . $after . '</div></form>';
+    return '</div><div class="actions actions-sticky"><button type="submit" class="btn">' . __('Сохранить') . '</button>' . $after . '</div></form>';
 }
 
 /** Страница админ-панели. $doc — название для вкладки браузера, если оно подробнее заголовка. */
@@ -121,11 +141,11 @@ function admin_page(string $title, string $body, string $current = '', string $a
 {
     $c = admin_counts();
     $groups = [
-        'Магазин' => [['home', 'Обзор', 'home', null], ['orders', 'Заказы', 'orders', $c['new'] ?: null], ['clients', 'Клиенты', 'users', $c['clients'] ?: null]],
-        'Контент' => [['pages', 'Страницы', 'page', null], ['list:post', 'Блог', 'blog', $c['post'] ?? null], ['banners', 'Баннеры и фото', 'image', null]],
-        'Каталог' => [['list:product', 'Товары', 'box', $c['product'] ?? null], ['list:category', 'Разделы', 'grid', $c['category'] ?? null],
-            ['list:brand', 'Бренды', 'tag', $c['brand'] ?? null], ['list:service', 'Услуги мастерской', 'tool', $c['service'] ?? null]],
-        'Настройки' => [['doc:config', 'Настройки сайта', 'gear', null], ['security', 'Безопасность', 'shield', null], ['password', 'Пароль', 'key', null]],
+        __('Магазин') => [['home', __('Обзор'), 'home', null], ['orders', __('Заказы'), 'orders', $c['new'] ?: null], ['clients', __('Клиенты'), 'users', $c['clients'] ?: null]],
+        __('Контент') => [['pages', __('Страницы'), 'page', null], ['list:post', __('Блог'), 'blog', $c['post'] ?? null], ['banners', __('Баннеры и фото'), 'image', null]],
+        __('Каталог') => [['list:product', __('Товары'), 'box', $c['product'] ?? null], ['list:category', __('Разделы'), 'grid', $c['category'] ?? null],
+            ['list:brand', __('Бренды'), 'tag', $c['brand'] ?? null], ['list:service', __('Услуги мастерской'), 'tool', $c['service'] ?? null]],
+        __('Настройки') => [['doc:config', __('Настройки сайта'), 'gear', null], ['security', __('Безопасность'), 'shield', null], ['password', __('Пароль'), 'key', null]],
     ];
     $links = '';
     foreach ($groups as $group => $items) {
@@ -133,7 +153,7 @@ function admin_page(string $title, string $body, string $current = '', string $a
         foreach ($items as [$key, $label, $ic, $n]) {
             $p = explode(':', $key);
             $url = $p[0] === 'list' ? admin_url('list', ['type' => $p[1]]) : ($p[0] === 'doc' ? admin_url('doc', ['name' => $p[1]]) : admin_url($p[0] === 'home' ? '' : $p[0]));
-            $badge = $n ? '<span class="n' . ($key === 'orders' ? ' n-new' : '') . '"' . ($key === 'orders' ? ' title="Новые"' : '') . '>' . (int) $n . '</span>' : '';
+            $badge = $n ? '<span class="n' . ($key === 'orders' ? ' n-new' : '') . '"' . ($key === 'orders' ? ' title="' . e(__('Новые')) . '"' : '') . '>' . (int) $n . '</span>' : '';
             $links .= '<a href="' . e($url) . '"' . ($current === $key ? ' aria-current="page"' : '') . '>' . icon($ic) . '<span>' . e($label) . '</span>' . $badge . '</a>';
         }
     }
@@ -141,17 +161,18 @@ function admin_page(string $title, string $body, string $current = '', string $a
     $base = base_path();
     $ver = substr(md5((string) @filemtime(ROOT . '/assets/css/admin.css') . @filemtime(ROOT . '/assets/js/admin.js')), 0, 8);
     header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
-        . '<title>' . e($doc !== '' ? $doc : $title) . ' — админ-панель Asioptik</title><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css?v=' . $ver . '"></head><body>'
+    echo '<!doctype html><html lang="' . ui_lang() . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
+        . '<title>' . e($doc !== '' ? $doc : $title) . ' ' . __('— админ-панель Asioptik') . '</title><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css?v=' . $ver . '"></head><body>'
         . '<div class="adm"><aside class="side"><a class="brand" href="' . e(admin_url()) . '">asi<b>optik</b><small>Admin</small></a>'
-        . '<button type="button" class="menu-btn" aria-expanded="false" aria-controls="adm-nav">Меню</button>'
-        . '<nav id="adm-nav" aria-label="Разделы админ-панели">' . $links . '</nav></aside>'
-        . '<main class="main"><header class="top"><h1>' . e($title) . '</h1><div class="top-acts">' . $actions
-        . '<a class="btn btn-line" href="' . e($base) . '" target="_blank" rel="noopener">' . icon('ext') . 'Сайт</a>'
-        . '<form method="post" class="logout" action="' . e(admin_url('logout')) . '">' . csrf_field() . '<button type="submit" class="btn">' . icon('out') . 'Выйти</button></form></div></header>'
+        . '<button type="button" class="menu-btn" aria-expanded="false" aria-controls="adm-nav">' . __('Меню') . '</button>'
+        . '<nav id="adm-nav" aria-label="' . e(__('Разделы админ-панели')) . '">' . $links . '</nav></aside>'
+        . '<main class="main"><header class="top"><h1>' . e($title) . '</h1><div class="top-acts">' . $actions . ui_switch()
+        . '<a class="btn btn-line" href="' . e($base) . '" target="_blank" rel="noopener">' . icon('ext') . __('Сайт') . '</a>'
+        . '<form method="post" class="logout" action="' . e(admin_url('logout')) . '">' . csrf_field() . '<button type="submit" class="btn">' . icon('out') . __('Выйти') . '</button></form></div></header>'
         . https_note()
         . ($flash ? '<p class="flash flash-' . e($flash[0]) . '" role="status">' . e($flash[1]) . '</p>' : '')
-        . $body . '</main></div><script src="' . e($base) . 'assets/js/admin.js?v=' . $ver . '"></script></body></html>';
+        . $body . '</main></div><script type="application/json" id="ao-i18n">' . json_encode(admin_js_texts(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) . '</script>'
+        . '<script src="' . e($base) . 'assets/js/admin.js?v=' . $ver . '"></script></body></html>';
     exit;
 }
 
@@ -159,9 +180,9 @@ function admin_bare(string $title, string $body): void
 {
     $base = base_path();
     header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
+    echo '<!doctype html><html lang="' . ui_lang() . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
         . '<title>' . e($title) . ' — Asioptik</title><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css"></head><body class="bare">'
-        . '<main class="card"><p class="brand">asi<b>optik</b></p><h1>' . e($title) . '</h1>' . https_note() . $body . '</main></body></html>';
+        . '<main class="card">' . ui_switch() . '<p class="brand">asi<b>optik</b></p><h1>' . e($title) . '</h1>' . https_note() . $body . '</main></body></html>';
     exit;
 }
 
@@ -193,7 +214,7 @@ function form_fields(array $fields, array $data, array $errors = []): string
         $id = 'f-' . preg_replace('~[^a-z0-9]+~i', '-', $k);
         $err = $errors[$k] ?? '';
         $hint = isset($f['hint']) ? '<p class="hint">' . e($f['hint']) . '</p>' : '';
-        $label = e($f['label']) . (!empty($f['req']) ? ' <span class="req" title="обязательно">*</span>' : '');
+        $label = e($f['label']) . (!empty($f['req']) ? ' <span class="req" title="' . e(__('обязательно')) . '">*</span>' : '');
         $in = '';
         switch ($f['type']) {
             case 'text':
@@ -244,7 +265,7 @@ function form_fields(array $fields, array $data, array $errors = []): string
                 $in = '<span class="lbl">' . $label . '</span><div class="imgf">' . img_preview(is_string($v) ? $v : null)
                     . '<div><input type="file" name="file[' . e($k) . ']" accept="image/jpeg,image/png,image/webp" data-max="' . upload_limit() . '" aria-label="' . e($f['label']) . '">'
                     . '<p class="file-note" aria-live="polite" hidden></p>'
-                    . (is_string($v) && $v !== '' ? '<label class="check"><input type="checkbox" name="remove[' . e($k) . ']" value="1"> <span>Убрать фото</span></label>' : '')
+                    . (is_string($v) && $v !== '' ? '<label class="check"><input type="checkbox" name="remove[' . e($k) . ']" value="1"> <span>' . __('Убрать фото') . '</span></label>' : '')
                     . '</div></div>';
                 break;
             case 'colors':
@@ -255,8 +276,8 @@ function form_fields(array $fields, array $data, array $errors = []): string
                     $extra = array_intersect_key(is_array($c) ? $c : [], ['a' => 1, 'c2' => 1, 'l' => 1, 'img' => 1]);
                     $n = "{$name}[$i]";
                     $in .= '<div class="color-row">';
-                    foreach (LANGS as $l) $in .= '<input type="text" name="' . e($n) . '[n][' . $l . ']" value="' . e($c['n'][$l] ?? '') . '" placeholder="Название ' . strtoupper($l) . '" aria-label="Название цвета, ' . strtoupper($l) . '">';
-                    $in .= '<input type="text" class="short" name="' . e($n) . '[c]" value="' . e($c['c'] ?? '') . '" placeholder="#1f1f22" aria-label="Код цвета">'
+                    foreach (LANGS as $l) $in .= '<input type="text" name="' . e($n) . '[n][' . $l . ']" value="' . e($c['n'][$l] ?? '') . '" placeholder="' . e(__('Название {lang}', ['lang' => strtoupper($l)])) . '" aria-label="' . e(__('Название цвета, {lang}', ['lang' => strtoupper($l)])) . '">';
+                    $in .= '<input type="text" class="short" name="' . e($n) . '[c]" value="' . e($c['c'] ?? '') . '" placeholder="#1f1f22" aria-label="' . e(__('Код цвета')) . '">'
                         . '<span class="sw" style="background:' . e(preg_match('~^#[0-9a-f]{3,8}$~i', (string) ($c['c'] ?? '')) ? $c['c'] : 'transparent') . '"></span>'
                         . '<input type="hidden" name="' . e($n) . '[x]" value="' . e($extra ? to_json($extra) : '') . '"></div>';
                 }
@@ -295,13 +316,13 @@ function form_parse(array $fields, array $data, array $post, array &$errors): ar
         switch ($f['type']) {
             case 'text':
                 $v = $clean($raw, 500);
-                if ($v === '' && $req) $errors[$k] = 'Заполните это поле.';
+                if ($v === '' && $req) $errors[$k] = __('Заполните это поле.');
                 if ($v === '') dunset($data, $k); else dset($data, $k, $v);
                 break;
             case 'date':
                 $v = $clean($raw, 10);
                 if (!preg_match('~^\d{4}-\d{2}-\d{2}$~', $v)) {
-                    if ($req || $v !== '') $errors[$k] = 'Укажите дату.';
+                    if ($req || $v !== '') $errors[$k] = __('Укажите дату.');
                     break;
                 }
                 dset($data, $k, $v);
@@ -309,12 +330,12 @@ function form_parse(array $fields, array $data, array $post, array &$errors): ar
             case 'number':
                 $v = str_replace([',', ' '], ['.', ''], $clean($raw, 20));
                 if ($v === '') {
-                    if ($req) $errors[$k] = 'Укажите число.';
+                    if ($req) $errors[$k] = __('Укажите число.');
                     dunset($data, $k);
                     break;
                 }
                 if (!is_numeric($v) || (float) $v < 0 || (float) $v > 1000000) {
-                    $errors[$k] = 'Здесь должно быть число, например 120 или 12.5.';
+                    $errors[$k] = __('Здесь должно быть число, например 120 или 12.5.');
                     break;
                 }
                 dset($data, $k, (float) $v == (int) $v ? (int) $v : round((float) $v, 2));
@@ -325,7 +346,7 @@ function form_parse(array $fields, array $data, array $post, array &$errors): ar
             case 'select':
                 $v = $clean($raw, 120);
                 if ($v !== '' && !array_key_exists($v, field_options($f))) $v = '';
-                if ($v === '' && $req) $errors[$k] = 'Выберите значение.';
+                if ($v === '' && $req) $errors[$k] = __('Выберите значение.');
                 if ($v === '') dunset($data, $k); else dset($data, $k, $v);
                 break;
             case 'checks':
@@ -340,7 +361,7 @@ function form_parse(array $fields, array $data, array $post, array &$errors): ar
                     $s = $clean(is_array($raw) ? ($raw[$l] ?? '') : '', $f['type'] === 'i18n' ? 300 : 3000);
                     if ($s !== '') $v[$l] = $s;
                 }
-                if ($req && empty($v['az'])) $errors[$k] = 'Заполните хотя бы азербайджанский вариант (AZ): это основной язык сайта.';
+                if ($req && empty($v['az'])) $errors[$k] = __('Заполните хотя бы азербайджанский вариант (AZ): это основной язык сайта.');
                 if ($v) dset($data, $k, $v); else dunset($data, $k);
                 break;
             case 'i18n_lines':
@@ -356,7 +377,7 @@ function form_parse(array $fields, array $data, array $post, array &$errors): ar
                     }
                     if ($lines) $v[$l] = $lines;
                 }
-                if ($req && empty($v['az'])) $errors[$k] = 'Заполните хотя бы азербайджанский вариант (AZ).';
+                if ($req && empty($v['az'])) $errors[$k] = __('Заполните хотя бы азербайджанский вариант (AZ).');
                 if ($v) dset($data, $k, $v); else dunset($data, $k);
                 break;
             case 'colors':
@@ -371,7 +392,7 @@ function form_parse(array $fields, array $data, array $post, array &$errors): ar
                     $c = $clean($row['c'] ?? '', 20);
                     if (!$n) continue;
                     if (!preg_match('~^(#[0-9a-fA-F]{3,8}|[a-z]{3,20})$~', $c)) {
-                        $errors[$k] = 'Код цвета должен выглядеть как #1f1f22.';
+                        $errors[$k] = __('Код цвета должен выглядеть как #1f1f22.');
                         $c = '#888888';
                     }
                     $extra = json_decode((string) ($row['x'] ?? ''), true);

@@ -148,6 +148,22 @@ html[data-lg=ru] .lang:not([data-lg=ru]),html[data-lg=az] .lang:not([data-lg=az]
 .count{display:block;margin-top:4px;color:var(--ink-2);font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
 .count.is-long{color:#9A5B00}
 
+/* язык админ-панели: RU / AZ / EN в верхней строке и на странице входа (у полей форм свой переключатель — .lgs) */
+.uis{display:inline-flex;align-items:center;gap:2px;min-height:46px;padding:0 5px 0 10px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--white);color:var(--ink-2)}
+.uis .ic{width:19px;height:19px;margin-right:4px}
+.uis a{display:grid;place-items:center;min-width:40px;height:34px;padding:0 8px;border-radius:7px;font-size:13.5px;font-weight:700;letter-spacing:.04em;color:var(--ink-2);text-decoration:none}
+.uis a:hover{background:var(--paper);color:var(--ink)}
+.uis a[aria-current]{background:var(--accent-l);color:var(--accent-d)}
+.bare .card{position:relative}
+.bare .uis{position:absolute;top:24px;right:22px;min-height:40px}
+.bare .uis a{height:30px}
+@media (max-width:700px){
+  .uis{padding:0 4px}
+  .uis .ic{display:none}
+  .uis a{min-width:34px;padding:0 6px}
+  .bare .uis .ic{display:block}
+}
+
 /* раздел «Безопасность»: ключи капчи, шаги и список защиты — одной колонкой */
 .sec{max-width:900px}
 .main:has(.sec)>.flash{max-width:900px}
