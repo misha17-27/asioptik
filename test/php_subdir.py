@@ -113,6 +113,16 @@ def unreadable():
     return out
 
 
+def main_site_files():
+    """Отпечаток «основного сайта» домена: все его файлы и папки вне папки Asioptik — путь, права и содержимое."""
+    out = {}
+    for p in sorted(SITE.parent.rglob('*')):
+        rel = p.relative_to(SITE.parent).as_posix()
+        if rel == SITE.name or rel.startswith(SITE.name + '/'): continue
+        out[rel] = (oct(stat.S_IMODE(p.stat().st_mode)), hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else 'dir')
+    return out
+
+
 def page_const(html, name):
     m = re.search(r'const ' + name + r' = (\{.*?\}|\[.*?\]);\n', html, re.S)
     return json.loads(m.group(1)) if m else None
@@ -122,6 +132,8 @@ def page_const(html, name):
 print('--- основной сайт и пустая подпапка')
 if (SITE / 'storage/config.php').exists():
     sys.exit('Стенд уже установлен: поднимите его заново — sh test/serve_sub.sh')
+MAIN_BEFORE = main_site_files()
+check('the main site of the domain has its own files next to the folder', {'index.php', '.htaccess', 'admin', 'admin/index.php', 'assets', 'assets/main.css'} <= set(MAIN_BEFORE), sorted(MAIN_BEFORE))
 check('site files belong to one user, the web server runs as another', (SITE / 'index.php').stat().st_uid != (SITE / 'storage').stat().st_uid, ((SITE / 'index.php').stat().st_uid, (SITE / 'storage').stat().st_uid))
 check('every unpacked file can be read by the web server', not unreadable(), unreadable()[:4])
 s, h, t = req(SUB, 'GET', '/'); check('main site answers at the domain root', s == 200 and 'MAIN SITE' in t and is_main_site(h))
@@ -537,21 +549,46 @@ import shutil, tempfile, yaml
 HOSTING = '/home/mguliyev/public_html/asioptik'
 yml_text = (pathlib.Path(ROOT) / '.cpanel.yml').read_text(encoding='utf-8')
 tasks = yaml.safe_load(yml_text)['deployment']['tasks']
-check('.cpanel.yml is valid: plain ASCII, a list of shell commands', yml_text.isascii() and yml_text.startswith('---\n') and len(tasks) >= 4 and all(isinstance(x, str) for x in tasks), tasks[:1])
-check('the first task names the site folder on the hosting', tasks[0] == f'export DEPLOYPATH={HOSTING}' and sum(HOSTING in x for x in tasks) == 1, tasks[0])
-check('only the contents of site/ are copied, with no wildcard', tasks.count('/bin/cp -R site/. $DEPLOYPATH/') == 1 and not any('*' in x for x in tasks) and sum('/bin/cp' in x for x in tasks) == 1)
+check('.cpanel.yml is valid: plain ASCII, a list of shell commands', yml_text.isascii() and yml_text.startswith('---\n') and all(isinstance(x, str) for x in tasks), tasks[:1])
+check('the tasks: name the site folder on the hosting, then call the deploy script', tasks == [f'export DEPLOYPATH={HOSTING}', '/bin/sh cpanel-deploy.sh $DEPLOYPATH'], tasks)
+script_text = (pathlib.Path(ROOT) / 'cpanel-deploy.sh').read_text(encoding='utf-8')
+code = re.sub(r'(?m)^\s*#.*$', '', script_text)      # сам скрипт без пояснений
+check('the deploy script copies only site/ and deletes only the installer', re.findall(r'(?m)^\s*cp .*$', code) == ['cp -R "$SRC/." "$DEST/"'] and re.findall(r'\brm [^;\n]*', code) == ['rm -f "$DEST/install.php"']
+      and not re.search(r'\b(mv|rmdir|find|rsync|unlink|truncate|dd)\b', code), (re.findall(r'(?m)^\s*cp .*$', code), re.findall(r'\brm [^;\n]*', code)))
 work = pathlib.Path(tempfile.mkdtemp(prefix='deploy-', dir='/tmp/asioptik-sub'))
 subprocess.run(['rsync', '-a', '--exclude=/storage/config.php', '--exclude=/storage/*.sqlite', '--exclude=/storage/sessions/', '--exclude=/storage/cache/*', '--exclude=/storage/logs/*', '--exclude=/uploads/*/',
                 f'{ROOT}/site/', str(work / 'site') + '/'], check=True)
-shutil.copy(pathlib.Path(ROOT) / '.cpanel.yml', work / '.cpanel.yml')
+for f in ('.cpanel.yml', 'cpanel-deploy.sh'): shutil.copy(pathlib.Path(ROOT) / f, work / f)
 (work / 'README.md').write_text('repository file that must never reach the web folder\n')
 (work / 'site/assets/css/added-later.css').write_text('/* a file added by a later commit */\n')
 (work / 'site/app/added').mkdir(); (work / 'site/app/added/later.php').write_text('<?php // added by a later commit\n')
 if not (SITE / 'storage/config.php').exists(): sys.exit('выкладка проверяется на установленном сайте')
+
+
+def deploy(dest, umask=0o077):
+    # задачи выполняются как в cPanel: в папке репозитория, одной оболочкой; путь с хостинга заменён папкой стенда
+    return subprocess.run(['bash', '-e', '-c', '\n'.join(tasks).replace(HOSTING, str(dest))], cwd=work, capture_output=True, text=True, preexec_fn=lambda: os.umask(umask))
+
+
+# главное опасение: в задачах по ошибке указана папка основного сайта домена
+main_now = main_site_files()
+r = deploy(SITE.parent)
+check('deploying into the folder of the main site is refused', r.returncode != 0 and 'лежит другой сайт' in r.stderr and 'ничего не изменено' in r.stderr, (r.returncode, r.stderr[:160]))
+check('… and the main site is left exactly as it was', main_site_files() == main_now and not (SITE.parent / 'app').exists() and not (SITE.parent / 'storage').exists())
+s, h, t = req(SUB, 'GET', '/'); check('… it still opens', s == 200 and 'MAIN SITE' in t)
+r = subprocess.run(['sh', str(work / 'cpanel-deploy.sh')], cwd=work, capture_output=True, text=True)
+check('no folder given: refused', r.returncode != 0 and 'не указана папка' in r.stderr, r.stderr[:120])
+r = subprocess.run(['sh', str(work / 'cpanel-deploy.sh'), 'public_html/asioptik'], cwd=work, capture_output=True, text=True)
+check('a relative folder: refused, nothing created', r.returncode != 0 and 'полным путём' in r.stderr and not (work / 'public_html').exists(), r.stderr[:120])
+fresh = work / 'empty-web-folder'
+r = deploy(fresh)
+check('a new empty folder: the site is copied there with the installer', r.returncode == 0 and (fresh / 'index.php').is_file() and (fresh / 'install.php').is_file() and (fresh / '.htaccess').is_file() and (fresh / 'admin/.htaccess').is_file(), r.stderr[:160])
+
+# выкладка в папку работающего сайта
 before = (hashlib.sha256((SITE / 'storage/config.php').read_bytes()).hexdigest(), sql('SELECT COUNT(*) FROM ao_orders'), sql('SELECT COUNT(*) FROM ao_items'), (SITE / stored).is_file())
 (SITE / 'install.php').write_text('<?php // установщик, случайно оставшийся на работающем сайте\n')
-r = subprocess.run(['bash', '-e', '-c', '\n'.join(tasks).replace(HOSTING, str(SITE))], cwd=work, capture_output=True, text=True, preexec_fn=lambda: os.umask(0o077))
-check('all tasks run without errors', r.returncode == 0, (r.stderr or r.stdout)[:300])
+r = deploy(SITE)
+check('deployment into the site folder runs without errors', r.returncode == 0 and 'Сайт выложен' in r.stdout, (r.stderr or r.stdout)[:300])
 check('after deployment the web server can read every file, new ones included', not unreadable() and (SITE / 'assets/css/added-later.css').is_file() and (SITE / 'app/added/later.php').is_file(), unreadable()[:4])
 after = (hashlib.sha256((SITE / 'storage/config.php').read_bytes()).hexdigest(), sql('SELECT COUNT(*) FROM ao_orders'), sql('SELECT COUNT(*) FROM ao_items'), (SITE / stored).is_file())
 check('settings, orders, catalog and uploaded photo are untouched', after == before, (before, after))
@@ -559,15 +596,19 @@ check('the installer does not stay on a working site', not (SITE / 'install.php'
 same = [f for f in ['.htaccess', '.user.ini', 'index.php', 'admin/.htaccess', 'admin/index.php', 'app/core/bootstrap.php', 'app/site/site.php', 'assets/js/app.js', 'assets/css/app.css', 'storage/.htaccess', 'uploads/.htaccess']
         if (SITE / f).read_bytes() != (work / 'site' / f).read_bytes()]
 check('files on the site are the files from the repository', not same, same)
-check('nothing but the site got into the web folder', not any((SITE / n).exists() for n in ['.git', '.cpanel.yml', 'README.md', 'site', 'test', 'src']))
+check('nothing but the site got into the web folder', not any((SITE / n).exists() for n in ['.git', '.cpanel.yml', 'cpanel-deploy.sh', 'README.md', 'site', 'test', 'src']))
+check('the main site of the domain is untouched by the deployment', main_site_files() == main_now)
 time.sleep(3.2)      # PHP перечитывает заменённые файлы не сразу
 s, h, t = req(SUB, 'GET', PRE + '/')
 check('site opens after deployment', s == 200 and csp(h) == [CSP['site']] and len(page_const(t, 'PRODUCTS')) > 20, s)
 for a in ['/assets/js/app.js', '/assets/css/added-later.css', '/favicon.ico']:
     s, h, t = req(SUB, 'GET', PRE + a); check(f'after deployment {a} is served', s == 200, s)
 s, h, t = req(SUB, 'GET', PRE + '/admin/?p=login'); check('login page opens after deployment', s == 200 and 'name="password"' in t and csp(h) == [CSP['admin']], s)
-for a in ['/storage/config.php', '/app/added/later.php', '/install.php', '/.cpanel.yml', '/README.md']:
-    s, h, t = req(SUB, 'GET', PRE + a); check(f'after deployment {a} stays closed', s in (302, 403) and 'added by a later commit' not in t and 'DEPLOYPATH' not in t, s)
+for a in ['/storage/config.php', '/app/added/later.php', '/install.php', '/.cpanel.yml', '/cpanel-deploy.sh', '/README.md']:
+    s, h, t = req(SUB, 'GET', PRE + a); check(f'after deployment {a} stays closed', s in (302, 403) and 'added by a later commit' not in t and 'DEPLOYPATH' not in t and 'set -eu' not in t, s)
+
+check('after everything, the main site of the domain is byte for byte what it was', main_site_files() == MAIN_BEFORE, [k for k in set(MAIN_BEFORE) | set(main_site_files()) if MAIN_BEFORE.get(k) != main_site_files().get(k)][:5])
+s, h, t = req(SUB, 'GET', '/'); check('… and it answers as before', s == 200 and 'MAIN SITE' in t and len(csp(h)) == 1 and MAIN_CSP in csp(h)[0])
 
 log = SITE / 'storage/logs/php-errors.log'
 check('no PHP errors in the log', not log.exists() or log.read_text().strip() == '', log.read_text()[-300:] if log.exists() else '')
