@@ -58,6 +58,7 @@ async def main():
             await pg.goto(B + '/admin/?p=orders&q=локальная'); print('orders search:', await pg.locator('.table tbody tr').count(), end=' | ')
             await pg.goto(B + '/admin/?p=clients'); print('clients:', [' '.join(x.split())[:60] for x in await pg.locator('.table tbody tr').all_inner_texts()], end=' | ')
             await pg.goto(B + '/admin/?p=pages'); print('pages:', await pg.locator('.table tbody tr').count())
+            await pg.goto(B + '/admin/?p=security'); print('security:', await pg.locator('.card-side .st').inner_text(), '| protected items:', await pg.locator('.sec-list li').count(), '| local hint:', await pg.locator('.sec-local').count())
             await pg.goto(B + '/admin/?p=page&id=home'); await pg.fill('#f-t-hero-title--ru', 'Локальная проверка надписи'); await pg.fill('#f-seo-title--ru', 'Локальный заголовок для поиска')
             await pg.locator('.actions .btn').click(); await pg.wait_for_load_state(); print('page texts:', await pg.locator('.flash').first.inner_text(), end=' | ')
             await pg.goto(B + '/?lang=ru'); await pg.wait_for_timeout(1500); print('on site:', await pg.inner_text('h1'), '|', await pg.title())

@@ -33,7 +33,7 @@ const SITE_PAGES = [
     'contacts' => ['title' => 'Контакты', 'path' => 'contacts', 'seo' => true, 'blocks' => ['Надписи страницы и форма' => ['ct']], 'more' => [['doc:config', 'Телефон, адрес, часы работы']]],
     'common' => ['title' => 'Общие надписи', 'path' => null, 'seo' => false, 'blocks' => [
         'Меню и подвал' => ['nav', 'lang', 'pg', 'ft', 'footer', 'wa', 'toast', 'sb'],
-        'Подсказки и ошибки в формах' => ['e', 'added', 'addedSvc', 'close'],
+        'Подсказки и ошибки в формах' => ['e', 'added', 'addedSvc', 'close', 'cap'],
         'Текст сообщения в WhatsApp' => ['m', 'ml', 'rxs'],
     ], 'more' => []],
 ];

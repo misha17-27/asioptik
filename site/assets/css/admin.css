@@ -108,7 +108,7 @@ input.mid{width:min(100%,320px)}
 .filter select,.filter input{width:auto;min-width:180px}
 .filter input[type=search],.filter input[type=text]{min-width:min(300px,100%)}
 .check{display:flex;align-items:flex-start;gap:10px;font-size:15.5px;cursor:pointer}
-.check input{width:18px;height:18px;margin:3px 0 0;accent-color:var(--accent)}
+.check input{flex:none;width:18px;height:18px;margin:3px 0 0;accent-color:var(--accent)}
 .checks{display:flex;flex-wrap:wrap;gap:8px 22px}
 .langs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .lang label{display:block;margin-bottom:3px;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
@@ -147,6 +147,31 @@ html[data-lg=ru] .lang:not([data-lg=ru]),html[data-lg=az] .lang:not([data-lg=az]
 .card-pad{padding-bottom:22px}
 .count{display:block;margin-top:4px;color:var(--ink-2);font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
 .count.is-long{color:#9A5B00}
+
+/* раздел «Безопасность»: ключи капчи, шаги и список защиты — одной колонкой */
+.sec{max-width:900px}
+.main:has(.sec)>.flash{max-width:900px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px}
+.sec-form{padding-bottom:22px}
+.sec-form .actions{margin-top:20px}
+.sec-state{font-weight:600;color:#135A3C}
+.sec-local{margin:0 0 4px}
+.sec-check{margin:0 clamp(16px,2vw,26px) 24px;padding:20px;border:1px solid #F3C9BB;border-radius:var(--r);background:#FFF8F5}
+.sec-check .block{margin-top:0}
+.sec-check .hint-block{margin:0 0 14px}
+.cap{max-width:420px;min-height:65px;margin:0 0 16px}
+.steps{display:grid;gap:10px;margin:0;padding:20px clamp(16px,2vw,26px) 4px calc(clamp(16px,2vw,26px) + 22px);font-size:15.5px}
+.steps li{padding-left:4px}
+.steps li::marker{font-weight:700;color:var(--hot-d)}
+.sec-foot{margin:16px clamp(16px,2vw,26px) 20px;padding-top:14px;border-top:1px solid var(--line)}
+.sec-list{display:grid;gap:16px;margin:0;padding:22px clamp(16px,2vw,26px);list-style:none}
+.sec-list li{position:relative;padding-left:32px}
+.sec-list li::before{content:"";position:absolute;top:2px;left:0;box-sizing:border-box;width:18px;height:18px;border:2.5px solid var(--green);border-radius:50%;background:#E2F4EA}
+.sec-list .warn::before{border-color:#D9822B;background:#FDF0E1}
+.sec-list .bad::before{border-color:var(--danger);background:#FBE9E7}
+.sec-list b{display:block;font-size:15.5px;font-weight:700}
+.sec-list .bad b{color:var(--danger)}
+.sec-list span{display:block;margin-top:3px;font-size:14px;color:var(--ink-2)}
 
 /* таблицы */
 .table-wrap{position:relative;overflow-x:auto}

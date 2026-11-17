@@ -49,9 +49,12 @@ function admin_run(): void
     header('Referrer-Policy: same-origin');
     header('Cache-Control: no-store');
     header('X-Robots-Tag: noindex, nofollow');
-    header("Content-Security-Policy: default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
-    admin_session();
     $p = (string) ($_GET['p'] ?? '');
+    // Адрес Cloudflare разрешён только там, где стоит проверка «не робот»: на странице входа и в разделе «Безопасность»
+    $cf = ($p === 'login' && captcha_on('login')) || ($p === 'security' && captcha_cfg()['site'] !== '') ? ' ' . TURNSTILE_ORIGIN : '';
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'$cf;"
+        . ($cf !== '' ? " frame-src$cf; connect-src 'self'$cf;" : '') . " frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
+    admin_session();
     if ($p === 'login') admin_login();
     if (empty($_SESSION['uid'])) redirect(admin_url('login'));
     if (time() - (int) ($_SESSION['seen'] ?? 0) > 8 * 3600) {   // восемь часов без действий — входим заново
@@ -73,6 +76,7 @@ function admin_run(): void
         case 'delete': admin_delete(); break;
         case 'doc': admin_doc(); break;
         case 'banners': admin_banners(); break;
+        case 'security': admin_security(); break;
         case 'password': admin_password(); break;
         case 'logout': admin_logout(); break;
     }
@@ -85,6 +89,7 @@ function admin_login(): void
     if (!empty($_SESSION['uid'])) redirect(admin_url());
     $error = '';
     $login = '';
+    $cap = captcha_on('login');   // проверка «не робот» от Cloudflare, если она включена в разделе «Безопасность»
     if (is_post()) {
         csrf_check();
         $ip = client_ip_hash();
@@ -94,6 +99,9 @@ function admin_login(): void
         $pass = (string) ($_POST['password'] ?? '');
         if ($tries >= 5) {
             $error = 'Слишком много попыток входа. Подождите 15 минут и попробуйте снова.';
+        } elseif ($cap && !captcha_pass(is_string($_POST['cf-turnstile-response'] ?? null) ? $_POST['cf-turnstile-response'] : '')) {
+            // пароль не проверяем и попытку не считаем: человек мог просто не дождаться отметки
+            $error = 'Подтвердите, что вы не робот: дождитесь зелёной отметки под паролем и нажмите «Войти» ещё раз.';
         } else {
             $u = q('SELECT * FROM ao_users WHERE login = ?', [$login])->fetch();
             // проверяем пароль и для несуществующего логина, чтобы по времени ответа нельзя было подобрать логин
@@ -116,6 +124,7 @@ function admin_login(): void
         . '<form method="post" action="' . e(admin_url('login')) . '">' . csrf_field()
         . '<div class="field"><label class="lbl" for="login">Логин</label><input id="login" name="login" type="text" value="' . e($login) . '" autocomplete="username" required autofocus></div>'
         . '<div class="field"><label class="lbl" for="password">Пароль</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>'
+        . ($cap ? captcha_widget() : '')
         . '<button type="submit" class="btn">Войти</button></form>');
 }
 

@@ -206,6 +206,8 @@ function site_data_build(): array
         // надписи и заголовки для поисковиков, изменённые в разделе «Страницы» (пусто — берутся встроенные)
         'TEXTS' => setting('texts', new stdClass()) ?: new stdClass(),
         'SEO' => setting('seo', new stdClass()) ?: new stdClass(),
+        // публичный ключ проверки «не робот», если она включена для форм сайта (раздел «Безопасность»)
+        '_cap' => captcha_ready('forms') ? captcha_cfg()['site'] : '',
     ];
 }
 

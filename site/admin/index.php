@@ -6,5 +6,6 @@ require APP . '/site/site.php';
 require APP . '/admin/schema.php';
 require APP . '/admin/views.php';
 require APP . '/admin/pages.php';
+require APP . '/admin/security.php';
 require APP . '/admin/admin.php';
 admin_run();

@@ -176,6 +176,9 @@ function site_run(): void
     $data['CONFIG']['basePath'] = $base;
     $data['CONFIG']['api'] = $base . 'api/order';
     $data['CONFIG']['apiToken'] = api_token();
+    // проверка «не робот» для форм: страница получает только публичный ключ
+    $cap = captcha_allowed() && is_string($data['_cap'] ?? null) ? $data['_cap'] : '';
+    if ($cap !== '') $data['CONFIG']['captchaKey'] = $cap;
     $data['CONFIG']['siteUrl'] = $site . '/';
     $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP;
     $js = '';
@@ -201,22 +204,24 @@ function site_run(): void
     ]);
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: no-cache');
-    site_headers();
+    site_headers($cap !== '');
     echo $html;
     exit;
 }
 
-/** Заголовки безопасности для страниц сайта. */
-function site_headers(): void
+/** Заголовки безопасности для страниц сайта. $captcha — на странице работает проверка «не робот» от Cloudflare. */
+function site_headers(bool $captcha = false): void
 {
+    $cf = $captcha ? ' ' . TURNSTILE_ORIGIN : '';
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
-    // Скрипты и запросы — только со своего сайта; шрифты Google, карта Google и картинки по https разрешены
-    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        . "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; frame-src https://www.google.com https://maps.google.com; "
-        . "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
+    // Скрипты и запросы — только со своего сайта; шрифты Google, карта Google и картинки по https разрешены.
+    // Адрес Cloudflare добавляется, только когда в разделе «Безопасность» включена проверка «не робот» для форм.
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'$cf; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        . "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; frame-src https://www.google.com https://maps.google.com$cf; "
+        . "connect-src 'self'$cf; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
     if (is_https()) header('Strict-Transport-Security: max-age=15552000');
 }
 
@@ -249,6 +254,8 @@ function api_order(): void
     $ip = client_ip_hash();
     $recent = q('SELECT COUNT(*) AS n FROM ao_orders WHERE ip_hash = ? AND created_at > ?', [$ip, date('Y-m-d H:i:s', time() - 3600)])->fetch();
     if ((int) $recent['n'] >= 20) json_out(['ok' => false, 'error' => 'rate'], 429);
+    // Проверка «не робот»: без неё запись не сохраняется (в WhatsApp заказ покупателя уходит в любом случае)
+    if (captcha_on('forms') && !captcha_pass(is_string($in['captcha'] ?? null) ? $in['captcha'] : '')) json_out(['ok' => false, 'error' => 'captcha'], 403);
 
     $number = $clean($in['number'] ?? '', 24);
     if (!preg_match('/^[A-Z]{1,3}-\d{2,6}-\d{2,8}$/', $number)) $number = ($kind === 'message' ? 'M' : ($kind === 'repair' ? 'R' : 'OP')) . '-' . date('dm') . '-' . random_int(1000, 9999);

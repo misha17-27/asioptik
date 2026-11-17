@@ -49,6 +49,7 @@ function icon(string $name): string
         'tool' => '<path d="M16.500 5.500 13.800 8.200l-2-2 2.700-2.700a4 4 0 0 0-5.100 5L3.500 14.400a1.500 1.500 0 0 0 2.100 2.100l5.900-5.900a4 4 0 0 0 5-5.100z"/>',
         'gear' => '<circle cx="10" cy="10" r="2.500"/><path d="M10 2.500v2.300M10 15.200v2.300M2.500 10h2.300M15.200 10h2.300M4.700 4.700l1.600 1.600M13.700 13.700l1.600 1.600M4.700 15.300l1.600-1.600M13.700 6.300l1.600-1.600"/>',
         'key' => '<circle cx="7" cy="13" r="3.500"/><path d="m9.500 10.500 7-7M13.500 6.500l2 2M11.500 8.500l1.500 1.500"/>',
+        'shield' => '<path d="M10 2.500 16 5v4.500c0 3.700-2.500 6.600-6 8-3.500-1.400-6-4.300-6-8V5z"/><path d="m7.300 10 2 2 3.500-3.800"/>',
         'out' => '<path d="M8 3H4v14h4"/><path d="M12.500 6.500 16 10l-3.500 3.500M16 10H7.500"/>',
         'ext' => '<path d="M11.500 3H17v5.500M17 3l-8 8"/><path d="M14.500 11.500V17H3V5.500h5.500"/>',
         'edit' => '<path d="m3 17 .800-3.700 9.700-9.700a1.400 1.400 0 0 1 2 0l.900.900a1.400 1.400 0 0 1 0 2l-9.700 9.700z"/>',
@@ -124,7 +125,7 @@ function admin_page(string $title, string $body, string $current = '', string $a
         'Контент' => [['pages', 'Страницы', 'page', null], ['list:post', 'Блог', 'blog', $c['post'] ?? null], ['banners', 'Баннеры и фото', 'image', null]],
         'Каталог' => [['list:product', 'Товары', 'box', $c['product'] ?? null], ['list:category', 'Разделы', 'grid', $c['category'] ?? null],
             ['list:brand', 'Бренды', 'tag', $c['brand'] ?? null], ['list:service', 'Услуги мастерской', 'tool', $c['service'] ?? null]],
-        'Настройки' => [['doc:config', 'Настройки сайта', 'gear', null], ['password', 'Пароль', 'key', null]],
+        'Настройки' => [['doc:config', 'Настройки сайта', 'gear', null], ['security', 'Безопасность', 'shield', null], ['password', 'Пароль', 'key', null]],
     ];
     $links = '';
     foreach ($groups as $group => $items) {

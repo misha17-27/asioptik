@@ -158,3 +158,4 @@ function dunset(array &$a, string $key): void
 
 require APP . '/core/db.php';
 require APP . '/core/store.php';
+require APP . '/core/captcha.php';

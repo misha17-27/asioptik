@@ -735,7 +735,7 @@ const THEME = (function () {
       'ok.orderText': '{id} sifarişinin mətni ilə WhatsApp-ı açdıq. Çatda «Göndər» düyməsini basın, menecer sifarişi və çatdırılma vaxtını təsdiqləyəcək.',
       'ok.repairTitle': 'Müraciəti göndərmək qalıb',
       'ok.repairText': '{id} müraciətinin mətni ilə WhatsApp-ı açdıq. Çatda «Göndər» düyməsini basın, usta təmirin müddəti və qiyməti ilə cavab verəcək.',
-      'ok.again': 'WhatsApp-ı yenidən açın', 'ok.back': 'Sayta qayıdın', 'toast.cart': 'Səbəti açın', 'wa.fab': 'Bizə WhatsApp-da yazın',
+      'ok.again': 'WhatsApp-ı yenidən açın', 'ok.back': 'Sayta qayıdın', 'toast.cart': 'Səbəti açın', 'cap.note': 'Robot olmadığınızı təsdiqləyin: müraciətiniz bizdə qeydə alınacaq', 'wa.fab': 'Bizə WhatsApp-da yazın',
       'rp.title': 'Təmir üçün müraciət', 'rp.what': 'Nə etmək lazımdır', 'rp.desc': 'Nasazlığı təsvir edin', 'rp.descPh': 'Məsələn: metal çərçivənin qolu qırılıb',
       'rp.how': 'Eynəyi necə təhvil verəcəksiniz', 'rp.salon': 'Salona gətirəcəyəm', 'rp.courier': 'Kuryer götürsün',
       'rp.address': 'Eynəyi haradan götürək', 'rp.addressPh': 'Küçə, ev, mənzil', 'rp.date': 'Uyğun tarix',
@@ -796,7 +796,7 @@ const THEME = (function () {
       'ok.orderText': 'Мы открыли WhatsApp с текстом заказа {id}. Нажмите в чате «Отправить», и менеджер подтвердит заказ и время доставки.',
       'ok.repairTitle': 'Осталось отправить заявку',
       'ok.repairText': 'Мы открыли WhatsApp с текстом заявки {id}. Нажмите в чате «Отправить», и мастер ответит со сроком и стоимостью ремонта.',
-      'ok.again': 'Открыть WhatsApp ещё раз', 'ok.back': 'Вернуться на сайт', 'toast.cart': 'Открыть корзину', 'wa.fab': 'Написать нам в WhatsApp',
+      'ok.again': 'Открыть WhatsApp ещё раз', 'ok.back': 'Вернуться на сайт', 'toast.cart': 'Открыть корзину', 'cap.note': 'Подтвердите, что вы не робот: так ваше обращение сохранится у нас', 'wa.fab': 'Написать нам в WhatsApp',
       'rp.title': 'Заявка на ремонт', 'rp.what': 'Что нужно сделать', 'rp.desc': 'Опишите поломку', 'rp.descPh': 'Например: отломился заушник у металлической оправы',
       'rp.how': 'Как передадите очки', 'rp.salon': 'Принесу в салон', 'rp.courier': 'Заберите курьером',
       'rp.address': 'Откуда забрать очки', 'rp.addressPh': 'Улица, дом, квартира', 'rp.date': 'Удобная дата',
@@ -857,7 +857,7 @@ const THEME = (function () {
       'ok.orderText': 'We’ve opened WhatsApp with order {id}. Press Send in the chat and our manager will confirm the order and delivery time.',
       'ok.repairTitle': 'Now send the request',
       'ok.repairText': 'We’ve opened WhatsApp with request {id}. Press Send in the chat and the technician will reply with the timing and price.',
-      'ok.again': 'Open WhatsApp again', 'ok.back': 'Back to the site', 'toast.cart': 'Open cart', 'wa.fab': 'Message us on WhatsApp',
+      'ok.again': 'Open WhatsApp again', 'ok.back': 'Back to the site', 'toast.cart': 'Open cart', 'cap.note': 'Please confirm you’re not a robot so we can save your request', 'wa.fab': 'Message us on WhatsApp',
       'rp.title': 'Repair request', 'rp.what': 'What needs doing', 'rp.desc': 'Describe the problem', 'rp.descPh': 'For example: the arm broke off a metal frame',
       'rp.how': 'How will you hand over your glasses', 'rp.salon': 'I’ll bring them in', 'rp.courier': 'Collect by courier',
       'rp.address': 'Where to collect the glasses', 'rp.addressPh': 'Street, building, flat', 'rp.date': 'Preferred date',
@@ -2446,10 +2446,82 @@ const THEME = (function () {
   // Отправка идёт в фоне и не мешает открыть WhatsApp.
   function sendToServer(kind, data) {
     if (!CONFIG.api || typeof fetch !== 'function') return;
-    try {
-      const body = JSON.stringify(Object.assign({ kind, lang, token: CONFIG.apiToken || '' }, data));
-      fetch(CONFIG.api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true, credentials: 'same-origin' }).catch(() => { /* сеть недоступна: заказ всё равно уйдёт в WhatsApp */ });
-    } catch (e) { /* ничего */ }
+    const base = Object.assign({ kind, lang, token: CONFIG.apiToken || '' }, data);
+    const post = captcha => {
+      try {
+        const body = JSON.stringify(captcha ? Object.assign(base, { captcha }) : base);
+        fetch(CONFIG.api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true, credentials: 'same-origin' }).catch(() => { /* сеть недоступна: заказ всё равно уйдёт в WhatsApp */ });
+      } catch (e) { /* ничего */ }
+    };
+    if (cap.key) capToken().then(post); else post('');
+  }
+
+  /* ---------- проверка «не робот» (Cloudflare Turnstile) ----------
+     Включается в админ-панели, раздел «Безопасность». Скрипт Cloudflare загружается, только когда посетитель начал
+     заполнять форму или открыл оформление заказа. Обычно проверка проходит сама и её не видно; если Cloudflare просит
+     поставить отметку, в углу экрана появляется небольшое окно. Заказ в WhatsApp уходит в любом случае. */
+  const cap = { key: String(CONFIG.captchaKey || ''), on: false, dead: false, id: null, token: '', at: 0, stale: false, wait: [] };
+  function capTake() {   // ответ одноразовый; следующий запрашивается, когда понадобится, а не сразу после отправки
+    const tok = cap.token;
+    cap.token = '';
+    cap.stale = true;
+    return tok;
+  }
+  function capWake() {   // нужен новый ответ: виджет проходит проверку ещё раз
+    if (!cap.stale || cap.id === null || !window.turnstile) return;
+    cap.stale = false;
+    try { window.turnstile.reset(cap.id); } catch (e) { /* ничего */ }
+  }
+  function capFeed() {
+    if (cap.token && cap.wait.length) cap.wait.shift()(capTake());
+    if (cap.wait.length) capWake();
+  }
+  function capFail() {   // проверка недоступна: отправки не ждут её дольше
+    cap.dead = true;
+    cap.wait.splice(0).forEach(give => give(''));
+  }
+  // Ответ проверки для одной отправки; пустая строка — получить его не удалось
+  function capToken() {
+    capStart();
+    return new Promise(done => {
+      if (cap.dead) return done('');
+      if (cap.token && Date.now() - cap.at < 280000) return done(capTake());
+      if (cap.token) capTake();   // ответ живёт пять минут: устаревший не отправляем
+      let fin = false;
+      const give = tok => { if (!fin) { fin = true; done(tok); } };
+      cap.wait.push(give);
+      setTimeout(() => { const i = cap.wait.indexOf(give); if (i >= 0) cap.wait.splice(i, 1); give(''); }, 90000);
+      capWake();
+    });
+  }
+  function capStart() {
+    if (!cap.key) return;
+    if (cap.on) return capWake();
+    cap.on = true;
+    const dock = document.createElement('div');
+    dock.className = 'cap-dock';
+    dock.innerHTML = `<p class="cap-note" data-i18n="cap.note">${esc(t('cap.note'))}</p><div id="capBox"></div>`;
+    document.body.appendChild(dock);
+    const show = on => dock.classList.toggle('is-on', on);
+    const s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    s.async = true;
+    s.onerror = capFail;
+    s.onload = () => {
+      try {
+        cap.id = window.turnstile.render('#capBox', {
+          sitekey: cap.key, appearance: 'interaction-only', 'refresh-expired': 'never', language: lang === 'az' ? 'auto' : lang,
+          callback: tok => { show(false); cap.token = String(tok || ''); cap.at = Date.now(); cap.stale = false; capFeed(); },
+          'expired-callback': () => { cap.token = ''; cap.stale = true; },
+          // ошибки с кодом 110… — неверный ключ или чужой домен: повтор не поможет
+          'error-callback': code => { cap.token = ''; show(false); if (/^110/.test(String(code))) capFail(); return true; },
+          'timeout-callback': () => show(false),
+          'before-interactive-callback': () => show(true),
+          'after-interactive-callback': () => show(false),
+        });
+      } catch (e) { capFail(); }
+    };
+    document.head.appendChild(s);
   }
   function waUrl(text) {
     const num = String(CONFIG.whatsapp || '').replace(/\D/g, '');
@@ -2509,6 +2581,7 @@ const THEME = (function () {
     prefill(f);
     toggleField(f, 'delivery', 'courier', '#coAddressField');
     renderCheckoutSummary();
+    if (!none) capStart();
   }
   function renderCheckoutSummary() {
     const f = $('#checkoutForm');
@@ -2928,6 +3001,7 @@ const THEME = (function () {
     bindNav();
     // Форма «Напишите нам» на странице контактов (страница перерисовывается, поэтому слушаем документ)
     document.addEventListener('submit', e => { if (e.target.id === 'contactForm') { e.preventDefault(); submitContact(e.target); } });
+    if (cap.key) document.addEventListener('focusin', e => { if (e.target.closest && e.target.closest('#checkoutForm, #repairForm, #contactForm')) capStart(); });
     document.addEventListener('input', e => {
       const fld = e.target.closest ? e.target.closest('#contactForm .field') : null;
       if (fld && fld.classList.contains('is-invalid')) clearFieldError(fld);
