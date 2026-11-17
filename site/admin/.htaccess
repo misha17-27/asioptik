@@ -1,0 +1,10 @@
+# Админ-панель: своя, более строгая политика и свои заголовки — что бы ни задавал для домена сайт уровнем выше.
+# Строки повторяют то, что отправляет PHP (app/admin/admin.php; политика записана в app/core/bootstrap.php).
+<IfModule mod_headers.c>
+Header always unset Content-Security-Policy
+Header set Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
+Header always unset X-Frame-Options
+Header set X-Frame-Options "DENY"
+Header always unset Referrer-Policy
+Header set Referrer-Policy "same-origin"
+</IfModule>

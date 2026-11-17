@@ -27,6 +27,27 @@ set_exception_handler(function (Throwable $e): void {
     exit;
 });
 
+/*
+ * Политика Content-Security-Policy: что странице разрешено загружать и выполнять. Три набора — для страниц сайта,
+ * для админ-панели и для установщика.
+ *   Сайт: свои скрипты и встроенные данные страницы, шрифты Google, карта Google, картинки по https.
+ *   Админ-панель: только свои скрипты, без встроенных.
+ *   В обоих разрешён адрес Cloudflare — для проверки «не робот» (раздел «Безопасность»).
+ * Те же строки стоят в .htaccess (в корне сайта и в admin/). Когда сайт лежит в папке другого сайта, тот может задавать
+ * свою политику для всего домена, и она заменяет заголовок, отправленный отсюда: страница остаётся без данных, шрифтов
+ * и фото. Строка в .htaccess выполняется последней и возвращает политику этого сайта. Меняете политику здесь —
+ * поменяйте и в .htaccess: совпадение проверяет test/php_security.py.
+ */
+const CSP_SITE = "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; "
+    . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; "
+    . "img-src 'self' data: blob: https:; frame-src https://www.google.com https://maps.google.com https://challenges.cloudflare.com; "
+    . "connect-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'";
+const CSP_ADMIN = "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; "
+    . "script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; "
+    . "connect-src 'self' https://challenges.cloudflare.com; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
+const CSP_INSTALL = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'none'; "
+    . "frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
+
 /** Настройки из storage/config.php (их записывает установщик); null, пока сайт не установлен. */
 function config(): ?array
 {

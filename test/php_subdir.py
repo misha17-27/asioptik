@@ -1,14 +1,16 @@
 """Сайт во временной подпапке чужого сайта (как mguliyev.com/asioptik на хостинге с cPanel) и переезд на свой домен.
 
-Стенд — sh test/serve_sub.sh: «основной сайт» на http://127.0.0.1:8772/ со своими .htaccess, admin/ и assets/,
-Asioptik чистой копией в его подпапке /asioptik/; та же папка отдаётся корнем отдельного сайта на http://127.0.0.1:8773/.
+Стенд — sh test/serve_sub.sh: «основной сайт» на http://127.0.0.1:8772/ со своими .htaccess, admin/ и assets/
+и со своими заголовками безопасности для всего домена (такими же, как на настоящем хостинге: строгая политика
+Content-Security-Policy без встроенных скриптов, чужих шрифтов и картинок). Asioptik лежит чистой копией в его
+подпапке /asioptik/; та же папка отдаётся корнем отдельного сайта на http://127.0.0.1:8773/.
 Проверка сама ставит сайт через install.php, поэтому перед каждым запуском стенд поднимается заново:
 
     sh test/serve.sh && sh test/serve_sub.sh && python3 test/php_subdir.py
 
 Что проверяется: ни один адрес не выходит из подпапки (страницы, картинки, заказы, админ-панель, установщик),
-основной сайт не задет, временный адрес закрыт от поисковиков, а после переезда на свой домен те же файлы и та же
-база работают без правок.
+основной сайт не задет и сам не ломает Asioptik своими заголовками, временный адрес закрыт от поисковиков,
+а после переезда на свой домен те же файлы и та же база работают без правок.
 """
 import asyncio, http.client, json, pathlib, re, subprocess, sys, time, urllib.parse
 from playwright.async_api import async_playwright
@@ -68,6 +70,12 @@ def req(port, method, path, body=None, headers=None, host=TEMP, jar=None):
 
 
 def one(h, name): return (h.get(name) or [''])[0]
+def csp(h): return h.get('content-security-policy', [])      # все политики ответа: должна быть одна и своя
+CSP = json.loads(subprocess.run(['php', '-r', f'require "{ROOT}/site/app/core/bootstrap.php"; echo json_encode(["site" => CSP_SITE, "admin" => CSP_ADMIN, "install" => CSP_INSTALL]);'], capture_output=True, text=True).stdout)
+MAIN_CSP = "script-src 'self' https://challenges.cloudflare.com;"      # примета политики основного сайта: встроенные скрипты запрещены
+MAIN_HT = SITE.parent / '.htaccess'
+# Шрифты Google на стенде подменены местными файлами с другого адреса (run.setup) — политика сайта их законно не пускает
+def blocked_by_csp(msgs): return [x for x in msgs if 'Content Security Policy' in x and '/node_modules/@fontsource/' not in x]
 def is_main_site(h): return 'x-main-site' in h          # ответил «основной сайт», а не Asioptik
 URL_ATTR = re.compile(r'(?:href|src|action|poster|data-src)="([^"]*)"')
 
@@ -97,6 +105,7 @@ print('--- основной сайт и пустая подпапка')
 if (SITE / 'storage/config.php').exists():
     sys.exit('Стенд уже установлен: поднимите его заново — sh test/serve_sub.sh')
 s, h, t = req(SUB, 'GET', '/'); check('main site answers at the domain root', s == 200 and 'MAIN SITE' in t and is_main_site(h))
+check('main site sets its own strict policy for the whole domain', len(csp(h)) == 1 and MAIN_CSP in csp(h)[0] and 'Header set Content-Security-Policy' in MAIN_HT.read_text(), csp(h))
 s, h, t = req(SUB, 'GET', '/admin/'); check('main site keeps its own /admin/', 'MAIN ADMIN' in t)
 s, h, t = req(SUB, 'GET', '/assets/main.css'); check('main site keeps its own /assets/', s == 200 and 'color:red' in t)
 s, h, t = req(SUB, 'GET', '/some/page'); check('main site handles its own unknown addresses', 'MAIN SITE' in t)
@@ -106,8 +115,9 @@ for p in ['/', '/catalog', '/admin/', '/product/f-milan']:
     check(f'before install {p} leads to the installer in the folder', s == 302 and one(h, 'location') == PRE + '/install.php' and not is_main_site(h), one(h, 'location'))
 s, h, t = req(SUB, 'GET', PRE + '/install.php')
 check('installer opens in the folder', s == 200 and 'Установка' in t and not is_main_site(h))
-check('installer takes its style and icon from the folder', f'href="{PRE}/assets/css/admin.css"' in t and f'rel="icon" href="{PRE}/favicon.ico"' in t and not outside(t, PRE), outside(t, PRE))
+check('installer takes its style and icon from the folder', f'href="{PRE}/assets/css/admin.css?v=' in t and f'rel="icon" href="{PRE}/favicon.ico"' in t and not outside(t, PRE), outside(t, PRE))
 check('installer on a real domain does not offer the file database', 'file_db' not in t)
+check('installer keeps its own policy, not the main site policy', csp(h) == [CSP['install']], csp(h))
 form = {'host': '127.0.0.1:3307', 'name': DB, 'user': 'aotest', 'pass': 'wrong-db-password', 'login': 'admin', 'password': PW, 'password2': PW}
 s, h, t = req(SUB, 'POST', PRE + '/install.php', form)
 check('wrong database password: nothing is installed', 'Готово' not in t and not (SITE / 'storage/config.php').exists() and (SITE / 'install.php').exists())
@@ -130,6 +140,10 @@ for p in PAGES:
     if p == '/': home = t
     bad = outside(t, PRE)
     check(f'page {p}', s == 200 and not is_main_site(h) and '<title>' in t and not bad, bad or s)
+for p, kind in [('/', 'site'), ('/catalog?lang=ru', 'site'), ('/product/f-milan', 'site'), ('/checkout', 'site')]:
+    s, h, t = req(SUB, 'GET', PRE + p)
+    check(f'page {p} carries the policy of this site, not of the main site', csp(h) == [CSP[kind]], [c[:80] for c in csp(h)])
+s, h, t = req(SUB, 'GET', '/'); check('the main site still has its own policy', len(csp(h)) == 1 and MAIN_CSP in csp(h)[0])
 cfg = page_const(home, 'CONFIG')
 check('page script knows its folder', cfg['basePath'] == PRE + '/' and cfg['api'] == PRE + '/api/order', (cfg['basePath'], cfg['api']))
 prods = page_const(home, 'PRODUCTS')
@@ -166,7 +180,7 @@ check('page address for search engines is the main one, not the temporary', cano
 s, h, t = req(SUB, 'GET', PRE + '/product/f-milan?lang=ru')
 check('product page on the temporary address is closed too', 'noindex' in one(h, 'x-robots-tag') and t.count('name="robots"') == 1 and f'href="https://{MAIN}/product/f-milan?lang=ru"' in t)
 s, h, t = req(SUB, 'GET', PRE + '/about', headers={'X-Forwarded-Proto': 'https'})
-check('no domain-wide https rule is set from a folder of another site', 'strict-transport-security' not in h, one(h, 'strict-transport-security'))
+check('this site adds no domain-wide https rule of its own from a folder of another site', h.get('strict-transport-security') == ['max-age=31536000; includeSubDomains'], h.get('strict-transport-security'))
 s, h, t = req(SUB, 'GET', PRE + '/about', host='evil.example')
 check('foreign Host header is not copied into the page', 'evil.example' not in t)
 s, h, t = req(SUB, 'GET', PRE + '/robots.txt')
@@ -199,6 +213,7 @@ check('session cookie is limited to the folder admin', jar.path('ao_admin') == P
 check('cookie is not sent to the main site admin or to the site pages', jar.header('/admin/') == '' and jar.header(PRE + '/') == '' and jar.header(PRE + '/admin/?p=login') != '')
 s, h, t = req(SUB, 'GET', PRE + '/admin/?p=login', jar=jar)
 check('login page: style, icon and links in the folder', s == 200 and f'rel="icon" href="{PRE}/favicon.ico"' in t and not outside(t, PRE), outside(t, PRE))
+check('login page carries the admin policy and headers, not the main site ones', csp(h) == [CSP['admin']] and h.get('x-frame-options') == ['DENY'] and h.get('referrer-policy') == ['same-origin'], (csp(h), h.get('x-frame-options'), h.get('referrer-policy')))
 csrf = re.search(r'name="csrf" value="([a-f0-9]+)"', t).group(1)
 s, h, t = req(SUB, 'POST', PRE + '/admin/?p=login', {'csrf': csrf, 'login': 'admin', 'password': PW}, jar=jar)
 check('login works in the folder', s == 302 and one(h, 'location') == PRE + '/admin/' and jar.path('ao_admin') == PRE + '/admin/', f'{s} {one(h, "location")}')
@@ -208,6 +223,7 @@ note_text = re.sub(r'<[^>]+>', '', note.group(1)) if note else ''
 check('overview explains the temporary address', bool(note) and f'{TEMP}{PRE}' in note_text and MAIN in note_text and 'Поисковики его не показывают' in note_text, note_text[:140])
 check('the note links to site settings', bool(note) and f'href="{PRE}/admin/?p=doc&amp;name=config"' in note.group(1))
 check('top bar «Сайт» opens the folder', f'<a class="btn btn-line" href="{PRE}/" target="_blank"' in t)
+check('admin pages carry the admin policy', csp(h) == [CSP['admin']], csp(h))
 menu = [u.replace('&amp;', '&') for u in re.findall(r'<a href="([^"]*)"', t[t.find('id="adm-nav"'):t.find('</nav>')])]
 check('menu links', len(menu) >= 12 and all(u.startswith(PRE + '/admin/') for u in menu), len(menu))
 seen, queue, crawled = set(), list(menu), 0
@@ -262,6 +278,8 @@ async def browser():
         await ctx.route('https://images.pexels.com/**', lambda r: r.abort())
         tail = lambda: pg.url.replace(ORIGIN, '')
         await pg.goto(B + '/?lang=ru'); await pg.wait_for_timeout(1500)
+        alive = await pg.evaluate("({data: typeof CONFIG, shop: typeof Shop, tiles: document.querySelectorAll('#cats .ctile').length, fonts: [...document.styleSheets].some(s => (s.href || '').includes('fonts.googleapis.com'))})")
+        check('page data and script run under the site policy', alive == {'data': 'object', 'shop': 'object', 'tiles': 5, 'fonts': True}, alive)
         nav = await pg.evaluate("[...document.querySelectorAll('#siteNav a[data-view]')].map(a => a.getAttribute('href'))")
         check('home in the browser, menu links in the folder', tail() == PRE + '/?lang=ru' and len(nav) >= 5 and all(u.startswith(PRE + '/') for u in nav), nav[:2])
         loose = await pg.evaluate("[...document.querySelectorAll('a[href], img[src], link[href], script[src]')].map(e => e.getAttribute('href') || e.getAttribute('src')).filter(u => u.startsWith('/') && !u.startsWith('//') && !u.startsWith('%s/'))" % PRE)
@@ -344,7 +362,9 @@ async def browser():
         check('admin: sign out returns to the folder login page', tail() == PRE + '/admin/?p=login', tail())
         check('no request left the folder for the main site', not leaks, leaks[:5])
         check('no failed requests', not bad, bad[:5])
-        errors = [x for x in errors if 'ERR_FAILED' not in x and 'font' not in x.lower()]
+        blocked = blocked_by_csp(errors)
+        check('nothing is blocked by a content security policy', not blocked, blocked[:2])
+        errors = [x for x in errors if 'ERR_FAILED' not in x and 'Content Security Policy' not in x]      # ERR_FAILED — временные фото с фотостока, на стенде они отключены
         check('no script errors', not errors, errors[:3])
         await ctx.close(); await b.close()
     return stored
@@ -362,6 +382,7 @@ check('page script: root addresses', cfg2['basePath'] == '/' and cfg2['api'] == 
 check('main address: open for search engines', 'x-robots-tag' not in h and 'name="robots"' not in t, one(h, 'x-robots-tag'))
 check('main address: page address for search engines', f'<link rel="canonical" href="https://{MAIN}/">' in t)
 check('main address over https: browser is told to always use https', 'max-age' in one(h, 'strict-transport-security'))
+check('own domain in a folder of the main site still gets the policy of this site', csp(h) == [CSP['site']], [c[:80] for c in csp(h)])
 for p in ['/catalog', '/product/f-milan', '/blog/care', '/about', '/contacts']:
     s, h, t = req(OWN, 'GET', p, host=MAIN, headers=LIVE)
     check(f'main address {p}', s == 200 and not stuck(t) and 'x-robots-tag' not in h, stuck(t) or s)
@@ -387,7 +408,7 @@ s, h, t = req(OWN, 'GET', '/admin/', host=MAIN, headers=LIVE, jar=jar2)
 check('admin at the new address', s == 302 and one(h, 'location') == '/admin/?p=login' and jar2.path('ao_admin') == '/admin/', f'{one(h, "location")} {jar2.path("ao_admin")}')
 s, h, t = req(OWN, 'GET', '/admin/?p=login', host=MAIN, headers=LIVE, jar=jar2)
 csrf2 = re.search(r'name="csrf" value="([a-f0-9]+)"', t).group(1)
-check('login page at the new address', 'rel="icon" href="/favicon.ico"' in t and not stuck(t) and 'без шифрования' not in t, stuck(t))
+check('login page at the new address', 'rel="icon" href="/favicon.ico"' in t and not stuck(t) and 'без шифрования' not in t and csp(h) == [CSP['admin']], stuck(t) or csp(h))
 s, h, t = req(OWN, 'POST', '/admin/?p=login', {'csrf': csrf2, 'login': 'admin', 'password': PW}, host=MAIN, headers=LIVE, jar=jar2)
 check('same login and password work after the move', s == 302 and one(h, 'location') == '/admin/', f'{s} {one(h, "location")}')
 s, h, t = req(OWN, 'GET', '/admin/', host=MAIN, headers=LIVE, jar=jar2)
@@ -419,6 +440,32 @@ finally:
     CFG.write_text(keep); time.sleep(3.2)
 s, h, t = req(SUB, 'GET', PRE + '/', host=TEMP)
 check('without the line the rule is automatic again', 'noindex' in one(h, 'x-robots-tag'))
+# ====================== основной сайт задаёт свои заголовки по-другому: через «Header always set» ======================
+print('--- заголовки основного сайта через always')
+main_ht = MAIN_HT.read_text(encoding='utf-8')
+try:
+    MAIN_HT.write_text(main_ht.replace('Header set ', 'Header always set '), encoding='utf-8')
+    s, h, t = req(SUB, 'GET', '/'); check('main site now sends its policy with «always»', len(csp(h)) == 1 and MAIN_CSP in csp(h)[0])
+    s, h, t = req(SUB, 'GET', PRE + '/'); check('site page: still one policy, of this site', csp(h) == [CSP['site']], [c[:80] for c in csp(h)])
+    s, h, t = req(SUB, 'GET', PRE + '/admin/?p=login'); check('login page: still one policy and own headers', csp(h) == [CSP['admin']] and h.get('x-frame-options') == ['DENY'] and h.get('referrer-policy') == ['same-origin'], (csp(h), h.get('x-frame-options')))
+    s, h, t = req(OWN, 'GET', '/', host=MAIN, headers=LIVE); check('own domain: still one policy, of this site', csp(h) == [CSP['site']], [c[:80] for c in csp(h)])
+
+    async def reload_check():
+        async with async_playwright() as p:
+            b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
+            pg = await b.new_page(viewport={'width': 1280, 'height': 860}); await setup(pg); msgs = []
+            pg.on('console', lambda m: msgs.append(m.text) if m.type == 'error' else None)
+            await pg.route('https://images.pexels.com/**', lambda r: r.abort())
+            await pg.goto(f'http://127.0.0.1:{SUB}{PRE}/?lang=ru'); await pg.wait_for_timeout(1500)
+            alive = await pg.evaluate("({data: typeof CONFIG, shop: typeof Shop, tiles: document.querySelectorAll('#cats .ctile').length})")
+            await b.close()
+            return alive, blocked_by_csp(msgs)
+    alive, blocked = asyncio.run(reload_check())
+    check('page works in the browser in this case too', alive == {'data': 'object', 'shop': 'object', 'tiles': 5} and not blocked, (alive, blocked[:1]))
+finally:
+    MAIN_HT.write_text(main_ht, encoding='utf-8')
+s, h, t = req(SUB, 'GET', '/'); check('main site .htaccess restored', len(csp(h)) == 1 and MAIN_CSP in csp(h)[0])
+
 # ====================== https: три строки в .htaccess действуют только на папку сайта ======================
 print('--- https в .htaccess папки')
 HT = SITE / '.htaccess'

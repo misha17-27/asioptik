@@ -9,13 +9,14 @@ header('X-Robots-Tag: noindex, nofollow');
 header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
-header("Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
+header('Content-Security-Policy: ' . CSP_INSTALL);
 
 function install_page(string $body): void
 {
     $base = base_path();
+    $ver = substr(md5((string) @filemtime(ROOT . '/assets/css/admin.css')), 0, 8);
     echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
-        . '<title>Установка сайта — Asioptik</title><link rel="icon" href="' . e($base) . 'favicon.ico"><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css"></head><body class="bare">'
+        . '<title>Установка сайта — Asioptik</title><link rel="icon" href="' . e($base) . 'favicon.ico"><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css?v=' . $ver . '"></head><body class="bare">'
         . '<main class="card card-wide"><p class="brand">asi<b>optik</b></p><h1>Установка сайта</h1>' . $body . '</main></body></html>';
     exit;
 }

@@ -194,9 +194,10 @@ function admin_page(string $title, string $body, string $current = '', string $a
 function admin_bare(string $title, string $body): void
 {
     $base = base_path();
+    $ver = substr(md5((string) @filemtime(ROOT . '/assets/css/admin.css')), 0, 8);   // с меткой версии браузер и CDN не отдают старый файл
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html lang="' . ui_lang() . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
-        . '<title>' . e($title) . ' — Asioptik</title><link rel="icon" href="' . e($base) . 'favicon.ico"><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css"></head><body class="bare">'
+        . '<title>' . e($title) . ' — Asioptik</title><link rel="icon" href="' . e($base) . 'favicon.ico"><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css?v=' . $ver . '"></head><body class="bare">'
         . '<main class="card">' . ui_switch() . '<p class="brand">asi<b>optik</b></p><h1>' . e($title) . '</h1>' . https_note() . $body . '</main></body></html>';
     exit;
 }

@@ -58,10 +58,8 @@ function admin_run(): void
         unset($q['ui'], $q['p']);
         redirect(admin_url($p, $q));
     }
-    // Адрес Cloudflare разрешён только там, где стоит проверка «не робот»: на странице входа и в разделе «Безопасность»
-    $cf = ($p === 'login' && captcha_on('login')) || ($p === 'security' && captcha_cfg()['site'] !== '') ? ' ' . TURNSTILE_ORIGIN : '';
-    header("Content-Security-Policy: default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'$cf;"
-        . ($cf !== '' ? " frame-src$cf; connect-src 'self'$cf;" : '') . " frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
+    // Только свои скрипты, без встроенных (политика целиком — в app/core/bootstrap.php, её же повторяет admin/.htaccess)
+    header('Content-Security-Policy: ' . CSP_ADMIN);
     admin_session();
     if ($p === 'login') admin_login();
     if (empty($_SESSION['uid'])) redirect(admin_url('login'));

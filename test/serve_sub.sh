@@ -43,7 +43,24 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]
+
+# Заголовки безопасности основного сайта действуют на весь домен, значит и на папку Asioptik. Такие стоят на
+# настоящем хостинге (mguliyev.com): строгая политика без встроенных скриптов, чужих шрифтов и картинок.
+# MAIN_HEADERS=always — тот же набор через «Header always set», MAIN_HEADERS=none — без заголовков.
+<IfModule mod_headers.c>
+MAINHDR Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self' https://challenges.cloudflare.com; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+MAINHDR Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+MAINHDR Referrer-Policy "strict-origin-when-cross-origin"
+MAINHDR X-Frame-Options "SAMEORIGIN"
+MAINHDR X-Content-Type-Options "nosniff"
+MAINHDR Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
 HT
+case "${MAIN_HEADERS:-set}" in
+  always) sed -i 's/^MAINHDR /Header always set /' "$RUN/root/.htaccess" ;;
+  none)   sed -i '/^MAINHDR /d' "$RUN/root/.htaccess" ;;
+  *)      sed -i 's/^MAINHDR /Header set /' "$RUN/root/.htaccess" ;;
+esac
 chown -R www-data:www-data "$RUN/root"
 mariadb --socket=/tmp/mysql-run/mysqld.sock -uroot -e "DROP DATABASE IF EXISTS asioptik_sub; CREATE DATABASE asioptik_sub CHARACTER SET utf8mb4; GRANT ALL ON asioptik_sub.* TO 'aotest'@'127.0.0.1';"
 cat > "$RUN/httpd.conf" <<CONF

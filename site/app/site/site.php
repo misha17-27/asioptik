@@ -206,24 +206,21 @@ function site_run(): void
     ]);
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: no-cache');
-    site_headers($cap !== '');
+    site_headers();
     echo $html;
     exit;
 }
 
-/** Заголовки безопасности для страниц сайта. $captcha — на странице работает проверка «не робот» от Cloudflare. */
-function site_headers(bool $captcha = false): void
+/** Заголовки безопасности для страниц сайта. */
+function site_headers(): void
 {
-    $cf = $captcha ? ' ' . TURNSTILE_ORIGIN : '';
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
-    // Скрипты и запросы — только со своего сайта; шрифты Google, карта Google и картинки по https разрешены.
-    // Адрес Cloudflare добавляется, только когда в разделе «Безопасность» включена проверка «не робот» для форм.
-    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'$cf; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        . "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; frame-src https://www.google.com https://maps.google.com$cf; "
-        . "connect-src 'self'$cf; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
+    // Скрипты и запросы — только со своего сайта; шрифты Google, карта Google и картинки по https разрешены
+    // (политика целиком — в app/core/bootstrap.php, её же повторяет .htaccess)
+    header('Content-Security-Policy: ' . CSP_SITE);
     // Это правило браузер запоминает для всего домена, поэтому сайт задаёт его, только когда домен целиком его:
     // в подпапке чужого сайта (временный адрес) решать за основной сайт нельзя
     if (is_https() && base_path() === '/') header('Strict-Transport-Security: max-age=15552000');

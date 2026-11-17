@@ -18,5 +18,6 @@ Deny from all
 </FilesMatch>
 <IfModule mod_headers.c>
 Header always set X-Content-Type-Options "nosniff"
+Header unset Content-Security-Policy
 Header always set Content-Security-Policy "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
 </IfModule>

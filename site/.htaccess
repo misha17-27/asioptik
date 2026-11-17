@@ -35,6 +35,18 @@ php_value post_max_size 12M
 
 <IfModule mod_headers.c>
 Header always set X-Content-Type-Options "nosniff"
+
+# Политика Content-Security-Policy этого сайта — та же, что отправляет PHP (она записана в app/core/bootstrap.php).
+# Здесь она повторена на случай, когда сайт лежит в папке другого сайта: тот может задавать свою политику
+# для всего домена, и она заменила бы нашу — страница осталась бы без данных, шрифтов и фото.
+# Эти строки выполняются после строк основного сайта и возвращают политику этого сайта.
+# Меняете политику — поменяйте её в обоих местах (и в admin/.htaccess, если речь об админ-панели).
+Header always unset Content-Security-Policy
+Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; frame-src https://www.google.com https://maps.google.com https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+<Files "install.php">
+Header set Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
+</Files>
+
 <FilesMatch "\.(css|js|jpg|jpeg|png|webp|svg|ico|woff2)$">
 Header set Cache-Control "public, max-age=2592000"
 </FilesMatch>

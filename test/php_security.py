@@ -74,6 +74,24 @@ s, h, t, raw = req('GET', '/admin/?p=login', headers={'X-Forwarded-Proto': 'http
 check('admin cookie Secure over https', 'secure' in cookie_of(raw).lower(), cookie_of(raw).split(';', 1)[1].strip())
 check('HSTS over https', 'max-age' in req('GET', '/', headers={'X-Forwarded-Proto': 'https'})[1].get('strict-transport-security', ''))
 
+# Политика Content-Security-Policy записана в app/core/bootstrap.php и повторена в .htaccess: сайт уровнем выше
+# (когда Asioptik лежит в его папке) может задавать свою политику для всего домена, и строки .htaccess возвращают нашу
+print('--- политика Content-Security-Policy')
+CSP = json.loads(subprocess.run(['php', '-r', f'require "{ROOT}/site/app/core/bootstrap.php"; echo json_encode(["site" => CSP_SITE, "admin" => CSP_ADMIN, "install" => CSP_INSTALL]);'], capture_output=True, text=True).stdout)
+csp_of = lambda raw: [v for k, v in raw if k.lower() == 'content-security-policy']
+for path, kind in [('/', 'site'), ('/catalog?lang=ru', 'site'), ('/product/f-milan', 'site'), ('/checkout', 'site'), ('/admin/?p=login', 'admin'), ('/install.php', 'install')]:
+    got = csp_of(req('GET', path)[3])
+    check(f'{path}: one policy, the {kind} one', got == [CSP[kind]], [g[:70] for g in got])
+ht_root = (ROOT / 'site/.htaccess').read_text(encoding='utf-8'); ht_admin = (ROOT / 'site/admin/.htaccess').read_text(encoding='utf-8')
+check('.htaccess repeats the site policy word for word', ht_root.count(f'Header set Content-Security-Policy "{CSP["site"]}"') == 1)
+check('.htaccess repeats the installer policy inside <Files "install.php">', re.search(r'<Files "install\.php">\s*Header set Content-Security-Policy "' + re.escape(CSP['install']) + r'"\s*</Files>', ht_root) is not None)
+check('admin/.htaccess repeats the admin policy word for word', ht_admin.count(f'Header set Content-Security-Policy "{CSP["admin"]}"') == 1)
+check('both files also drop a policy set by a parent site with «always»', 'Header always unset Content-Security-Policy' in ht_root and 'Header always unset Content-Security-Policy' in ht_admin)
+check('site policy: inline data and own scripts, fonts, map, https pictures', all(x in CSP['site'] for x in ["script-src 'self' 'unsafe-inline'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com', 'https://maps.google.com', "img-src 'self' data: blob: https:", "object-src 'none'", "frame-ancestors 'self'"]))
+check('admin policy: no inline scripts, no framing', "'unsafe-inline'" not in CSP['admin'].split('script-src')[1].split(';')[0] and "frame-ancestors 'none'" in CSP['admin'] and "object-src 'none'" in CSP['admin'])
+check('only one outside script origin is allowed anywhere: the Cloudflare check', re.findall(r'https://[^\s;]+', CSP['admin']) == ['https://challenges.cloudflare.com'] * 3 and re.findall(r'https://[^\s;]+', CSP['site'].split('script-src')[1].split(';')[0]) == ['https://challenges.cloudflare.com'])
+check('uploads keep their own strict policy', "default-src 'none'" in ' '.join(csp_of(req('GET', '/uploads/')[3])), csp_of(req('GET', '/uploads/')[3]))
+
 s, h, t, raw = req('GET', '/admin/?p=login', headers={'Host': 'asioptik.az'}); check('admin over plain http shows a warning', 'без шифрования' in t)
 s, h, t, raw = req('GET', '/admin/?p=login', headers={'Host': 'asioptik.az', 'X-Forwarded-Proto': 'https'}); check('no warning over https', 'без шифрования' not in t)
 check('no warning on a local test address', 'без шифрования' not in req('GET', '/admin/?p=login')[2])
