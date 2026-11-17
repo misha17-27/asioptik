@@ -410,6 +410,11 @@ function admin_edit(): void
         if (isset($S['load'])) $data = $S['load']($data);
         $oldCat = (string) ($data['cat'] ?? '');
         $data = form_parse($S['fields'], $data, $_POST, $errors);
+        if ($type === 'category' && !empty($data['banner']['demo'])) {
+            // своё фото на слайде или просьба убрать временное: временное фото и его кадрирование больше не нужны
+            $own = (string) ($data['banner']['img'] ?? '');
+            if (!empty($_POST['nodemo']) || ($own !== '' && $own !== (string) ($item['data']['banner']['img'] ?? ''))) $data['banner'] = drop_demo($data['banner']);
+        }
         if (isset($S['save'])) $data = $S['save']($data);
         if ($type === 'product') {
             $cat = (string) ($data['cat'] ?? '');
@@ -452,6 +457,10 @@ function admin_edit(): void
     if ($errors) $out .= '<p class="flash flash-err" role="alert">Не сохранено: проверьте поля, отмеченные красным.</p>';
     if ($copyOf) $out .= '<p class="note">Это копия товара. Измените название, код и цену, загрузите фото и сохраните — появится новый товар.</p>';
     $out .= form_open($head, '<a href="' . e($listUrl) . '">← К списку</a>') . form_fields($fields, $view, $errors);
+    if ($type === 'category' && !empty($data['banner']['demo'])) {
+        $out .= '<div class="field"><label class="check"><input type="checkbox" name="nodemo" value="1"> <span>Убрать временное фото со слайда</span></label>'
+            . '<p class="hint">Сейчас на слайде стоит временное фото с бесплатного фотостока. Загрузите своё, и временное уберётся само. Без фото на слайде показывается рисунок из товаров.</p></div>';
+    }
     $out .= '<h3 class="block">' . (empty($S['fixed']) ? 'Адрес и показ на сайте' : 'Показ на сайте') . '</h3><div class="field-row">';
     if (empty($S['fixed'])) {
         $out .= '<div class="field"><label class="lbl" for="slug">' . e($S['slug']) . '</label><input id="slug" type="text" name="slug" value="' . e($copyOf ? '' : $slug) . '" class="mid" pattern="[a-z0-9\-]*"><p class="hint">' . e($S['slug_hint']) . '</p></div>';
@@ -553,7 +562,9 @@ function admin_banners(): void
     if (is_post()) {
         $aud = form_parse($fields, $aud, $_POST, $errors);
         foreach (array_keys($demo) as $path) {
-            if (!empty($_POST['nodemo'][$path])) dunset($aud, $path . '.demo');
+            // своё фото или просьба убрать временное: временное фото и его кадрирование больше не нужны
+            $node = dget($aud, (string) $path);
+            if (is_array($node) && (!empty($_POST['nodemo'][$path]) || !empty($node['img']))) dset($aud, (string) $path, drop_demo($node));
         }
         if (!$errors) {
             set_setting('audiences', $aud);

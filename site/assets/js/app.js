@@ -186,11 +186,12 @@ const THEME = (function () {
 
   // Фото для баннера. Сначала берётся свой файл из папки images; если его нет — временное фото по ссылке (demo);
   // если не загрузилось и оно, остаётся рисунок из товаров
-  const photo = (x, lazy, cls) => {
+  // later = true: адрес кладётся в data-src, а грузится фото позже (слайды первого экрана — когда подходит их очередь)
+  const photo = (x, lazy, cls, later) => {
     const S = Shop, list = x ? [x.img].concat(x.demo || []).filter(Boolean) : [];
     if (!list.length) return '';
     const st = (x.pos ? 'object-position:' + S.esc(x.pos) + ';' : '') + (x.flip ? 'transform:scaleX(-1)' : '');
-    return `<img class="ph${cls ? ' ' + cls : ''}${x.flip ? ' is-flip' : ''}" src="${S.esc(list[0])}"${list.length > 1 ? ` data-next="${S.esc(list.slice(1).join(' '))}"` : ''}${st ? ` style="${st}"` : ''} alt="" decoding="async"${lazy ? ' loading="lazy"' : ''} onload="this.parentNode.classList.add('has-photo');var k=this.naturalWidth/this.naturalHeight;if(k>=1.9)this.classList.add('is-wide');else if(k<.95)this.classList.add('is-tall')" onerror="var n=(this.dataset.next||'').split(' ').filter(Boolean);if(n.length){this.src=n.shift();this.dataset.next=n.join(' ')}else{this.remove()}">`;
+    return `<img class="ph${cls ? ' ' + cls : ''}${x.flip ? ' is-flip' : ''}" ${later ? 'data-src' : 'src'}="${S.esc(list[0])}"${list.length > 1 ? ` data-next="${S.esc(list.slice(1).join(' '))}"` : ''}${st ? ` style="${st}"` : ''} alt="" decoding="async"${lazy ? ' loading="lazy"' : ''} onload="this.parentNode.classList.add('has-photo');var k=this.naturalWidth/this.naturalHeight;if(k>=1.9)this.classList.add('is-wide');else if(k<.95)this.classList.add('is-tall')" onerror="var n=(this.dataset.next||'').split(' ').filter(Boolean);if(n.length){this.src=n.shift();this.dataset.next=n.join(' ')}else{this.parentNode.classList.remove('wants-photo');this.remove()}">`;
   };
   // Рисунок для баннера: до трёх товаров, средний крупнее
   // Баннер «Для детей»: собственный рисунок — дети в очках на фоне линзы с бликом из логотипа.
@@ -206,10 +207,10 @@ const THEME = (function () {
   const svg = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${d}"/></svg>`;
   const ICO = { prev: svg('m14.5 6-6 6 6 6'), next: svg('m9.5 6 6 6-6 6'), pause: svg('M9 6.5v11M15 6.5v11'), play: svg('M9 6.5v11l8.5-5.5Z') };
   function bannerHTML(c) {
-    const S = Shop, list = PRODUCTS.filter(p => p.cat === c.id), b = c.banner || {};
+    const S = Shop, list = PRODUCTS.filter(p => p.cat === c.id), b = c.banner || {}, ph = photo(b, false, '', true);
     const min = Math.min.apply(null, list.map(p => p.price));
     return `<a class="hs-slide bn bn-${c.id}" href="#catalog" data-goto="${c.id}">
-      <span class="bn-in">${photo(b)}
+      <span class="bn-in${ph ? ' wants-photo' : ''}">${ph}
         <span class="bn-title">${S.esc(S.L(c.name))}</span>
         ${b.text ? `<span class="bn-text">${S.esc(S.L(b.text))}</span>` : ''}
         <span class="bn-arts" aria-hidden="true">${arts(b.show || list.slice(0, 3).map(p => p.id))}</span>
@@ -221,10 +222,11 @@ const THEME = (function () {
     const box = document.getElementById('heroKit');
     if (!box) return;
     const S = Shop, cats = CATEGORIES.filter(c => PRODUCTS.some(p => p.cat === c.id));
-    const names = [S.t('hs.kit')].concat(cats.map(c => S.L(c.name)));
+    // первыми идут слайды разделов (с фотографиями), рисунок набора пробных линз — последним
+    const names = cats.map(c => S.L(c.name)).concat([S.t('hs.kit')]);
     hs.n = names.length;
     box.innerHTML = `<div class="hs" role="region" aria-roledescription="carousel" aria-label="${S.esc(S.t('hs.label'))}">
-      <div class="hs-track"><div class="hs-slide hs-kit" aria-hidden="true">${kitSVG()}</div>${cats.map(bannerHTML).join('')}</div>
+      <div class="hs-track">${cats.map(bannerHTML).join('')}<div class="hs-slide hs-kit" aria-hidden="true">${kitSVG()}</div></div>
       <div class="hs-nav">
         <button type="button" class="hs-btn" data-hs="prev" aria-label="${S.esc(S.t('hs.prev'))}">${ICO.prev}</button>
         <div class="hs-dots">${names.map((n, k) => `<button type="button" class="hs-dot" data-hs-go="${k}" aria-label="${S.esc(S.t('hs.go', { n: k + 1, name: n }))}"></button>`).join('')}</div>
@@ -243,6 +245,8 @@ const THEME = (function () {
       root.querySelectorAll('.hs-slide').forEach((el, k) => {
         const on = k === hs.i;
         el.classList.toggle('is-active', on);
+        // фото грузится у открытого слайда и у следующего: к своей очереди оно уже на месте, а остальные не тянут трафик зря
+        if (on || k === (hs.i + 1) % hs.n) el.querySelectorAll('img[data-src]').forEach(im => { im.src = im.getAttribute('data-src'); im.removeAttribute('data-src'); });
         if (live && !el.classList.contains('hs-kit')) { el.setAttribute('aria-hidden', String(!on)); el.tabIndex = on ? 0 : -1; }
       });
       root.querySelectorAll('.hs-dot').forEach((el, k) => {

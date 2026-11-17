@@ -11,7 +11,9 @@ d.write_text(new, encoding='utf-8')
 subprocess.run(['python3', str(ROOT / 'build.py')], capture_output=True)
 async def fake(route):
     m = re.search(r'/photos/(\d+)/', route.request.url)
-    await route.fulfill(path=f'{ROOT}/test/fake/{m.group(1)}.jpg', content_type='image/jpeg')
+    for f in (f'{ROOT}/test/fake/{m.group(1)}.jpg', f'{ROOT}/test/fake/ph/{m.group(1)}.jpg'):
+        if __import__('os').path.exists(f): return await route.fulfill(path=f, content_type='image/jpeg')
+    await route.abort()   # образца нет — на сайте остаётся рисунок
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])

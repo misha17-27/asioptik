@@ -224,6 +224,28 @@ s, h, t, raw = req('POST', '/admin/?p=page&id=home', body, cookie=ADMIN)
 check('texts put back through the page editor', s == 302 and setting('texts') == was_t and setting('seo') == was_s, s)
 s, h, t, raw = req('GET', '/?lang=ru'); check('texts restored after the check', 'alert(7)' not in t and 'alert(9)' not in t)
 
+print('--- обновление данных уже установленного сайта')
+# сайт прежней версии: у слайдов разделов нет временных фото, у одного раздела стоит своё фото, версии данных в базе нет
+def refresh():
+    # любое сохранение в админ-панели сбрасывает готовые данные сайта; здесь — страница «Общие надписи» без правок
+    return req('POST', '/admin/?p=page&id=common', {'csrf': csrf_of(ADMIN, '/admin/?p=page&id=common')}, cookie=ADMIN)[0]
+def slides():
+    t = req('GET', '/?lang=ru')[2]
+    return {c['id']: c.get('banner', {}) for c in json.loads(re.search(r'const CATEGORIES = (\[.*?\]);\n', t).group(1))}
+sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.banner.demo', '$.banner.pos', '$.banner.flip', '$.banner.img') WHERE type='category'")
+sql("UPDATE ao_items SET data = JSON_SET(data, '$.banner.img', 'uploads/b/own-photo.jpg') WHERE type='category' AND slug='frames'")
+sql("DELETE FROM ao_settings WHERE name='data_version'")
+check('old data: cache dropped', refresh() == 302)
+b = slides()
+check('upgrade keeps the own slide photo and adds nothing to it', b['frames'].get('img', '').endswith('/uploads/b/own-photo.jpg') and 'demo' not in b['frames'], b['frames'].get('img'))
+check('upgrade gives the other slides a temporary photo', all('images.pexels.com' in b[k].get('demo', '') for k in ('sun', 'contacts', 'lenses')), [k for k in b if b[k].get('demo')])
+check('upgrade is recorded', sql("SELECT value FROM ao_settings WHERE name='data_version'") == '2')
+sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.banner.demo', '$.banner.pos', '$.banner.flip') WHERE type='category' AND slug='sun'"); refresh()
+check('a temporary photo removed by the owner does not come back', 'demo' not in slides()['sun'])
+# вернуть как после чистой установки
+sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.banner.img') WHERE type='category' AND slug='frames'"); sql("DELETE FROM ao_settings WHERE name='data_version'"); refresh()
+check('slides restored', all('demo' in v for v in slides().values()))
+
 print('--- загрузка файлов')
 up = ROOT / 'site' / 'uploads' / 'p'; up.mkdir(parents=True, exist_ok=True)
 planted = {'shell.php': b'<?php echo "RUN" . (6 * 7); ?>', 'shell.phtml': b'<?php echo "RUN" . (6 * 7); ?>', 'shell.php.jpg': b'<?php echo "RUN" . (6 * 7); ?>', 'x.html': b'<script>alert(1)</script>', 'x.svg': b'<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>', '.htaccess': b'php_flag engine on'}

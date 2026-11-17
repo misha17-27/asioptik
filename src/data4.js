@@ -36,26 +36,28 @@ const CONFIG = {
 /* ---------- Разделы каталога ----------
    banner — баннер раздела в слайдах на первом экране:
      img  — фото для баннера. Положите файл с таким именем в папку images рядом с сайтом,
-            и он появится сам. Пока файла нет, показывается рисунок из товаров.
+            и он появится сам.
+     demo — временное фото по ссылке (бесплатный фотосток Pexels), пока своего нет; pos и flip — как его
+            поставить в кадр. Если не загрузилось и оно, показывается рисунок из товаров.
      show — до трёх товаров для рисунка: [код товара, номер цвета]
      text — подпись под названием раздела */
 const CATEGORIES = [
   { id: 'frames',   name: { az: 'Çərçivələr', ru: 'Оправы', en: 'Frames' },
-    banner: { img: 'images/slide-frames.jpg', show: [['f-florence', 0], ['f-milan', 0], ['f-oslo', 0]],
+    banner: { img: 'images/slide-frames.jpg', demo: 'https://images.pexels.com/photos/28938434/pexels-photo-28938434.jpeg?auto=compress&cs=tinysrgb&w=1000', pos: '50% 90%', show: [['f-florence', 0], ['f-milan', 0], ['f-oslo', 0]],
       text: { az: 'Asetat, titan və metal. Linzaları reseptinizə uyğun taxırıq.', ru: 'Ацетат, титан и металл. Линзы поставим по вашему рецепту.', en: 'Acetate, titanium and metal. We fit lenses to your prescription.' } } },
   { id: 'sun',      name: { az: 'Günəş eynəkləri', ru: 'Солнцезащитные очки', en: 'Sunglasses' },
                     short: { az: 'Günəş eynəkləri', ru: 'Солнцезащитные', en: 'Sunglasses' },
-    banner: { img: 'images/slide-sun.jpg', show: [['s-tropez', 1], ['s-riviera', 0], ['s-capri', 0]],
+    banner: { img: 'images/slide-sun.jpg', demo: 'https://images.pexels.com/photos/46710/pexels-photo-46710.jpeg?auto=compress&cs=tinysrgb&w=1000', pos: '50% 62%', flip: true, show: [['s-tropez', 1], ['s-riviera', 0], ['s-capri', 0]],
       text: { az: 'Polyarizasiya və UV400 qoruması, böyüklər və uşaqlar üçün.', ru: 'Поляризация и защита UV400, для взрослых и детей.', en: 'Polarized lenses and UV400 protection, for adults and kids.' } } },
   { id: 'contacts', name: { az: 'Kontakt linzaları', ru: 'Контактные линзы', en: 'Contact lenses' },
-    banner: { img: 'images/slide-contacts.jpg', show: [['c-2week', 0], ['c-daily', 0], ['c-month', 0]],
+    banner: { img: 'images/slide-contacts.jpg', demo: 'https://images.pexels.com/photos/5843419/pexels-photo-5843419.jpeg?auto=compress&cs=tinysrgb&w=1000', pos: '50% 30%', show: [['c-2week', 0], ['c-daily', 0], ['c-month', 0]],
       text: { az: 'Birgünlük, ikihəftəlik və aylıq. Hər göz üçün ayrıca seçilir.', ru: 'Однодневные, двухнедельные и месячные. Подбираются отдельно для каждого глаза.', en: 'Daily, two-weekly and monthly. Chosen separately for each eye.' } } },
   { id: 'lenses',   name: { az: 'Eynək linzaları', ru: 'Линзы для очков', en: 'Spectacle lenses' },
-    banner: { img: 'images/slide-lenses.jpg', show: [['l-ar', 0], ['l-photo', 0], ['l-blue', 0]],
+    banner: { img: 'images/slide-lenses.jpg', demo: 'https://images.pexels.com/photos/5715884/pexels-photo-5715884.jpeg?auto=compress&cs=tinysrgb&w=900', pos: '50% 96%', show: [['l-ar', 0], ['l-photo', 0], ['l-blue', 0]],
       text: { az: 'Antirefleks, mavi işıq filtri, fotoxrom və proqressiv.', ru: 'Антиблик, фильтр синего света, фотохромные и прогрессивные.', en: 'Anti-reflective, blue light filter, photochromic and progressive.' } } },
   { id: 'care',     name: { az: 'Qulluq və aksesuarlar', ru: 'Уход и аксессуары', en: 'Care & accessories' },
                     short: { az: 'Qulluq', ru: 'Уход', en: 'Care' },
-    banner: { img: 'images/slide-care.jpg', show: [['a-solution', 0], ['a-case', 0], ['a-cloth', 0]],
+    banner: { img: 'images/slide-care.jpg', demo: 'https://images.pexels.com/photos/8217234/pexels-photo-8217234.jpeg?auto=compress&cs=tinysrgb&w=1000', pos: '50% 100%', show: [['a-solution', 0], ['a-case', 0], ['a-cloth', 0]],
       text: { az: 'Məhlul, damcılar, qablar və salfetlər.', ru: 'Раствор, капли, футляры и салфетки.', en: 'Solution, drops, cases and cloths.' } } },
 ];
 

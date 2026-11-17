@@ -89,15 +89,53 @@ function cache_clear(): void
     if (is_file(cache_file())) @unlink(cache_file());
 }
 
+/* Версия первых данных. Когда в новых файлах сайта появляются данные, которых нет в уже установленном
+   сайте (например, временные фото слайдов), число увеличивается, и data_upgrade() дополняет базу. */
+const DATA_VERSION = 2;
+
+/**
+ * Дополняет уже установленный сайт тем, что появилось в первых данных позже. Своё не трогает:
+ * временное фото получает только слайд раздела, у которого нет ни своего фото, ни временного.
+ */
+function data_upgrade(): void
+{
+    $have = (int) setting('data_version', 1);
+    if ($have >= DATA_VERSION) return;
+    $seed = json_decode((string) @file_get_contents(APP . '/data/seed.json'), true);
+    if ($have < 2 && is_array($seed)) {
+        $bySlug = [];
+        foreach ($seed['items']['category'] ?? [] as $r) $bySlug[$r['slug']] = $r['data']['banner'] ?? [];
+        foreach (items('category') as $it) {
+            $b = $bySlug[$it['slug']] ?? [];
+            $d = $it['data'];
+            if (empty($b['demo']) || !empty($d['banner']['img']) || !empty($d['banner']['demo'])) continue;
+            foreach (['demo', 'pos', 'flip'] as $k) {
+                if (isset($b[$k])) $d['banner'][$k] = $b[$k];
+            }
+            item_save($it['id'], 'category', $it['slug'], $it['position'], $it['active'], $d);
+        }
+    }
+    set_setting('data_version', DATA_VERSION);
+}
+
+/** Своё фото вместо временного: временное и его кадрирование больше не нужны. */
+function drop_demo(array $node): array
+{
+    unset($node['demo'], $node['pos'], $node['flip']);
+    return $node;
+}
+
 /** Все данные сайта в том виде, в каком их ждёт страница (CONFIG, PRODUCTS и так далее). */
 function site_data(): array
 {
     $f = cache_file();
     if (is_file($f)) {
         $d = json_decode((string) file_get_contents($f), true);
-        if (is_array($d) && isset($d['PRODUCTS'])) return $d;
+        if (is_array($d) && isset($d['PRODUCTS']) && ($d['_v'] ?? 0) === DATA_VERSION) return $d;
     }
+    data_upgrade();
     $d = site_data_build();
+    $d['_v'] = DATA_VERSION;
     if (!is_dir(dirname($f))) @mkdir(dirname($f), 0775, true);
     @file_put_contents($f, to_json($d), LOCK_EX);
     return $d;
