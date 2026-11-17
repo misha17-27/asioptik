@@ -27,6 +27,7 @@ mkdir -p "$RUN/logs" "$RUN/root/admin" "$RUN/root/assets"
 # сайт распаковывается заново: чистая папка, как после загрузки архива в файловый менеджер
 if [ -d "$RUN/root/asioptik" ]; then mv "$RUN/root/asioptik" "$RUN/old-$(date +%s)"; fi
 mkdir -p "$RUN/root/asioptik"
+umask 022
 if [ -n "$ZIP" ]; then (cd "$RUN/root/asioptik" && unzip -q "$ZIP")
 else
   # без архива — копия папки site/ в том виде, в каком она попадает в архив: без всего, что появляется после установки
@@ -61,7 +62,13 @@ case "${MAIN_HEADERS:-set}" in
   none)   sed -i '/^MAINHDR /d' "$RUN/root/.htaccess" ;;
   *)      sed -i 's/^MAINHDR /Header set /' "$RUN/root/.htaccess" ;;
 esac
-chown -R www-data:www-data "$RUN/root"
+# Как на хостинге: файлы сайта принадлежат одному пользователю (здесь root), а веб-сервер работает от другого
+# (www-data) и читает их только потому, что права это позволяют всем. Файл с правами «только владелец» — например
+# из архива, который такие права в себе несёт, — сервер прочитать не сможет, и стенд это покажет.
+# Серверу отданы только места, куда PHP пишет: сама папка сайта (установщик удаляет себя), storage/ и uploads/.
+chown -R root:root "$RUN/root"
+chown www-data:www-data "$RUN/root/asioptik"
+chown -R www-data:www-data "$RUN/root/asioptik/storage" "$RUN/root/asioptik/uploads"
 mariadb --socket=/tmp/mysql-run/mysqld.sock -uroot -e "DROP DATABASE IF EXISTS asioptik_sub; CREATE DATABASE asioptik_sub CHARACTER SET utf8mb4; GRANT ALL ON asioptik_sub.* TO 'aotest'@'127.0.0.1';"
 cat > "$RUN/httpd.conf" <<CONF
 ServerRoot "$RUN"

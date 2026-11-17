@@ -7,12 +7,16 @@ Content-Security-Policy без встроенных скриптов, чужих
 Проверка сама ставит сайт через install.php, поэтому перед каждым запуском стенд поднимается заново:
 
     sh test/serve.sh && sh test/serve_sub.sh && python3 test/php_subdir.py
+    sh test/serve_sub.sh asioptik-site.zip && python3 test/php_subdir.py asioptik-update.zip      готовые архивы
+
+С путём к архиву обновления проверка в конце распаковывает его поверх установленного сайта, как это делает
+файловый менеджер хостинга, и смотрит, что сайт после этого открывается, а настройки и заказы на месте.
 
 Что проверяется: ни один адрес не выходит из подпапки (страницы, картинки, заказы, админ-панель, установщик),
 основной сайт не задет и сам не ломает Asioptik своими заголовками, временный адрес закрыт от поисковиков,
 а после переезда на свой домен те же файлы и та же база работают без правок.
 """
-import asyncio, http.client, json, pathlib, re, subprocess, sys, time, urllib.parse
+import asyncio, hashlib, http.client, json, os, pathlib, re, stat, subprocess, sys, time, urllib.parse
 from playwright.async_api import async_playwright
 from run import setup, ROOT
 SUB, OWN = 8772, 8773                 # сайт в подпапке «основного» и та же папка корнем своего домена
@@ -21,6 +25,7 @@ TEMP = f'stage.example:{SUB}'         # временный адрес: доме�
 MAIN = 'asioptik.az'                  # основной адрес из «Настроек сайта»
 SITE = pathlib.Path('/tmp/asioptik-sub/root/asioptik')
 DB = 'asioptik_sub'
+UPDATE_ZIP = sys.argv[1] if len(sys.argv) > 1 else ''      # архив обновления: проверяется в конце, если указан
 PW = 'Test-Admin-2026'                # пароль только для локальной тестовой базы
 DBPW = 'test-only-local'
 FAILS = []
@@ -95,6 +100,19 @@ def stuck(html):
     return re.findall(r'["\'(=]' + re.escape(PRE) + r'/[^"\'\s)]*', html)[:3]
 
 
+def unreadable():
+    """Файлы и папки сайта, которые веб-сервер не сможет прочитать: на стенде, как и на хостинге, он работает от другого
+    пользователя, чем владелец файлов. То, что PHP создаёт сам (настройки, сессии, кэш, журналы), сюда не входит."""
+    own = ('storage/config.php', 'storage/sessions', 'storage/cache', 'storage/logs')
+    out = []
+    for p in [SITE, *SITE.rglob('*')]:
+        rel = p.relative_to(SITE).as_posix()
+        if any(rel == o or rel.startswith(o + '/') for o in own): continue
+        need = 0o005 if p.is_dir() else 0o004
+        if stat.S_IMODE(p.stat().st_mode) & need != need: out.append(f'{rel} {oct(stat.S_IMODE(p.stat().st_mode))}')
+    return out
+
+
 def page_const(html, name):
     m = re.search(r'const ' + name + r' = (\{.*?\}|\[.*?\]);\n', html, re.S)
     return json.loads(m.group(1)) if m else None
@@ -104,6 +122,8 @@ def page_const(html, name):
 print('--- основной сайт и пустая подпапка')
 if (SITE / 'storage/config.php').exists():
     sys.exit('Стенд уже установлен: поднимите его заново — sh test/serve_sub.sh')
+check('site files belong to one user, the web server runs as another', (SITE / 'index.php').stat().st_uid != (SITE / 'storage').stat().st_uid, ((SITE / 'index.php').stat().st_uid, (SITE / 'storage').stat().st_uid))
+check('every unpacked file can be read by the web server', not unreadable(), unreadable()[:4])
 s, h, t = req(SUB, 'GET', '/'); check('main site answers at the domain root', s == 200 and 'MAIN SITE' in t and is_main_site(h))
 check('main site sets its own strict policy for the whole domain', len(csp(h)) == 1 and MAIN_CSP in csp(h)[0] and 'Header set Content-Security-Policy' in MAIN_HT.read_text(), csp(h))
 s, h, t = req(SUB, 'GET', '/admin/'); check('main site keeps its own /admin/', 'MAIN ADMIN' in t)
@@ -487,6 +507,26 @@ try:
 finally:
     HT.write_text(ht, encoding='utf-8')
 s, h, t = req(SUB, 'GET', PRE + '/catalog'); check('.htaccess restored', s == 200)
+
+# ====================== обновление: архив распаковывается поверх работающего сайта ======================
+if UPDATE_ZIP:
+    print('--- обновление архивом поверх сайта')
+    with __import__('zipfile').ZipFile(UPDATE_ZIP) as z: in_zip = set(z.namelist())
+    check('update archive has no installer and no site data', 'install.php' not in in_zip and 'storage/config.php' not in in_zip and '.htaccess' in in_zip and 'admin/.htaccess' in in_zip)
+    before = (hashlib.sha256((SITE / 'storage/config.php').read_bytes()).hexdigest(), sql('SELECT COUNT(*) FROM ao_orders'), sql("SELECT COUNT(*) FROM ao_items"), (SITE / stored).is_file())
+    # распаковка той же программой и тем же способом, что в файловом менеджере хостинга: от имени владельца, с заменой файлов
+    r = subprocess.run(['unzip', '-o', '-q', os.path.abspath(UPDATE_ZIP), '-d', str(SITE)], capture_output=True, text=True, preexec_fn=lambda: os.umask(0o022))
+    check('archive unpacks over the site', r.returncode == 0, r.stderr[:200])
+    check('after the update every file can still be read by the web server', not unreadable(), unreadable()[:4])
+    after = (hashlib.sha256((SITE / 'storage/config.php').read_bytes()).hexdigest(), sql('SELECT COUNT(*) FROM ao_orders'), sql("SELECT COUNT(*) FROM ao_items"), (SITE / stored).is_file())
+    check('settings, orders, catalog and uploaded photo are untouched', after == before and not (SITE / 'install.php').exists(), (before, after))
+    time.sleep(3.2)      # PHP перечитывает заменённые файлы не сразу
+    s, h, t = req(SUB, 'GET', PRE + '/')
+    check('site opens after the update', s == 200 and csp(h) == [CSP['site']] and page_const(t, 'CONFIG')['basePath'] == PRE + '/' and len(page_const(t, 'PRODUCTS')) > 20, s)
+    for a in ['/assets/js/app.js', '/assets/css/app.css', '/assets/css/admin.css', '/favicon.ico']:
+        s, h, t = req(SUB, 'GET', PRE + a); check(f'after the update {a} is served', s == 200 and len(t) > 1000, s)
+    s, h, t = req(SUB, 'GET', PRE + '/admin/?p=login'); check('login page opens after the update', s == 200 and 'name="password"' in t and csp(h) == [CSP['admin']], s)
+    s, h, t = req(SUB, 'GET', PRE + '/storage/config.php'); check('settings file is still closed', s == 403, s)
 
 log = SITE / 'storage/logs/php-errors.log'
 check('no PHP errors in the log', not log.exists() or log.read_text().strip() == '', log.read_text()[-300:] if log.exists() else '')
