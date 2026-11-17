@@ -33,39 +33,127 @@ function csrf_field(): string
 }
 
 /** Каркас страницы админ-панели. */
-function admin_page(string $title, string $body, string $current = ''): void
+/** Контурные значки меню и кнопок (20×20). */
+function icon(string $name): string
 {
-    $nav = [
-        'orders' => 'Заказы и заявки', 'list:product' => 'Товары', 'list:category' => 'Разделы каталога', 'list:brand' => 'Бренды',
-        'list:post' => 'Блог', 'list:service' => 'Услуги мастерской', 'doc:about' => 'Страница «О нас»', 'banners' => 'Баннеры и фото',
-        'doc:config' => 'Настройки', 'password' => 'Пароль',
+    static $paths = [
+        'home' => '<path d="M3 9.5 10 3l7 6.5V17h-4.500v-5h-5v5H3z"/>',
+        'orders' => '<path d="M5 3h10v14l-2.500-1.500L10 17l-2.500-1.500L5 17z"/><path d="M8 7.500h4M8 10.500h4"/>',
+        'users' => '<circle cx="7.500" cy="7" r="3"/><path d="M2 17c.400-3 2.600-4.500 5.500-4.500s5.100 1.500 5.500 4.500"/><path d="M13.500 4.200a3 3 0 0 1 0 5.600M15.500 13c1.500.700 2.300 2 2.500 4"/>',
+        'page' => '<path d="M5 2.500h7l3 3v12H5z"/><path d="M8 9.500h4M8 12.500h4"/>',
+        'blog' => '<path d="M3 5h14M3 10h9M3 15h14"/>',
+        'image' => '<rect x="3" y="4" width="14" height="12" rx="2"/><circle cx="7.500" cy="8.500" r="1.300"/><path d="m4 15 4.500-4.500 3 3 2-2L17 15"/>',
+        'box' => '<path d="M3 6.500 10 3l7 3.500v7L10 17l-7-3.500z"/><path d="M3 6.500 10 10l7-3.500M10 10v7"/>',
+        'grid' => '<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/>',
+        'tag' => '<path d="M3 3h7l7 7-7 7-7-7z"/><circle cx="7" cy="7" r="1.200"/>',
+        'tool' => '<path d="M16.500 5.500 13.800 8.200l-2-2 2.700-2.700a4 4 0 0 0-5.100 5L3.500 14.400a1.500 1.500 0 0 0 2.100 2.100l5.900-5.900a4 4 0 0 0 5-5.100z"/>',
+        'gear' => '<circle cx="10" cy="10" r="2.500"/><path d="M10 2.500v2.300M10 15.200v2.300M2.500 10h2.300M15.200 10h2.300M4.700 4.700l1.600 1.600M13.700 13.700l1.600 1.600M4.700 15.300l1.600-1.600M13.700 6.300l1.600-1.600"/>',
+        'key' => '<circle cx="7" cy="13" r="3.500"/><path d="m9.500 10.500 7-7M13.500 6.500l2 2M11.500 8.500l1.500 1.500"/>',
+        'out' => '<path d="M8 3H4v14h4"/><path d="M12.500 6.500 16 10l-3.500 3.500M16 10H7.500"/>',
+        'ext' => '<path d="M11.500 3H17v5.500M17 3l-8 8"/><path d="M14.500 11.500V17H3V5.500h5.500"/>',
+        'edit' => '<path d="m3 17 .800-3.700 9.700-9.700a1.400 1.400 0 0 1 2 0l.900.900a1.400 1.400 0 0 1 0 2l-9.700 9.700z"/>',
+        'trash' => '<path d="M4 6h12M8 6V3.500h4V6M5.500 6l.700 11h7.600l.700-11"/>',
+        'plus' => '<path d="M10 4v12M4 10h12"/>',
+        'copy' => '<rect x="7" y="7" width="10" height="10" rx="1.500"/><path d="M13 7V4.500A1.500 1.500 0 0 0 11.500 3h-7A1.500 1.500 0 0 0 3 4.500v7A1.500 1.500 0 0 0 4.500 13H7"/>',
     ];
-    $new = (int) (q("SELECT COUNT(*) AS n FROM ao_orders WHERE status = 'new'")->fetch()['n'] ?? 0);
+    return '<svg class="ic" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.600" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($paths[$name] ?? '') . '</svg>';
+}
+
+/** «1 товар, 2 товара, 5 товаров»: слово в нужной форме для числа. */
+function plural(int $n, string $one, string $few, string $many): string
+{
+    $a = abs($n) % 100;
+    $b = $a % 10;
+    if ($a > 10 && $a < 20) return $many;
+    if ($b === 1) return $one;
+    return $b >= 2 && $b <= 4 ? $few : $many;
+}
+
+/** Переключатель языка для форм: показывает поля одного языка за раз. Без скриптов видны все три. */
+function lang_switch(): string
+{
+    $out = '<div class="lgs" role="group" aria-label="Язык текстов">';
+    foreach (['ru', 'az', 'en'] as $l) $out .= '<button type="button" class="lg-btn" data-lg-set="' . $l . '" aria-pressed="false">' . strtoupper($l) . '</button>';
+    return $out . '</div>';
+}
+
+/** Заголовок карточки: название слева, справа ссылка или пояснение. */
+function card_head(string $title, string $right = '', string $extra = ''): string
+{
+    return '<div class="card-head"><h2>' . e($title) . '</h2>' . $extra . ($right !== '' ? '<div class="card-side">' . $right . '</div>' : '') . '</div>';
+}
+
+/** Числа для меню: сколько чего в базе. Считаются один раз за запрос. */
+function admin_counts(): array
+{
+    static $c = null;
+    if ($c !== null) return $c;
+    $c = ['new' => 0, 'orders' => 0, 'sales' => 0, 'clients' => 0];
+    foreach (q('SELECT type, COUNT(*) AS n FROM ao_items GROUP BY type')->fetchAll() as $r) $c[$r['type']] = (int) $r['n'];
+    $o = q("SELECT COUNT(*) AS n, SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) AS fresh, SUM(CASE WHEN kind = 'order' THEN 1 ELSE 0 END) AS sales, COUNT(DISTINCT phone) AS people FROM ao_orders")->fetch();
+    $c['orders'] = (int) ($o['n'] ?? 0);
+    $c['new'] = (int) ($o['fresh'] ?? 0);
+    $c['sales'] = (int) ($o['sales'] ?? 0);
+    $c['clients'] = (int) ($o['people'] ?? 0);
+    return $c;
+}
+
+/**
+ * Страница админ-панели: слева меню по группам, сверху заголовок и кнопки.
+ * $actions — кнопки страницы рядом с «Сайт» и «Выйти» (например, «Добавить товар»).
+ */
+/** Начало формы в карточке: слева название и переключатель языка текстов, справа ссылка назад. */
+function form_open(string $title, string $right = '', string $class = ''): string
+{
+    return '<form method="post" enctype="multipart/form-data" class="card form-card' . ($class !== '' ? ' ' . $class : '') . '">' . csrf_field()
+        . card_head($title, $right, lang_switch()) . '<div class="card-body">';
+}
+
+/** Конец формы: кнопка «Сохранить» остаётся внизу экрана, пока листают поля. */
+function form_close(string $after = ''): string
+{
+    return '</div><div class="actions actions-sticky"><button type="submit" class="btn">Сохранить</button>' . $after . '</div></form>';
+}
+
+/** Страница админ-панели. $doc — название для вкладки браузера, если оно подробнее заголовка. */
+function admin_page(string $title, string $body, string $current = '', string $actions = '', string $doc = ''): void
+{
+    $c = admin_counts();
+    $groups = [
+        'Магазин' => [['home', 'Обзор', 'home', null], ['orders', 'Заказы', 'orders', $c['new'] ?: null], ['clients', 'Клиенты', 'users', $c['clients'] ?: null]],
+        'Контент' => [['pages', 'Страницы', 'page', null], ['list:post', 'Блог', 'blog', $c['post'] ?? null], ['banners', 'Баннеры и фото', 'image', null]],
+        'Каталог' => [['list:product', 'Товары', 'box', $c['product'] ?? null], ['list:category', 'Разделы', 'grid', $c['category'] ?? null],
+            ['list:brand', 'Бренды', 'tag', $c['brand'] ?? null], ['list:service', 'Услуги мастерской', 'tool', $c['service'] ?? null]],
+        'Настройки' => [['doc:config', 'Настройки сайта', 'gear', null], ['password', 'Пароль', 'key', null]],
+    ];
     $links = '';
-    foreach ($nav as $key => $label) {
-        $p = explode(':', $key);
-        $url = $p[0] === 'list' ? admin_url('list', ['type' => $p[1]]) : ($p[0] === 'doc' ? admin_url('doc', ['name' => $p[1]]) : admin_url($p[0]));
-        $badge = $key === 'orders' && $new ? ' <span class="n">' . $new . '</span>' : '';
-        $links .= '<a href="' . e($url) . '"' . ($current === $key ? ' aria-current="page"' : '') . '>' . e($label) . $badge . '</a>';
+    foreach ($groups as $group => $items) {
+        $links .= '<p class="nav-group">' . e($group) . '</p>';
+        foreach ($items as [$key, $label, $ic, $n]) {
+            $p = explode(':', $key);
+            $url = $p[0] === 'list' ? admin_url('list', ['type' => $p[1]]) : ($p[0] === 'doc' ? admin_url('doc', ['name' => $p[1]]) : admin_url($p[0] === 'home' ? '' : $p[0]));
+            $badge = $n ? '<span class="n' . ($key === 'orders' ? ' n-new' : '') . '"' . ($key === 'orders' ? ' title="Новые"' : '') . '>' . (int) $n . '</span>' : '';
+            $links .= '<a href="' . e($url) . '"' . ($current === $key ? ' aria-current="page"' : '') . '>' . icon($ic) . '<span>' . e($label) . '</span>' . $badge . '</a>';
+        }
     }
     $flash = flash();
     $base = base_path();
-    $ver = substr(md5((string) @filemtime(ROOT . '/assets/css/admin.css')), 0, 8);
+    $ver = substr(md5((string) @filemtime(ROOT . '/assets/css/admin.css') . @filemtime(ROOT . '/assets/js/admin.js')), 0, 8);
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
-        . '<title>' . e($title) . ' — админ-панель Asioptik</title><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css?v=' . $ver . '"></head><body>'
-        . '<div class="adm"><aside class="side"><a class="brand" href="' . e(admin_url()) . '">asi<b>optik</b><small>админ-панель</small></a>'
+        . '<title>' . e($doc !== '' ? $doc : $title) . ' — админ-панель Asioptik</title><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css?v=' . $ver . '"></head><body>'
+        . '<div class="adm"><aside class="side"><a class="brand" href="' . e(admin_url()) . '">asi<b>optik</b><small>Admin</small></a>'
         . '<button type="button" class="menu-btn" aria-expanded="false" aria-controls="adm-nav">Меню</button>'
-        . '<nav id="adm-nav">' . $links . '</nav>'
-        . '<div class="side-foot"><a href="' . e($base) . '" target="_blank" rel="noopener">Открыть сайт</a>'
-        . '<form method="post" action="' . e(admin_url('logout')) . '">' . csrf_field() . '<button type="submit" class="link">Выйти</button></form></div></aside>'
-        . '<main class="main"><h1>' . e($title) . '</h1>' . https_note()
+        . '<nav id="adm-nav" aria-label="Разделы админ-панели">' . $links . '</nav></aside>'
+        . '<main class="main"><header class="top"><h1>' . e($title) . '</h1><div class="top-acts">' . $actions
+        . '<a class="btn btn-line" href="' . e($base) . '" target="_blank" rel="noopener">' . icon('ext') . 'Сайт</a>'
+        . '<form method="post" class="logout" action="' . e(admin_url('logout')) . '">' . csrf_field() . '<button type="submit" class="btn">' . icon('out') . 'Выйти</button></form></div></header>'
+        . https_note()
         . ($flash ? '<p class="flash flash-' . e($flash[0]) . '" role="status">' . e($flash[1]) . '</p>' : '')
         . $body . '</main></div><script src="' . e($base) . 'assets/js/admin.js?v=' . $ver . '"></script></body></html>';
     exit;
 }
 
-/** Страница без меню: вход. */
 function admin_bare(string $title, string $body): void
 {
     $base = base_path();
@@ -94,6 +182,10 @@ function form_fields(array $fields, array $data, array $errors = []): string
 {
     $out = '';
     foreach ($fields as $f) {
+        if ($f['type'] === 'head') {   // подзаголовок внутри формы
+            $out .= '<h3 class="block">' . e($f['label']) . '</h3>' . (isset($f['hint']) ? '<p class="hint hint-block">' . e($f['hint']) . '</p>' : '');
+            continue;
+        }
         $k = $f['key'];
         $v = dget($data, $k);
         $name = 'f[' . $k . ']';
@@ -137,10 +229,12 @@ function form_fields(array $fields, array $data, array $errors = []): string
                     }, $val));
                     $val = is_scalar($val) ? (string) $val : '';
                     $fid = $id . '-' . $l;
-                    $in .= '<div class="lang"><label for="' . $fid . '">' . strtoupper($l) . '</label>';
+                    // ph — текст, который сайт поставит сам, пока поле пустое; count — сколько знаков обычно помещается в поиске
+                    $more = (isset($f['ph'][$l]) && $f['ph'][$l] !== '' ? ' placeholder="' . e($f['ph'][$l]) . '"' : '') . (isset($f['count']) ? ' data-count="' . (int) $f['count'] . '"' : '');
+                    $in .= '<div class="lang" data-lg="' . $l . '"><label for="' . $fid . '">' . strtoupper($l) . '</label>';
                     $in .= $f['type'] === 'i18n'
-                        ? '<input id="' . $fid . '" type="text" name="' . e($name) . '[' . $l . ']" value="' . e($val) . '" lang="' . $l . '">'
-                        : '<textarea id="' . $fid . '" name="' . e($name) . '[' . $l . ']" rows="' . (int) ($f['rows'] ?? 5) . '" lang="' . $l . '">' . e($val) . '</textarea>';
+                        ? '<input id="' . $fid . '" type="text" name="' . e($name) . '[' . $l . ']" value="' . e($val) . '" lang="' . $l . '"' . $more . '>'
+                        : '<textarea id="' . $fid . '" name="' . e($name) . '[' . $l . ']" rows="' . (int) ($f['rows'] ?? 5) . '" lang="' . $l . '"' . $more . '>' . e($val) . '</textarea>';
                     $in .= '</div>';
                 }
                 $in .= '</div>';
@@ -193,6 +287,7 @@ function form_parse(array $fields, array $data, array $post, array &$errors): ar
     };
     $in = isset($post['f']) && is_array($post['f']) ? $post['f'] : [];
     foreach ($fields as $f) {
+        if ($f['type'] === 'head') continue;
         $k = $f['key'];
         $raw = $in[$k] ?? null;
         $req = !empty($f['req']);

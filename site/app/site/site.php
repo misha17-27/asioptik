@@ -33,6 +33,27 @@ function tr($v, string $lang): string
     return (string) $v;
 }
 
+/** Надпись сайта на нужном языке: сначала изменённая в админ-панели, потом встроенная; слова в {скобках} подставляются. */
+function site_text(string $key, string $lang, array $vars = []): string
+{
+    $own = setting('texts', []);
+    $def = texts_default();
+    $s = is_array($own) && isset($own[$lang][$key]) && is_string($own[$lang][$key]) && $own[$lang][$key] !== '' ? $own[$lang][$key] : (string) ($def[$key][$lang] ?? ($def[$key]['az'] ?? ''));
+    foreach ($vars as $k => $v) $s = str_replace('{' . $k . '}', (string) $v, $s);
+    return $s;
+}
+
+/** Описание страницы товара для поисковиков, когда своё не задано: название, короткое описание, раздел и салон. */
+function product_desc(array $p, string $lang, array $data): string
+{
+    $cat = '';
+    foreach ($data['CATEGORIES'] ?? [] as $c) {
+        if (($c['id'] ?? '') === ($p['cat'] ?? null)) $cat = tr($c['name'] ?? '', $lang);
+    }
+    $s = site_text('seo.product', $lang, ['name' => tr($p['name'] ?? '', $lang), 'sub' => tr($p['sub'] ?? '', $lang), 'cat' => $cat, 'shop' => (string) ($data['CONFIG']['shopName'] ?? 'Asioptik')]);
+    return (string) preg_replace('~\s*\.\s*\.~u', '.', $s);   // у товара без короткого описания не остаётся двух точек подряд
+}
+
 function site_run(): void
 {
     if (!config()) redirect(base_path() . 'install.php');
@@ -83,8 +104,8 @@ function site_run(): void
         }
         if (!$p) redirect($base . 'catalog' . $query($keep));
         $route = 'product/' . rawurlencode($p['id']);
-        $title = tr($p['name'] ?? '', $lang) . ' — ' . $shop;
-        $desc = tr($p['name'] ?? '', $lang) . '. ' . tr($p['sub'] ?? '', $lang) . '.';
+        $title = own_text($p['seoTitle'] ?? null, $lang) ?: tr($p['name'] ?? '', $lang) . ' — ' . $shop;
+        $desc = own_text($p['seoDesc'] ?? null, $lang) ?: product_desc($p, $lang, $data);
     } elseif ($first === 'blog' && count($seg) <= 2) {
         $route = 'blog';
         $title = $T['blog'][0] . ' — ' . $shop;
@@ -96,8 +117,8 @@ function site_run(): void
             }
             if (!$post) redirect($base . 'blog' . $query($keep));
             $route = 'blog/' . rawurlencode($post['id']);
-            $title = tr($post['title'] ?? '', $lang) . ' — ' . $shop;
-            $desc = tr($post['lead'] ?? '', $lang);
+            $title = own_text($post['seoTitle'] ?? null, $lang) ?: tr($post['title'] ?? '', $lang) . ' — ' . $shop;
+            $desc = own_text($post['seoDesc'] ?? null, $lang) ?: tr($post['lead'] ?? '', $lang);
         }
     } elseif ($first === 'about' && count($seg) === 1) {
         $route = 'about';
@@ -116,6 +137,13 @@ function site_run(): void
         }
     } else {
         redirect($base . $query(array_intersect_key($keep, ['lang' => 1])));   // неизвестный адрес — на главную
+    }
+    // Свои заголовок и описание страницы из раздела «Страницы» админ-панели (у раздела каталога и у статьи остаются свои)
+    $pageId = $route === '' ? 'home' : $route;
+    $seo = is_array($data['SEO'] ?? null) ? ($data['SEO'][$pageId] ?? null) : null;
+    if (is_array($seo) && !($route === 'catalog' && isset($keep['cat']))) {
+        $title = own_text($seo['title'] ?? null, $lang) ?: $title;
+        $desc = own_text($seo['desc'] ?? null, $lang) ?: $desc;
     }
 
     $site = rtrim((string) ($cfg['siteUrl'] ?? ''), '/');
@@ -136,9 +164,10 @@ function site_run(): void
     $data['CONFIG']['siteUrl'] = $site . '/';
     $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP;
     $js = '';
-    foreach (['CONFIG', 'CATEGORIES', 'RX', 'AUDIENCES', 'PRODUCTS', 'BRANDS', 'SERVICES', 'ABOUT', 'POSTS'] as $k) {
-        $v = $data[$k];
-        if (in_array($k, ['CONFIG', 'RX', 'ABOUT'], true) && $v === []) $v = new stdClass();
+    // TEXTS и SEO — надписи и заголовки страниц, изменённые в админ-панели (раздел «Страницы»)
+    foreach (['CONFIG', 'CATEGORIES', 'RX', 'AUDIENCES', 'PRODUCTS', 'BRANDS', 'SERVICES', 'ABOUT', 'POSTS', 'TEXTS', 'SEO'] as $k) {
+        $v = $data[$k] ?? [];
+        if (in_array($k, ['CONFIG', 'RX', 'ABOUT', 'TEXTS', 'SEO'], true) && ($v === [] || !is_array($v) && !is_object($v))) $v = new stdClass();
         $js .= "const $k = " . json_encode($v, $flags) . ";\n";
     }
 

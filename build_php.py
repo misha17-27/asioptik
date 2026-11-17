@@ -120,6 +120,10 @@ put('app/site/shell.html', shell)
 put('app/data/seed.json', json.dumps(seed, ensure_ascii=False, separators=(',', ':')))
 put('assets/css/app.css', css + '\n')
 put('assets/js/app.js', theme_js + '\n' + core_js + '\n')
+# все надписи сайта на трёх языках — чтобы их можно было менять в админ-панели, раздел «Страницы»
+texts = subprocess.run(['node', str(ROOT / 'build_texts.js'), str(ROOT / 'src' / 'core4.js'), str(ROOT / 'src' / 'v4.html')], capture_output=True, text=True, check=True).stdout
+assert len(json.loads(texts)) > 200
+put('app/data/texts.json', texts.strip())
 for folder in ('storage/cache', 'storage/logs', 'uploads'):   # пустые папки, которые должны быть на хостинге
     (OUT / folder).mkdir(parents=True, exist_ok=True)
     if not (OUT / folder / '.gitkeep').exists():

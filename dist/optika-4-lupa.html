@@ -2564,7 +2564,7 @@ const THEME = (function () {
       'co.summary': 'Sifarişiniz', 'co.items': 'Məhsullar', 'co.deliveryRow': 'Çatdırılma', 'co.total': 'Cəmi',
       'co.submit': 'Sifarişi WhatsApp-a göndərin', 'co.note': 'Sifarişin hazır mətni ilə WhatsApp açılacaq. Orada «Göndər» düyməsini basın, sifariş bizə çatacaq.',
       'dn.free': 'Şəhər daxilində pulsuz', 'dn.price': 'Şəhər daxilində {price}', 'dn.priceFree': 'Şəhər daxilində {price}. {lim}-dan pulsuz',
-      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
+      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'seo.product': '{name}. {sub}. {cat} — Bakıda {shop} optika salonunda. Saytda sifariş, WhatsApp-da təsdiq.', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
       'e.svc': 'Ən azı bir xidmət seçin', 'e.pickupAddr': 'Eynəyin götürüləcəyi ünvanı yazın',
       'ok.orderTitle': 'Sifarişi göndərmək qalıb',
       'ok.orderText': '{id} sifarişinin mətni ilə WhatsApp-ı açdıq. Çatda «Göndər» düyməsini basın, menecer sifarişi və çatdırılma vaxtını təsdiqləyəcək.',
@@ -2625,7 +2625,7 @@ const THEME = (function () {
       'co.summary': 'Ваш заказ', 'co.items': 'Товары', 'co.deliveryRow': 'Доставка', 'co.total': 'Итого',
       'co.submit': 'Отправить заказ в WhatsApp', 'co.note': 'Откроется WhatsApp с готовым текстом заказа. Нажмите в нём «Отправить», и заказ придёт к нам.',
       'dn.free': 'По городу, бесплатно', 'dn.price': 'По городу, {price}', 'dn.priceFree': 'По городу, {price}. Бесплатно от {lim}',
-      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
+      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'seo.product': '{name}. {sub}. {cat} в салоне оптики {shop} в Баку. Заказ на сайте, подтверждение в WhatsApp.', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
       'e.svc': 'Выберите хотя бы одну услугу', 'e.pickupAddr': 'Укажите адрес, откуда забрать очки',
       'ok.orderTitle': 'Осталось отправить заказ',
       'ok.orderText': 'Мы открыли WhatsApp с текстом заказа {id}. Нажмите в чате «Отправить», и менеджер подтвердит заказ и время доставки.',
@@ -2686,7 +2686,7 @@ const THEME = (function () {
       'co.summary': 'Your order', 'co.items': 'Items', 'co.deliveryRow': 'Delivery', 'co.total': 'Total',
       'co.submit': 'Send order via WhatsApp', 'co.note': 'WhatsApp will open with your order already written. Press Send there and the order reaches us.',
       'dn.free': 'Within the city, free', 'dn.price': 'Within the city, {price}', 'dn.priceFree': 'Within the city, {price}. Free from {lim}',
-      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
+      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'seo.product': '{name}. {sub}. {cat} at the {shop} optician in Baku. Order on the site, confirm in WhatsApp.', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
       'e.svc': 'Choose at least one service', 'e.pickupAddr': 'Enter the address to collect your glasses from',
       'ok.orderTitle': 'Now send the order',
       'ok.orderText': 'We’ve opened WhatsApp with order {id}. Press Send in the chat and our manager will confirm the order and delivery time.',
@@ -2774,10 +2774,13 @@ const THEME = (function () {
     catch (e) { s = String(v); }
     return s + NB + CONFIG.currency;
   }
+  // Тексты, изменённые в админ-панели (раздел «Страницы»), стоят первыми; остальные берутся из словарей ниже
+  const TX = (typeof TEXTS !== 'undefined' && TEXTS) || {};
   function t(key, vars, lng) {
     const l = lng || lang;
     const P = TH.i18n || {};
-    let s = (P[l] && P[l][key] != null) ? P[l][key]
+    let s = (TX[l] && TX[l][key]) ? TX[l][key]
+      : (P[l] && P[l][key] != null) ? P[l][key]
       : (UI[l] && UI[l][key] != null) ? UI[l][key]
       : (P[LANGS[0]] && P[LANGS[0]][key] != null) ? P[LANGS[0]][key]
       : (UI.ru[key] != null ? UI.ru[key] : key);
@@ -3761,9 +3764,15 @@ const THEME = (function () {
   function setMeta() {
     const p = state.page ? byId[state.page] : null, v = !p && state.view && state.viewInfo && state.viewInfo.title ? state.viewInfo : null;
     const inCat = v && state.view === 'catalog' && state.cat !== 'all' && catById[state.cat] ? state.cat : '';
-    const title = p ? L(p.name) + ' — ' + CONFIG.shopName : v ? (inCat ? catName(inCat) + ' — ' : '') + v.title + ' — ' + CONFIG.shopName : t('meta.title');
+    // Свои заголовок и описание для поисковиков: у товара и статьи — из их карточки, у страниц — из раздела «Страницы».
+    // Берётся только текст на языке страницы; если его нет, заголовок собирается сам.
+    const own = o => (o && typeof o === 'object' && typeof o[lang] === 'string' ? o[lang].trim() : '');
+    const SE = (typeof SEO !== 'undefined' && SEO) || {};
+    const post = v && state.view === 'blog' && state.post && typeof POSTS !== 'undefined' ? POSTS.find(x => x.id === state.post) : null;
+    const seo = p ? { title: p.seoTitle, desc: p.seoDesc } : post ? { title: post.seoTitle, desc: post.seoDesc } : (!inCat && !(v && state.post) && SE[v ? state.view : 'home']) || {};
+    const title = own(seo.title) || (p ? L(p.name) + ' — ' + CONFIG.shopName : v ? (inCat ? catName(inCat) + ' — ' : '') + v.title + ' — ' + CONFIG.shopName : t('meta.title'));
     if (title !== 'meta.title') document.title = title;
-    const md = $('meta[name="description"]'), desc = p ? L(p.name) + '. ' + L(p.sub) + '.' : v && v.desc ? v.desc : t('meta.desc');
+    const md = $('meta[name="description"]'), desc = own(seo.desc) || (p ? t('seo.product', { name: L(p.name), sub: L(p.sub), cat: catName(p.cat) }).replace(/\s*\.\s*\./g, '.') : v && v.desc ? v.desc : t('meta.desc'));
     if (md && desc !== 'meta.desc') md.setAttribute('content', desc);
     // Адрес страницы для поисковиков и для ссылок, которыми делятся в мессенджерах
     const put = (sel, attr, v) => { const el = $(sel); if (el && v) el.setAttribute(attr, v); };

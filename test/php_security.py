@@ -9,6 +9,10 @@ FAILS = []
 def sql(q):
     return subprocess.run(['mariadb', '--socket=/tmp/mysql-run/mysqld.sock', '-uroot', 'asioptik_test', '-N', '-e', q], capture_output=True, text=True).stdout.strip()
 
+def sql_raw(q):
+    """То же, но значение выводится как есть: без экранирования кавычек и переводов строк."""
+    return subprocess.run(['mariadb', '--socket=/tmp/mysql-run/mysqld.sock', '-uroot', 'asioptik_test', '-N', '--raw', '-e', q], capture_output=True, text=True).stdout.strip()
+
 def req(method, path, body=None, headers=None, cookie=None):
     c = http.client.HTTPConnection(HOST, PORT, timeout=30)
     h = dict(headers or {})
@@ -50,7 +54,7 @@ def multipart(fields, files):
 
 sql('DELETE FROM ao_logins')
 print('--- закрытые папки и файлы')
-for p in ['/app/', '/app/core/bootstrap.php', '/app/core/db.php', '/app/data/seed.json', '/app/site/shell.html', '/app/admin/admin.php', '/storage/', '/storage/config.php', '/storage/cache/site.json',
+for p in ['/app/', '/app/core/bootstrap.php', '/app/core/db.php', '/app/data/seed.json', '/app/data/texts.json', '/app/site/shell.html', '/app/admin/admin.php', '/app/admin/pages.php', '/storage/', '/storage/config.php', '/storage/cache/site.json',
           '/storage/logs/php-errors.log', '/.htaccess', '/app/.htaccess', '/uploads/.htaccess', '/.git/config', '/.env', '/README.md', '/composer.json', '/backup.sql', '/dump.sqlite', '/uploads/', '/assets/', '/assets/css/']:
     s = req('GET', p)[0]; check('closed ' + p, s in (403, 404), s)
 for p in ['/', '/catalog', '/about', '/blog', '/contacts', '/checkout', '/robots.txt', '/sitemap.xml', '/assets/js/app.js', '/assets/css/app.css', '/favicon.ico', '/admin/?p=login']:
@@ -75,7 +79,7 @@ s, h, t, raw = req('GET', '/admin/?p=login', headers={'Host': 'asioptik.az', 'X-
 check('no warning on a local test address', 'без шифрования' not in req('GET', '/admin/?p=login')[2])
 
 print('--- вход')
-for p in ['/admin/', '/admin/?p=list&type=product', '/admin/?p=orders', '/admin/?p=doc&name=config', '/admin/?p=order&id=1']:
+for p in ['/admin/', '/admin/?p=list&type=product', '/admin/?p=orders', '/admin/?p=doc&name=config', '/admin/?p=order&id=1', '/admin/?p=clients', '/admin/?p=pages', '/admin/?p=page&id=home', '/admin/?p=banners']:
     s, h, t, raw = req('GET', p); check('guest ' + p, s == 302 and 'p=login' in h.get('location', ''), f"{s} {h.get('location', '')}")
 pid = sql("SELECT id FROM ao_items WHERE type='product' AND slug='f-verona'")
 s, h, t, raw = req('POST', f'/admin/?p=delete&type=product&id={pid}', {'csrf': 'x'})
@@ -93,7 +97,7 @@ check('login ok', s == 302 and 'p=login' not in h.get('location', ''), h.get('lo
 check('session id changes on login', new != '' and new.split(';')[0] != old, 'new cookie issued' if new else 'same cookie')
 check('old session id is not logged in', req('GET', '/admin/', cookie=old)[0] == 302)
 ADMIN = ck
-s, h, t, raw = req('GET', '/admin/', cookie=ADMIN); check('admin page with session', s == 200 and 'Заказы и заявки' in t, s)
+s, h, t, raw = req('GET', '/admin/', cookie=ADMIN); check('admin page with session', s == 200 and 'Последние заказы' in t and 'Обзор' in t, s)
 
 for weak in ['12345678', 'password', 'aaaaaaaa', 'admin']:
     s, h, t, raw = req('POST', '/admin/?p=password', {'csrf': csrf_of(ADMIN), 'old': PW, 'new': weak, 'new2': weak}, cookie=ADMIN)
@@ -108,6 +112,10 @@ s, h, t, raw = req('POST', f'/admin/?p=delete&type=product&id={pid}', {}, cookie
 s, h, t, raw = req('GET', f'/admin/?p=delete&type=product&id={pid}', cookie=ADMIN); check('delete by GET link does nothing', sql(f'SELECT COUNT(*) FROM ao_items WHERE id={pid}') == '1', s)
 s, h, t, raw = req('GET', '/admin/?p=logout', cookie=ADMIN); check('logout by GET link does nothing', req('GET', '/admin/', cookie=ADMIN)[0] == 200)
 s, h, t, raw = req('POST', '/admin/?p=password', {'old': PW, 'new': 'hacked-123456', 'new2': 'hacked-123456'}, cookie=ADMIN); check('password change without token', s == 400, s)
+texts_before = sql("SELECT IFNULL((SELECT value FROM ao_settings WHERE name='texts'), 'нет')")
+for label, body in [('no token', {'t[hero.title][ru]': 'взлом'}), ('wrong token', {'csrf': 'b' * 40, 't[hero.title][ru]': 'взлом'})]:
+    s, h, t, raw = req('POST', '/admin/?p=page&id=home', body, cookie=ADMIN); check('page texts, ' + label, s == 400 and sql("SELECT IFNULL((SELECT value FROM ao_settings WHERE name='texts'), 'нет')") == texts_before, s)
+s, h, t, raw = req('POST', '/admin/?p=page&id=home', {'csrf': csrf_of(ADMIN), 't[hero.title][ru]': 'взлом'}); check('page texts by a guest with a real token', s == 302 and 'p=login' in h.get('location', '') and 'взлом' not in sql("SELECT IFNULL((SELECT value FROM ao_settings WHERE name='texts'), '')"), s)
 s, h, t, raw = req('POST', f'/admin/?p=edit&type=product&id={pid}', 'x' * 100, headers={'Content-Type': 'multipart/form-data; boundary=zz'}, cookie=ADMIN); check('empty form body gets a clear answer', s in (400, 413), s)
 
 print('--- приём заказов с сайта')
@@ -139,8 +147,10 @@ check('number replaced, status forced, total dropped', re.match(r'^OP-\d{4}-\d{4
 check('details: unknown keys dropped, types fixed', set(d) <= {'comment', 'address', 'items'} and len(d['address']) == 300 and len(d['items']) == 59 and d['items'][0]['qty'] == 0 and d['items'][0]['price'] is None and d['items'][0]['sum'] == 12.5 and d['items'][0]['lines'] == ['<i>line</i>', '7'], sorted(d))
 oid = sql('SELECT id FROM ao_orders ORDER BY id DESC LIMIT 1')
 s, h, t, raw = req('GET', f'/admin/?p=order&id={oid}', cookie=ADMIN)
-check('admin order page escapes everything', s == 200 and '<script>alert' not in t and 'onerror=alert' not in t.replace('onerror=alert(2)&gt;', '').replace('&lt;img src=x onerror=alert(4)&gt;', '') and '<svg' not in t and '&lt;script&gt;alert(1)&lt;/script&gt;' in t, s)
+check('admin order page escapes everything', s == 200 and '<script>alert' not in t and 'onerror=alert' not in t.replace('onerror=alert(2)&gt;', '').replace('&lt;img src=x onerror=alert(4)&gt;', '') and '<svg onload' not in t and '&lt;script&gt;alert(1)&lt;/script&gt;' in t, s)
 s, h, t, raw = req('GET', '/admin/?p=orders', cookie=ADMIN); check('admin orders list escapes everything', '<script>alert' not in t and '<img src=x' not in t)
+for p, label in [('/admin/', 'overview'), ('/admin/?p=clients', 'clients list')]:
+    s, h, t, raw = req('GET', p, cookie=ADMIN); check('admin ' + label + ' escapes everything', s == 200 and '<script>alert' not in t and '<img src=x' not in t and '<svg onload' not in t and '&lt;script&gt;alert' in t, s)
 sql("DELETE FROM ao_orders WHERE name = 'Проверка' OR name LIKE '<script>%'")
 codes = [api({**good, 'name': 'Поток'})[0] for _ in range(22)]
 check('rate limit: 20 an hour from one address', codes.count(200) + int(sql("SELECT COUNT(*) FROM ao_orders WHERE name <> 'Поток'")) == 20 and codes[-1] == 429, f'{codes.count(200)} accepted, then {codes[-1]}')
@@ -156,6 +166,63 @@ for p in ['/?page=//evil.example', '/?page=https://evil.example', '/?product=//e
 s, h, t, raw = req('GET', '/catalog?lang=ru&cat=%22%3E%3Cscript%3Ealert(1)%3C/script%3E'); check('query text is escaped in the page', '<script>alert(1)' not in t, s)
 s, h, t, raw = req('GET', '/about', headers={'Host': 'evil.example'}); check('foreign Host header does not reach canonical', 'evil.example' not in t, re.search(r'rel="canonical" href="([^"]*)"', t).group(1))
 s, h, t, raw = req('GET', '/no-such-page', headers={'Host': 'evil.example'}); check('redirects are relative', h.get('location', '').startswith('/'), h.get('location'))
+
+print('--- поиск и фильтры в админ-панели')
+total = int(sql("SELECT COUNT(*) FROM ao_items WHERE type='product'"))
+rows = lambda t: t.count('<tr><td')
+s, h, t, raw = req('GET', '/admin/?p=list&type=product', cookie=ADMIN); check('products list shows every product', s == 200 and rows(t) == total, f'{rows(t)} of {total}')
+for q in ["' OR '1'='1", "%' OR 1=1 -- ", '") UNION SELECT 1,2,3 -- ', '%', '_']:
+    s, h, t, raw = req('GET', '/admin/?p=list&type=product&q=' + urllib.parse.quote(q), cookie=ADMIN)
+    check('products search, sql text: ' + q[:14], s == 200 and rows(t) == 0 and 'SQL' not in t and 'PDO' not in t, f'{s}, rows {rows(t)}')
+    s, h, t, raw = req('GET', '/admin/?p=orders&q=' + urllib.parse.quote(q), cookie=ADMIN)
+    check('orders search, sql text: ' + q[:14], s == 200 and rows(t) == 0 and 'SQL' not in t and 'PDO' not in t, f'{s}, rows {rows(t)}')
+xss = urllib.parse.quote('"><script>alert(1)</script>')
+for p in ['/admin/?p=list&type=product&q=' + xss, '/admin/?p=list&type=product&cat=' + xss, '/admin/?p=orders&q=' + xss, '/admin/?p=orders&kind=' + xss + '&status=' + xss, '/admin/?p=page&id=' + xss, '/admin/?p=list&type=' + xss]:
+    s, h, t, raw = req('GET', p, cookie=ADMIN); check('admin query text is escaped ' + p[7:36], s in (200, 302) and '<script>alert(1)' not in t, s)
+s, h, t, raw = req('GET', '/admin/?p=page&id=..%2F..%2Fstorage%2Fconfig', cookie=ADMIN); check('unknown page id goes back to the list', s == 302 and h.get('location', '').endswith('p=pages'), h.get('location'))
+
+print('--- надписи и SEO, которые правят в админ-панели')
+setting = lambda name: json.loads(sql_raw(f"SELECT IFNULL((SELECT value FROM ao_settings WHERE name='{name}'), '{{}}')") or '{}')
+keep = {name: sql_raw(f"SELECT IFNULL((SELECT value FROM ao_settings WHERE name='{name}'), '')") for name in ('texts', 'seo')}
+body = {'csrf': csrf_of(ADMIN, '/admin/?p=page&id=home'), 't[hero.title][ru]': '<img src=x onerror=alert(7)>', 't[hero.title][az]': '</script><script>alert(8)</script>', 't[hero.lead][en]': 'L' * 5000,
+        't[no.such.key][ru]': 'лишний ключ', 't[cart.title][ru]': 'надпись другой страницы', 't[hero.cta1][xx]': 'чужой язык', 't[hero.cta1][ru][]': 'массив вместо строки',
+        'seo[title][ru]': '</title><script>alert(9)</script>', 'seo[desc][ru]': '"><script>alert(10)</script>', 'seo[title][xx]': 'чужой язык', 'seo[evil][ru]': 'лишнее поле'}
+s, h, t, raw = req('POST', '/admin/?p=page&id=home', body, cookie=ADMIN); check('page texts are saved', s == 302, s)
+tx, seo = setting('texts'), setting('seo')
+check('only the keys of this page and the three languages are stored', set(tx) <= {'az', 'ru', 'en'} and not any(k in tx.get(l, {}) for l in tx for k in ('no.such.key', 'cart.title', 'hero.cta1')),
+      {l: sorted(v) for l, v in tx.items()})
+check('long text is cut', len(tx.get('en', {}).get('hero.lead', '')) == 600, len(tx.get('en', {}).get('hero.lead', '')))
+check('seo: only title and description in the three languages', set(seo.get('home', {})) <= {'title', 'desc'} and set(seo['home']['title']) == {'ru'}, seo.get('home'))
+for lang in ('ru', 'az'):
+    s, h, t, raw = req('GET', '/?lang=' + lang)
+    check(f'site ({lang}): text with markup cannot become markup', s == 200 and '<img src=x' not in t and '<script>alert' not in t and '</title><script>' not in t and t.count('</title>') == 1, s)
+s, h, t, raw = req('GET', '/?lang=ru')
+check('site: title and description are escaped', '&lt;/title&gt;&lt;script&gt;alert(9)&lt;/script&gt;' in t and '&quot;&gt;&lt;script&gt;alert(10)' in t)
+s, h, t, raw = req('GET', '/admin/?p=page&id=home', cookie=ADMIN); check('admin page editor escapes stored texts', s == 200 and '<img src=x' not in t and '<script>alert' not in t and '&lt;img src=x onerror=alert(7)&gt;' in t, s)
+s, h, t, raw = req('GET', '/admin/?p=pages', cookie=ADMIN); check('admin pages list is intact', s == 200 and '<script>alert' not in t and 'изменено' in t, s)
+try:
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as pw:
+        br = pw.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox']); page = br.new_page(); fired = []
+        page.on('dialog', lambda d: (fired.append(d.message), d.dismiss()))
+        for lang in ('ru', 'az'):
+            page.goto(f'http://{HOST}:{PORT}/?lang={lang}'); page.wait_for_timeout(1500)
+            seen = page.evaluate("({ h1: document.querySelector('h1').textContent.trim(), planted: document.querySelectorAll('img[src=\"x\"], h1 script, h1 img').length, title: document.title })")
+            check(f'browser ({lang}): the text is shown as written, nothing runs', not fired and seen['planted'] == 0 and ('alert(7)' in seen['h1'] or 'alert(8)' in seen['h1']), seen)
+        br.close()
+except ImportError:
+    print('skip browser check: playwright is not installed')
+# вернуть надписи как были — через саму админ-панель: пустое поле возвращает встроенный текст
+was_t, was_s = (json.loads(keep[n]) if keep[n] else {} for n in ('texts', 'seo'))
+body = {'csrf': csrf_of(ADMIN, '/admin/?p=page&id=home')}
+for key, lang in (('hero.title', 'ru'), ('hero.title', 'az'), ('hero.lead', 'en')):
+    body[f't[{key}][{lang}]'] = was_t.get(lang, {}).get(key, '')
+for part in ('title', 'desc'):
+    for lang in ('az', 'ru', 'en'):
+        body[f'seo[{part}][{lang}]'] = was_s.get('home', {}).get(part, {}).get(lang, '')
+s, h, t, raw = req('POST', '/admin/?p=page&id=home', body, cookie=ADMIN)
+check('texts put back through the page editor', s == 302 and setting('texts') == was_t and setting('seo') == was_s, s)
+s, h, t, raw = req('GET', '/?lang=ru'); check('texts restored after the check', 'alert(7)' not in t and 'alert(9)' not in t)
 
 print('--- загрузка файлов')
 up = ROOT / 'site' / 'uploads' / 'p'; up.mkdir(parents=True, exist_ok=True)

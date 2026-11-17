@@ -1,4 +1,4 @@
-/* Админ-панель: меню на телефоне, подтверждение удаления, цвет рядом с кодом цвета, подготовка фото к загрузке */
+/* Админ-панель: меню на телефоне, подтверждение удаления, цвет рядом с кодом цвета, язык полей, подготовка фото к загрузке */
 (function () {
   'use strict';
   var side = document.querySelector('.side'), btn = document.querySelector('.menu-btn');
@@ -27,6 +27,38 @@
     var sw = el.closest('.color-row').querySelector('.sw');
     if (sw) sw.style.background = /^#[0-9a-f]{3,8}$/i.test(el.value.trim()) ? el.value.trim() : 'transparent';
   });
+
+  /* Язык текстов в формах: видны поля одного языка, выбор держится до закрытия вкладки.
+     Если форма вернулась с ошибкой в поле другого языка, открывается он. */
+  var LG = ['ru', 'az', 'en'];
+  function setLang(l) {
+    if (LG.indexOf(l) < 0) l = 'ru';
+    document.documentElement.setAttribute('data-lg', l);
+    [].forEach.call(document.querySelectorAll('[data-lg-set]'), function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-lg-set') === l ? 'true' : 'false');
+    });
+    try { sessionStorage.setItem('ao-lg', l); } catch (err) { /* без памяти вкладки просто не запоминаем */ }
+  }
+  if (document.querySelector('.lang[data-lg]') && document.querySelector('[data-lg-set]')) {
+    var first = 'ru';
+    try { first = sessionStorage.getItem('ao-lg') || 'ru'; } catch (err) { /* ничего */ }
+    var bad = document.querySelector('.field.is-invalid .lang .err');
+    bad = bad ? bad.closest('.lang') : null;
+    if (!bad) {
+      var wrong = document.querySelector('.field.is-invalid .langs');
+      if (wrong) {
+        bad = [].filter.call(wrong.querySelectorAll('.lang'), function (x) {
+          var i = x.querySelector('input,textarea');
+          return i && !i.value.trim();
+        })[0] || null;
+      }
+    }
+    setLang(bad ? bad.getAttribute('data-lg') : first);
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('[data-lg-set]') : null;
+      if (b) setLang(b.getAttribute('data-lg-set'));
+    });
+  }
 
   /* Фото уменьшается прямо в браузере до 2000 точек по длинной стороне:
      большой снимок с телефона проходит любой хостинг и загружается за секунды. Сервер всё равно проверяет и пересохраняет файл. */
@@ -104,5 +136,23 @@
       if (max && out.size > max) return note(input, 'Файл ' + size(out.size) + ' — больше, чем принимает хостинг (' + size(max) + '). Уменьшите фото и выберите его снова.', true);
       note(input, out !== file ? 'Фото уменьшено: ' + size(file.size) + ' → ' + size(out.size) + '. Нажмите «Сохранить».' : 'Фото выбрано: ' + size(out.size) + '. Нажмите «Сохранить».');
     });
+  });
+})();
+
+/* Счётчик знаков у SEO-полей: что длиннее нормы, поисковик обрежет. Пустое поле считает текст, который сайт поставит сам. */
+(function () {
+  [].forEach.call(document.querySelectorAll('[data-count]'), function (el) {
+    var max = parseInt(el.getAttribute('data-count'), 10) || 0;
+    var out = document.createElement('span');
+    out.className = 'count';
+    el.parentNode.appendChild(out);
+    function update() {
+      var own = el.value.replace(/^\s+|\s+$/g, '').length;
+      var n = own || (el.getAttribute('placeholder') || '').length;
+      out.textContent = n + ' из ' + max + ' знаков' + (own ? '' : n ? ' — текст сайта' : '');
+      out.className = 'count' + (n > max ? ' is-long' : '');
+    }
+    el.addEventListener('input', update);
+    update();
   });
 })();

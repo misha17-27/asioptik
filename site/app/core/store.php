@@ -165,7 +165,27 @@ function site_data_build(): array
         'SERVICES' => $withId(items('service', true)),
         'ABOUT' => setting('about', new stdClass()),
         'POSTS' => $posts,
+        // надписи и заголовки для поисковиков, изменённые в разделе «Страницы» (пусто — берутся встроенные)
+        'TEXTS' => setting('texts', new stdClass()) ?: new stdClass(),
+        'SEO' => setting('seo', new stdClass()) ?: new stdClass(),
     ];
+}
+
+/** Все надписи сайта на трёх языках, как они заданы в самом сайте: ключ => ['az' => …, 'ru' => …, 'en' => …]. */
+function texts_default(): array
+{
+    static $t = null;
+    if ($t === null) {
+        $t = json_decode((string) @file_get_contents(APP . '/data/texts.json'), true);
+        if (!is_array($t)) $t = [];
+    }
+    return $t;
+}
+
+/** Текст на одном языке без подстановки другого языка: для заголовков страниц, которые задаются отдельно. */
+function own_text($v, string $lang): string
+{
+    return is_array($v) && isset($v[$lang]) && is_string($v[$lang]) ? trim($v[$lang]) : '';
 }
 
 /** Путь к картинке → адрес для страницы (картинки хранятся относительно корня сайта). */

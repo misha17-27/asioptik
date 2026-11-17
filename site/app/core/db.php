@@ -10,7 +10,14 @@ function db_connect(array $d): PDO
         PDO::ATTR_EMULATE_PREPARES => false,
     ];
     if (($d['driver'] ?? 'mysql') === 'sqlite') {
-        return new PDO('sqlite:' . $d['path'], null, null, $opt);
+        $pdo = new PDO('sqlite:' . $d['path'], null, null, $opt);
+        // SQLite сам приводит к строчным только латиницу; для поиска по именам на кириллице подменяем LOWER()
+        if (method_exists($pdo, 'sqliteCreateFunction')) {
+            @$pdo->sqliteCreateFunction('lower', function ($v) {
+                return $v === null ? null : mb_strtolower((string) $v);
+            }, 1);
+        }
+        return $pdo;
     }
     $dsn = 'mysql:host=' . $d['host'] . (empty($d['port']) ? '' : ';port=' . (int) $d['port']) . ';dbname=' . $d['name'] . ';charset=utf8mb4';
     return new PDO($dsn, (string) $d['user'], (string) $d['pass'], $opt);
