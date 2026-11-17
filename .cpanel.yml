@@ -1,0 +1,22 @@
+---
+# Deployment to cPanel hosting: Git Version Control -> Manage -> Pull or Deploy ->
+# "Update from Remote", then "Deploy HEAD Commit". Described in Russian in README.md.
+#
+# The repository on the hosting must live OUTSIDE the web folder (for example in repositories/asioptik):
+# besides the site it holds sources and tests, and the git history must not be reachable from a browser.
+# Only the contents of site/ are copied into the web folder. Settings (storage/config.php), the database
+# and uploaded photos (uploads/) are not touched.
+#
+# Comments here are plain ASCII on purpose: the file is parsed by cPanel.
+deployment:
+  tasks:
+    # The web folder of the site. When the site moves to another folder, change this line only.
+    - export DEPLOYPATH=/home/mguliyev/public_html/asioptik
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R site/. $DEPLOYPATH/
+    # The installer is needed only before the first install; it must not stay on a working site.
+    - 'if [ -f $DEPLOYPATH/storage/config.php ]; then /bin/rm -f $DEPLOYPATH/install.php; fi'
+    # The web server runs as a different user than the owner of the files, so site files need mode 644
+    # and folders 755. Otherwise the server cannot read .htaccess and answers "Forbidden" to every address.
+    - /bin/chmod -R u=rwX,go=rX $DEPLOYPATH/admin $DEPLOYPATH/app $DEPLOYPATH/assets
+    - /bin/chmod 644 $DEPLOYPATH/.htaccess $DEPLOYPATH/.user.ini $DEPLOYPATH/index.php $DEPLOYPATH/favicon.ico $DEPLOYPATH/storage/.htaccess $DEPLOYPATH/uploads/.htaccess
