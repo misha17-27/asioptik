@@ -39,8 +39,8 @@ async def main():
         print('post:', tail(), '|', await pg.inner_text('#pgTitle'))
         await pg.goto(B + '/blog/kids-glasses?lang=en'); await pg.wait_for_timeout(1200)
         print('direct post EN:', await pg.inner_text('#pgTitle'), '| lang', await pg.evaluate('Shop.lang'))
-        await pg.locator('.site-header .logo').click(); await pg.wait_for_timeout(400); print('logo → home:', tail())
-        await pg.locator('[data-set-lang="ru"]').first.click(); await pg.wait_for_timeout(300)
+        await pg.locator('.hdr > .logo').click(); await pg.wait_for_timeout(400); print('logo → home:', tail())
+        await pg.locator('.hdr-right [data-set-lang=\"ru\"]').click(); await pg.wait_for_timeout(300)
         # заказ
         await pg.goto(B + '/product/f-milan?lang=ru'); await pg.wait_for_timeout(1200)
         await pg.locator('#ppAdd').click(); await pg.wait_for_timeout(300)

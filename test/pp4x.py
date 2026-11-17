@@ -87,7 +87,7 @@ async def main():
         print('file reload page:', await pg.evaluate('Shop.state.page'), '| cart:', await pg.evaluate('Shop.state.cart.length'))
         await pg.go_back(); await pg.wait_for_timeout(500)
         print('file back:', pg.url.split('/')[-1], '| page:', repr(await pg.evaluate('Shop.state.page')))
-        await pg.locator('.site-header .lang [data-set-lang="ru"]').click(); await pg.wait_for_timeout(300)
+        await pg.locator('.hdr-right [data-set-lang="ru"]').click(); await pg.wait_for_timeout(300)
         print('file lang url:', pg.url.split('/')[-1], '| card href:', await pg.get_attribute('#productsGrid [data-pid="f-milan"] .card-title a', 'href'))
         print('file errors:', ferr or 'none')
         await b.close()

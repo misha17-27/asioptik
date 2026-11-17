@@ -55,6 +55,9 @@ shell = sub1(r'<meta property="og:description" content="[^"]*">', '<meta propert
 # ссылки меню: на сервере адреса обычные (/catalog), а не ?page=catalog
 shell, n = re.subn(r'href="\?page=([a-z]+)"', r'href="%%BASE%%\1"', shell)
 assert n >= 8, n
+# то же для страниц «для кого»: ?page=catalog&aud=kids → /catalog?aud=kids
+shell, n = re.subn(r'href="\?page=([a-z]+)&amp;([a-z]+=[a-z0-9-]+)"', r'href="%%BASE%%\1?\2"', shell)
+assert n == 2, n
 assert 'href="?page=' not in shell
 shell = shell.replace('Адреса: ?page=catalog, ?page=about, ?page=blog, ?page=contacts', 'Адреса: /catalog, /about, /blog, /contacts')
 

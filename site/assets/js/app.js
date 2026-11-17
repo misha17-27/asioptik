@@ -433,14 +433,15 @@ const THEME = (function () {
   }
 
   /* ---------- плитки разделов каталога (главная и страница каталога) ---------- */
-  function tilesHTML() {
+  // aud — «для кого» (adults, men, women, kids): тогда в плитках только разделы и товары для них
+  function tilesHTML(aud) {
     const S = Shop;
     return CATEGORIES.map(c => {
-      const list = PRODUCTS.filter(p => p.cat === c.id), b = c.banner || {};
+      const list = PRODUCTS.filter(p => p.cat === c.id && S.inAud(p, aud || '')), b = c.banner || {};
       if (!list.length) return '';
       const min = Math.min.apply(null, list.map(p => p.price));
-      return `<a class="ctile ctile-${c.id}" href="${S.esc(S.hrefCatalog(c.id))}" data-view="catalog" data-goto="${c.id}" data-hash="#catalog">
-        <span class="ctile-arts" aria-hidden="true">${arts(b.show || list.slice(0, 3).map(p => p.id))}</span>
+      return `<a class="ctile ctile-${c.id}" href="${S.esc(S.hrefCatalog(c.id, aud))}" data-view="catalog" data-goto="${c.id}"${aud ? ` data-aud="${S.esc(aud)}"` : ''} data-hash="#catalog">
+        <span class="ctile-arts" aria-hidden="true">${arts(!aud && b.show ? b.show : list.slice(0, 3).map(p => p.id))}</span>
         <span class="ctile-body"><b>${S.esc(S.L(c.name))}</b><span>${S.esc(S.count(list.length) + ', ' + S.priceFrom(min))}</span></span>
       </a>`;
     }).join('');
@@ -494,9 +495,17 @@ const THEME = (function () {
   // Услуги в форме «Напишите нам»; подписи — в словаре, ключи ct.t.<код>
   const CT_TOPICS = ['glasses', 'rx', 'contacts', 'repair', 'exam', 'other'];
   const VIEW = {
+    // Страница каталога. С отбором «для кого» (?aud=adults|men|women|kids) это страница раздела:
+    // свой заголовок и текст, плитки только тех разделов, где есть товары для них.
     catalog() {
-      const S = Shop, title = S.t('cat.title'), lead = S.t('cat.lead');
-      return { title, desc: lead, html: `<div class="wrap">${pgHead(title, lead, [homeCrumb()])}<div class="ctiles">${tilesHTML()}</div></div>` };
+      const S = Shop, id = S.audById[S.state.aud] ? S.state.aud : '', a = id ? S.audById[id] : null, up = a && S.audParent[id] ? S.audById[S.audParent[id]] : null;
+      const title = a ? S.L(a.title) || S.L(a.name) : S.t('cat.title'), lead = a ? S.L(a.text) : S.t('cat.lead');
+      const link = (aud, name) => [S.hrefCatalog('all', aud), name, ` data-view="catalog" data-goto="all"${aud ? ` data-aud="${S.esc(aud)}"` : ''}`];
+      const trail = [homeCrumb()].concat(a ? [link('', S.t('cat.title'))] : [], up ? [link(up.id, S.L(up.name))] : []);
+      // у раздела из частей («Взрослым») под заголовком стоят ссылки на части: «Мужчинам», «Женщинам»
+      const parts = a && a.parts ? a.parts.filter(x => PRODUCTS.some(p => S.inAud(p, x.id))) : [];
+      const sub = parts.length ? `<p class="pg-parts">${parts.map(x => { const l = link(x.id, S.L(x.name)); return `<a class="btn btn-line" href="${S.esc(l[0])}"${l[2]}>${S.esc(l[1])}</a>`; }).join('')}</p>` : '';
+      return { title, desc: lead, aud: id, html: `<div class="wrap">${pgHead(title, lead, trail)}${sub}<div class="ctiles">${tilesHTML(id)}</div></div>` };
     },
     about() {
       const S = Shop, A = ABOUT, title = S.L(A.title), lead = S.L(A.lead), fr = S.byId['f-milan'];
@@ -1356,6 +1365,8 @@ const THEME = (function () {
   }
   function renderCatalog() {
     if (state.cat !== 'all' && !PRODUCTS.some(p => inAud(p, state.aud) && p.cat === state.cat)) state.cat = 'all';
+    // Заголовок, текст и плитки разделов на странице каталога свои у каждого «для кого»: при смене отбора обновляем их
+    if (state.view === 'catalog' && state.viewInfo && (state.viewInfo.aud || '') !== state.aud) renderView();
     renderTabs();
     renderAudSwitch();
     renderBrands();
@@ -1899,10 +1910,15 @@ const THEME = (function () {
   }
   // Ссылки на страницы сайта: адрес с текущим языком и отметка открытой страницы в меню
   function syncNav() {
+    const top = state.aud ? (audParent[state.aud] || state.aud) : '';
     $$('a[data-view]').forEach(a => {
-      a.setAttribute('href', hrefView(a.dataset.view, a.dataset.post || ''));
+      // ссылка на раздел каталога или на страницу «для кого» сохраняет их в адресе (важно, когда её открывают в новой вкладке)
+      const sec = a.dataset.view === 'catalog' && a.dataset.goto;
+      a.setAttribute('href', sec ? hrefCatalog(a.dataset.goto, audById[a.dataset.aud] ? a.dataset.aud : '') : hrefView(a.dataset.view, a.dataset.post || ''));
       if (!a.closest('.nav, .ft-nav')) return;
-      if (a.dataset.view === state.view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      // «Каталог», «Взрослым» и «Детям» — одна страница с разным отбором: отмечается та ссылка, чей отбор открыт
+      const on = a.dataset.view === state.view && (a.dataset.view !== 'catalog' || (a.dataset.aud || '') === top);
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
   }
   // Мгновенный переход к месту на странице (без плавной прокрутки через весь сайт)
@@ -1921,7 +1937,8 @@ const THEME = (function () {
     const own = o => (o && typeof o === 'object' && typeof o[lang] === 'string' ? o[lang].trim() : '');
     const SE = (typeof SEO !== 'undefined' && SEO) || {};
     const post = v && state.view === 'blog' && state.post && typeof POSTS !== 'undefined' ? POSTS.find(x => x.id === state.post) : null;
-    const seo = p ? { title: p.seoTitle, desc: p.seoDesc } : post ? { title: post.seoTitle, desc: post.seoDesc } : (!inCat && !(v && state.post) && SE[v ? state.view : 'home']) || {};
+    const inAudPage = v && state.view === 'catalog' && state.aud;
+    const seo = p ? { title: p.seoTitle, desc: p.seoDesc } : post ? { title: post.seoTitle, desc: post.seoDesc } : (!inCat && !inAudPage && !(v && state.post) && SE[v ? state.view : 'home']) || {};
     const title = own(seo.title) || (p ? L(p.name) + ' — ' + CONFIG.shopName : v ? (inCat ? catName(inCat) + ' — ' : '') + v.title + ' — ' + CONFIG.shopName : t('meta.title'));
     if (title !== 'meta.title') document.title = title;
     const md = $('meta[name="description"]'), desc = own(seo.desc) || (p ? t('seo.product', { name: L(p.name), sub: L(p.sub), cat: catName(p.cat) }).replace(/\s*\.\s*\./g, '.') : v && v.desc ? v.desc : t('meta.desc'));
@@ -2729,16 +2746,27 @@ const THEME = (function () {
   }
 
   /* ---------- шапка, меню и клавиатура ---------- */
-  function closeMenu() {
-    document.body.classList.remove('menu-open');
-    $$('.js-menu-toggle').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  // Меню на телефоне открывается на весь экран. Пока оно открыто, остальная страница недоступна с клавиатуры.
+  function setMenu(on, focus) {
+    const was = document.body.classList.contains('menu-open');
+    document.body.classList.toggle('menu-open', on);
+    $$('.js-menu-toggle').forEach(b => b.setAttribute('aria-expanded', String(on)));
+    $$('main, .site-footer, .hdr-right, .hdr > .logo').forEach(el => { el.inert = on; });
+    if (!focus || was === on) return;
+    const to = on ? $('.nav-close') : $('.hdr-right .js-menu-toggle');
+    if (to && to.getClientRects().length) to.focus();
   }
+  function closeMenu() { setMenu(false); }
   function bindNav() {
-    $$('.js-menu-toggle').forEach(tg => tg.addEventListener('click', () => {
-      const on = !document.body.classList.contains('menu-open');
-      document.body.classList.toggle('menu-open', on);
-      tg.setAttribute('aria-expanded', on);
-    }));
+    // логотип для мобильного меню — копия логотипа из шапки
+    const slot = $('.nav-logo'), logo = $('.hdr > .logo');
+    if (slot && logo && !slot.firstChild) slot.appendChild(logo.cloneNode(true));
+    $$('.js-menu-toggle').forEach(tg => tg.addEventListener('click', () => setMenu(!document.body.classList.contains('menu-open'), true)));
+    // если экран стал широким (повернули планшет), открытое мобильное меню закрывается
+    if (window.matchMedia) {
+      const wide = window.matchMedia('(min-width:1101px)'), off = () => { if (wide.matches) closeMenu(); };
+      if (wide.addEventListener) wide.addEventListener('change', off); else if (wide.addListener) wide.addListener(off);
+    }
     const nav = $('#siteNav');
     if (nav) nav.addEventListener('click', e => { if (e.target.closest('a')) closeMenu(); });
     const header = $('.site-header');
@@ -2844,7 +2872,7 @@ const THEME = (function () {
   }
   function onKey(e) {
     if (!layers.length) {
-      if (e.key === 'Escape' && document.body.classList.contains('menu-open')) closeMenu();
+      if (e.key === 'Escape' && document.body.classList.contains('menu-open')) setMenu(false, true);
       return;
     }
     const top = layers[layers.length - 1].el;
@@ -2918,7 +2946,7 @@ const THEME = (function () {
 
   /* ---------- запуск ---------- */
   window.Shop = {
-    CONFIG, state, byId, art, glasses, money, esc, swatches, swAttr, badges, needsOptions, priceLabel, catName,
+    CONFIG, state, byId, art, glasses, money, esc, swatches, swAttr, badges, needsOptions, priceLabel, catName, audById, audParent, inAud,
     colorOf, hexA, icon: n => ICON[n] || '', toast, reduced, waUrl, t, L, setLang, href: hrefFor, hrefView, hrefCatalog, go: navigate, brandName,
     count: itemsCount, priceFrom,
     get lang() { return lang; },

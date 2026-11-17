@@ -130,10 +130,25 @@ function site_run(): void
         $title = $T[$first][0] . ' — ' . $shop;
         $desc = $T[$first][1] ?: $T['home'][1];
         $noindex = $first === 'checkout';
-        if ($first === 'catalog' && isset($keep['cat'])) {
-            foreach ($data['CATEGORIES'] as $c) {
-                if ($c['id'] === $keep['cat']) $title = tr($c['name'] ?? '', $lang) . ' — ' . $title;
+        if ($first === 'catalog') {
+            // Страница «для кого» (?aud=adults, men, women, kids): свой заголовок и текст, как на самой странице
+            $aud = null;
+            foreach ($data['AUDIENCES'] as $a) {
+                foreach (array_merge([$a], is_array($a['parts'] ?? null) ? $a['parts'] : []) as $x) {
+                    if (isset($keep['aud']) && ($x['id'] ?? '') === $keep['aud']) $aud = $x;
+                }
             }
+            if (!$aud) unset($keep['aud']);   // незнакомое значение в адрес страницы не попадает
+            if ($aud) {
+                $title = (tr($aud['title'] ?? '', $lang) ?: tr($aud['name'] ?? '', $lang)) . ' — ' . $shop;
+                $desc = tr($aud['text'] ?? '', $lang) ?: $desc;
+            }
+            $cat = null;
+            foreach ($data['CATEGORIES'] as $c) {
+                if (isset($keep['cat']) && $c['id'] === $keep['cat']) $cat = $c;
+            }
+            if (!$cat) unset($keep['cat']);
+            if ($cat) $title = tr($cat['name'] ?? '', $lang) . ' — ' . $title;
         }
     } else {
         redirect($base . $query(array_intersect_key($keep, ['lang' => 1])));   // неизвестный адрес — на главную
@@ -141,7 +156,7 @@ function site_run(): void
     // Свои заголовок и описание страницы из раздела «Страницы» админ-панели (у раздела каталога и у статьи остаются свои)
     $pageId = $route === '' ? 'home' : $route;
     $seo = is_array($data['SEO'] ?? null) ? ($data['SEO'][$pageId] ?? null) : null;
-    if (is_array($seo) && !($route === 'catalog' && isset($keep['cat']))) {
+    if (is_array($seo) && !($route === 'catalog' && (isset($keep['cat']) || isset($keep['aud'])))) {
         $title = own_text($seo['title'] ?? null, $lang) ?: $title;
         $desc = own_text($seo['desc'] ?? null, $lang) ?: $desc;
     }
@@ -304,6 +319,14 @@ function site_sitemap(): void
     $site = site_origin_url();
     $urls = ['', 'catalog', 'about', 'blog', 'contacts'];
     foreach ($data['CATEGORIES'] as $c) $urls[] = 'catalog?cat=' . rawurlencode($c['id']);
+    // страницы «для кого»: взрослым, мужчинам, женщинам, детям — если для них есть товары
+    $for = [];
+    foreach ($data['PRODUCTS'] as $p) foreach ((array) ($p['for'] ?? []) as $f) $for[$f] = true;
+    foreach ($data['AUDIENCES'] as $a) {
+        $parts = array_column(is_array($a['parts'] ?? null) ? $a['parts'] : [], 'id');
+        if (array_intersect_key($for, array_flip($parts ?: [$a['id']]))) $urls[] = 'catalog?aud=' . rawurlencode($a['id']);
+        foreach ($parts as $id) if (isset($for[$id])) $urls[] = 'catalog?aud=' . rawurlencode($id);
+    }
     foreach ($data['PRODUCTS'] as $p) $urls[] = 'product/' . rawurlencode($p['id']);
     foreach ($data['POSTS'] as $p) $urls[] = 'blog/' . rawurlencode($p['id']);
     header('Content-Type: application/xml; charset=utf-8');

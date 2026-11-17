@@ -678,6 +678,8 @@
   }
   function renderCatalog() {
     if (state.cat !== 'all' && !PRODUCTS.some(p => inAud(p, state.aud) && p.cat === state.cat)) state.cat = 'all';
+    // Заголовок, текст и плитки разделов на странице каталога свои у каждого «для кого»: при смене отбора обновляем их
+    if (state.view === 'catalog' && state.viewInfo && (state.viewInfo.aud || '') !== state.aud) renderView();
     renderTabs();
     renderAudSwitch();
     renderBrands();
@@ -1221,10 +1223,15 @@
   }
   // Ссылки на страницы сайта: адрес с текущим языком и отметка открытой страницы в меню
   function syncNav() {
+    const top = state.aud ? (audParent[state.aud] || state.aud) : '';
     $$('a[data-view]').forEach(a => {
-      a.setAttribute('href', hrefView(a.dataset.view, a.dataset.post || ''));
+      // ссылка на раздел каталога или на страницу «для кого» сохраняет их в адресе (важно, когда её открывают в новой вкладке)
+      const sec = a.dataset.view === 'catalog' && a.dataset.goto;
+      a.setAttribute('href', sec ? hrefCatalog(a.dataset.goto, audById[a.dataset.aud] ? a.dataset.aud : '') : hrefView(a.dataset.view, a.dataset.post || ''));
       if (!a.closest('.nav, .ft-nav')) return;
-      if (a.dataset.view === state.view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      // «Каталог», «Взрослым» и «Детям» — одна страница с разным отбором: отмечается та ссылка, чей отбор открыт
+      const on = a.dataset.view === state.view && (a.dataset.view !== 'catalog' || (a.dataset.aud || '') === top);
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
   }
   // Мгновенный переход к месту на странице (без плавной прокрутки через весь сайт)
@@ -1243,7 +1250,8 @@
     const own = o => (o && typeof o === 'object' && typeof o[lang] === 'string' ? o[lang].trim() : '');
     const SE = (typeof SEO !== 'undefined' && SEO) || {};
     const post = v && state.view === 'blog' && state.post && typeof POSTS !== 'undefined' ? POSTS.find(x => x.id === state.post) : null;
-    const seo = p ? { title: p.seoTitle, desc: p.seoDesc } : post ? { title: post.seoTitle, desc: post.seoDesc } : (!inCat && !(v && state.post) && SE[v ? state.view : 'home']) || {};
+    const inAudPage = v && state.view === 'catalog' && state.aud;
+    const seo = p ? { title: p.seoTitle, desc: p.seoDesc } : post ? { title: post.seoTitle, desc: post.seoDesc } : (!inCat && !inAudPage && !(v && state.post) && SE[v ? state.view : 'home']) || {};
     const title = own(seo.title) || (p ? L(p.name) + ' — ' + CONFIG.shopName : v ? (inCat ? catName(inCat) + ' — ' : '') + v.title + ' — ' + CONFIG.shopName : t('meta.title'));
     if (title !== 'meta.title') document.title = title;
     const md = $('meta[name="description"]'), desc = own(seo.desc) || (p ? t('seo.product', { name: L(p.name), sub: L(p.sub), cat: catName(p.cat) }).replace(/\s*\.\s*\./g, '.') : v && v.desc ? v.desc : t('meta.desc'));
@@ -2051,16 +2059,27 @@
   }
 
   /* ---------- шапка, меню и клавиатура ---------- */
-  function closeMenu() {
-    document.body.classList.remove('menu-open');
-    $$('.js-menu-toggle').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  // Меню на телефоне открывается на весь экран. Пока оно открыто, остальная страница недоступна с клавиатуры.
+  function setMenu(on, focus) {
+    const was = document.body.classList.contains('menu-open');
+    document.body.classList.toggle('menu-open', on);
+    $$('.js-menu-toggle').forEach(b => b.setAttribute('aria-expanded', String(on)));
+    $$('main, .site-footer, .hdr-right, .hdr > .logo').forEach(el => { el.inert = on; });
+    if (!focus || was === on) return;
+    const to = on ? $('.nav-close') : $('.hdr-right .js-menu-toggle');
+    if (to && to.getClientRects().length) to.focus();
   }
+  function closeMenu() { setMenu(false); }
   function bindNav() {
-    $$('.js-menu-toggle').forEach(tg => tg.addEventListener('click', () => {
-      const on = !document.body.classList.contains('menu-open');
-      document.body.classList.toggle('menu-open', on);
-      tg.setAttribute('aria-expanded', on);
-    }));
+    // логотип для мобильного меню — копия логотипа из шапки
+    const slot = $('.nav-logo'), logo = $('.hdr > .logo');
+    if (slot && logo && !slot.firstChild) slot.appendChild(logo.cloneNode(true));
+    $$('.js-menu-toggle').forEach(tg => tg.addEventListener('click', () => setMenu(!document.body.classList.contains('menu-open'), true)));
+    // если экран стал широким (повернули планшет), открытое мобильное меню закрывается
+    if (window.matchMedia) {
+      const wide = window.matchMedia('(min-width:1101px)'), off = () => { if (wide.matches) closeMenu(); };
+      if (wide.addEventListener) wide.addEventListener('change', off); else if (wide.addListener) wide.addListener(off);
+    }
     const nav = $('#siteNav');
     if (nav) nav.addEventListener('click', e => { if (e.target.closest('a')) closeMenu(); });
     const header = $('.site-header');
@@ -2166,7 +2185,7 @@
   }
   function onKey(e) {
     if (!layers.length) {
-      if (e.key === 'Escape' && document.body.classList.contains('menu-open')) closeMenu();
+      if (e.key === 'Escape' && document.body.classList.contains('menu-open')) setMenu(false, true);
       return;
     }
     const top = layers[layers.length - 1].el;
@@ -2240,7 +2259,7 @@
 
   /* ---------- запуск ---------- */
   window.Shop = {
-    CONFIG, state, byId, art, glasses, money, esc, swatches, swAttr, badges, needsOptions, priceLabel, catName,
+    CONFIG, state, byId, art, glasses, money, esc, swatches, swAttr, badges, needsOptions, priceLabel, catName, audById, audParent, inAud,
     colorOf, hexA, icon: n => ICON[n] || '', toast, reduced, waUrl, t, L, setLang, href: hrefFor, hrefView, hrefCatalog, go: navigate, brandName,
     count: itemsCount, priceFrom,
     get lang() { return lang; },

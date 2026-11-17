@@ -872,7 +872,8 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
 .nav a:hover{color:var(--ink)}
 /* открытая страница отмечена в меню коралловой чертой */
 .nav a[aria-current]{color:var(--ink);text-decoration:underline;text-decoration-color:var(--coral);text-decoration-thickness:2px;text-underline-offset:9px}
-.nav-phone,.nav-more{display:none}
+.nav-more,.nav-head,.nav-foot{display:none}
+.nav-links{display:contents}
 .hdr-right{display:flex;align-items:center;gap:14px;margin-left:auto}
 .hdr-phone{font-weight:600;text-decoration:none;white-space:nowrap}
 .lang{display:inline-flex;padding:3px;border:1px solid var(--line-2);border-radius:999px;background:var(--white)}
@@ -888,12 +889,34 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
 @media (max-width:1100px){
   .hdr{gap:12px}
   .menu-btn{display:inline-grid}
-  .nav{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;align-items:stretch;gap:0;padding:6px var(--pad) 20px;background:var(--white);border-bottom:1px solid var(--line);box-shadow:0 18px 34px rgba(15,43,91,.08)}
+  /* Меню на телефоне и планшете — на весь экран: логотип и «закрыть», разделы, внизу язык и контакты */
+  .nav{display:none;position:fixed;inset:0;z-index:5;flex-direction:column;align-items:stretch;gap:0;padding:0 var(--pad) calc(18px + env(safe-area-inset-bottom));background:var(--paper);overflow-y:auto;overscroll-behavior:contain}
   .menu-open .nav{display:flex}
-  .nav a{padding:15px 0;border-bottom:1px solid var(--line);font-size:18px;color:var(--ink)}
-  .nav a[aria-current]{text-underline-offset:6px}
+  /* размытие у шапки привязало бы меню к её размеру, поэтому пока меню открыто, его нет */
+  .menu-open .site-header{z-index:90;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom-color:transparent}
+  .menu-open{overflow:hidden}
+  .menu-open .wa-float{display:none}
+  .nav-head{display:flex;flex:none;align-items:center;justify-content:space-between;height:var(--header)}
+  .nav-logo .logo{padding:0;color:var(--accent)}
+  .nav-logo .logo svg{height:32px}
+  .nav-logo .logo-full{display:block}
+  .nav-logo .logo .logo-mark{display:none}
+  .nav-close{margin-right:-8px;border:1px solid var(--line-2);background:var(--white)}
+  .nav-links{display:flex;flex:none;flex-direction:column;padding:0 0 clamp(12px,2vh,24px)}
+  /* размер строк подстраивается под высоту экрана, чтобы меню целиком помещалось на обычном телефоне */
+  .nav-links a{padding:clamp(7px,1.3vh,13px) 0;padding:clamp(7px,1.3dvh,13px) 0;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:clamp(20px,3vh,27px);font-size:clamp(20px,3dvh,27px);font-weight:300;line-height:1.2;letter-spacing:-.01em;color:var(--ink);white-space:normal}
+  .nav-links a[aria-current]{text-underline-offset:7px}
   .nav-more{display:block}
-  .nav-phone{display:block;font-weight:600}
+  .nav-foot{display:grid;gap:12px;margin-top:auto;padding-top:2px}
+  .nav-foot .lang{justify-self:start}
+  .nav-foot .lang button{min-width:48px;height:38px;font-size:14px}
+  .nav-call{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px}
+  .nav-foot .nav-tel{padding:0;font-family:var(--grot);font-size:clamp(20px,5.4vw,24px);font-weight:700;color:var(--ink);text-decoration:none;white-space:nowrap}
+  .nav-foot .nav-wa{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 18px;font-size:15.5px;font-weight:600;color:#fff}
+  .nav-wa svg{width:20px;height:20px}
+  .nav-info{display:flex;gap:10px;margin:0;font-size:15px;line-height:1.45;color:var(--ink-2)}
+  .nav-info svg{flex:none;width:19px;height:19px;margin-top:1px;color:var(--accent)}
+  .nav-foot .nav-info a{padding:0;font-size:inherit;font-weight:400;color:inherit;white-space:normal;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
   .cart-btn-label{display:none}
   .cart-btn{padding-left:12px}
 }
@@ -1119,10 +1142,11 @@ body.is-view-catalog main>.catalog{display:block}
 .ctile b{font-family:var(--serif);font-size:clamp(24px,2.4vw,34px);font-weight:300;line-height:1.1;letter-spacing:-.01em;overflow-wrap:break-word}
 .ctile-body span{font-family:var(--grot);font-size:13.5px;font-weight:500;color:var(--ink-2)}
 .pg .ctiles{padding-bottom:clamp(40px,5vw,72px)}
+.pg-parts{display:flex;flex-wrap:wrap;gap:10px;margin:calc(-1 * clamp(8px,2vw,28px)) 0 clamp(24px,3vw,40px)}
 @media (max-width:900px){
   .ctiles{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ctile,.ctile:nth-child(-n+2){grid-column:auto;min-height:190px}
-  .ctile:first-child{grid-column:span 2}
+  .ctile:first-child,.ctile:last-child:nth-child(even){grid-column:span 2}
 }
 @media (max-width:520px){
   .ctiles{gap:12px}
@@ -1418,6 +1442,7 @@ body.is-view-catalog main>.catalog{display:block}
 .norm::after{content:"";position:absolute;left:3.4em;right:3.4em;bottom:0;height:2px;background:var(--red);transform-origin:left center}
 .norm-green::after{background:var(--green)}
 @media (prefers-reduced-motion:no-preference){
+  .menu-open .nav{animation:v4-menu .22s ease}
   .js-chart .chart:not(.is-visible) .chart-row b{filter:blur(10px);opacity:.45}
   .js-chart .chart:not(.is-visible) .norm::after{transform:scaleX(0)}
   .chart.is-visible .chart-row b{animation:v4-focus 2.1s cubic-bezier(.25,.6,.2,1) .1s both}
@@ -1426,6 +1451,7 @@ body.is-view-catalog main>.catalog{display:block}
 }
 @keyframes v4-focus{0%{filter:blur(10px);opacity:.45}35%{filter:blur(3.5px);opacity:.85}58%{filter:blur(3.5px);opacity:.85}100%{filter:blur(0);opacity:1}}
 @keyframes v4-draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes v4-menu{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .eye-copy{display:grid;gap:28px;align-content:center}
 .eye-copy .lead{margin-top:0}
 .eye-cta{display:flex;flex-wrap:wrap;gap:12px}
@@ -1631,16 +1657,30 @@ body.is-view-catalog main>.catalog{display:block}
       <svg class="logo-mark" viewBox="0 503.6 571.8 496.4" aria-hidden="true" focusable="false"><circle cx="237.4" cy="741.0" r="194.2" fill="none" stroke="currentColor" stroke-width="86.3"/><rect x="474.8" y="503.7" width="97.1" height="496.3" rx="48.6" fill="currentColor"/><path d="M129.5 708.7A118.7 118.7 0 0 1 205.0 633.1" fill="none" stroke="var(--coral,#F0643C)" stroke-width="48.6" stroke-linecap="round"/></svg>
     </a>
     <nav class="nav" id="siteNav" aria-label="Menu">
+      <!-- На телефоне меню открывается на весь экран: сверху логотип (копируется из шапки) и кнопка закрытия -->
+      <div class="nav-head"><span class="nav-logo"></span><button type="button" class="icon-btn nav-close js-menu-toggle" aria-expanded="false" aria-controls="siteNav" aria-label="Bağlayın" data-i18n-attr="aria-label:close"><span data-icon="x"></span></button></div>
+      <div class="nav-links">
       <a href="?page=catalog" data-view="catalog" data-goto="all" data-i18n="cat.title">Kataloq</a>
-      <a href="#adults" data-aud-name="adults">Böyüklər</a>
-      <a href="#kids" data-aud-name="kids">Uşaqlar</a>
+      <!-- «Взрослым» и «Детям» открывают страницу каталога с товарами и разделами только для них -->
+      <a href="?page=catalog&amp;aud=adults" data-view="catalog" data-goto="all" data-aud="adults" data-aud-name="adults">Böyüklər</a>
+      <a href="?page=catalog&amp;aud=kids" data-view="catalog" data-goto="all" data-aud="kids" data-aud-name="kids">Uşaqlar</a>
       <a class="nav-more" href="#catalog" data-goto="contacts" data-i18n="nav.contacts">Linzalar</a>
       <a class="nav-more" href="#eye" data-i18n="nav.eye">Görmə yoxlaması</a>
       <a href="#repair" data-i18n="nav.repair">Təmir</a>
       <a href="?page=about" data-view="about" data-i18n="nav.about">Haqqımızda</a>
       <a href="?page=blog" data-view="blog" data-i18n="nav.blog">Bloq</a>
       <a href="?page=contacts" data-view="contacts" data-i18n="nav.contact">Əlaqə</a>
-      <a class="nav-phone" data-cfg-href="tel" href="#" data-cfg="phone">+994 00 000 00 00</a>
+      </div>
+      <!-- Низ мобильного меню: язык сайта и контакты из настроек -->
+      <div class="nav-foot">
+        <div class="lang" data-lang-switch role="group" aria-label="Dil" data-i18n-attr="aria-label:lang.label"></div>
+        <div class="nav-call">
+          <a class="nav-tel" data-cfg-href="tel" href="#" data-cfg="phone">+994 00 000 00 00</a>
+          <a class="btn btn-primary nav-wa" data-cfg-href="wa" href="#" target="_blank" rel="noopener"><span data-icon="chat"></span><span data-i18n="c.waLink">WhatsApp-a yazın</span></a>
+        </div>
+        <p class="nav-info"><span data-icon="pin"></span><a data-cfg-href="map" href="#" target="_blank" rel="noopener" data-cfg="address"></a></p>
+        <p class="nav-info"><span data-icon="clock"></span><span data-cfg="hours"></span></p>
+      </div>
     </nav>
     <div class="hdr-right">
       <div class="lang" data-lang-switch role="group" aria-label="Dil" data-i18n-attr="aria-label:lang.label"></div>
@@ -2279,14 +2319,15 @@ const THEME = (function () {
   }
 
   /* ---------- плитки разделов каталога (главная и страница каталога) ---------- */
-  function tilesHTML() {
+  // aud — «для кого» (adults, men, women, kids): тогда в плитках только разделы и товары для них
+  function tilesHTML(aud) {
     const S = Shop;
     return CATEGORIES.map(c => {
-      const list = PRODUCTS.filter(p => p.cat === c.id), b = c.banner || {};
+      const list = PRODUCTS.filter(p => p.cat === c.id && S.inAud(p, aud || '')), b = c.banner || {};
       if (!list.length) return '';
       const min = Math.min.apply(null, list.map(p => p.price));
-      return `<a class="ctile ctile-${c.id}" href="${S.esc(S.hrefCatalog(c.id))}" data-view="catalog" data-goto="${c.id}" data-hash="#catalog">
-        <span class="ctile-arts" aria-hidden="true">${arts(b.show || list.slice(0, 3).map(p => p.id))}</span>
+      return `<a class="ctile ctile-${c.id}" href="${S.esc(S.hrefCatalog(c.id, aud))}" data-view="catalog" data-goto="${c.id}"${aud ? ` data-aud="${S.esc(aud)}"` : ''} data-hash="#catalog">
+        <span class="ctile-arts" aria-hidden="true">${arts(!aud && b.show ? b.show : list.slice(0, 3).map(p => p.id))}</span>
         <span class="ctile-body"><b>${S.esc(S.L(c.name))}</b><span>${S.esc(S.count(list.length) + ', ' + S.priceFrom(min))}</span></span>
       </a>`;
     }).join('');
@@ -2340,9 +2381,17 @@ const THEME = (function () {
   // Услуги в форме «Напишите нам»; подписи — в словаре, ключи ct.t.<код>
   const CT_TOPICS = ['glasses', 'rx', 'contacts', 'repair', 'exam', 'other'];
   const VIEW = {
+    // Страница каталога. С отбором «для кого» (?aud=adults|men|women|kids) это страница раздела:
+    // свой заголовок и текст, плитки только тех разделов, где есть товары для них.
     catalog() {
-      const S = Shop, title = S.t('cat.title'), lead = S.t('cat.lead');
-      return { title, desc: lead, html: `<div class="wrap">${pgHead(title, lead, [homeCrumb()])}<div class="ctiles">${tilesHTML()}</div></div>` };
+      const S = Shop, id = S.audById[S.state.aud] ? S.state.aud : '', a = id ? S.audById[id] : null, up = a && S.audParent[id] ? S.audById[S.audParent[id]] : null;
+      const title = a ? S.L(a.title) || S.L(a.name) : S.t('cat.title'), lead = a ? S.L(a.text) : S.t('cat.lead');
+      const link = (aud, name) => [S.hrefCatalog('all', aud), name, ` data-view="catalog" data-goto="all"${aud ? ` data-aud="${S.esc(aud)}"` : ''}`];
+      const trail = [homeCrumb()].concat(a ? [link('', S.t('cat.title'))] : [], up ? [link(up.id, S.L(up.name))] : []);
+      // у раздела из частей («Взрослым») под заголовком стоят ссылки на части: «Мужчинам», «Женщинам»
+      const parts = a && a.parts ? a.parts.filter(x => PRODUCTS.some(p => S.inAud(p, x.id))) : [];
+      const sub = parts.length ? `<p class="pg-parts">${parts.map(x => { const l = link(x.id, S.L(x.name)); return `<a class="btn btn-line" href="${S.esc(l[0])}"${l[2]}>${S.esc(l[1])}</a>`; }).join('')}</p>` : '';
+      return { title, desc: lead, aud: id, html: `<div class="wrap">${pgHead(title, lead, trail)}${sub}<div class="ctiles">${tilesHTML(id)}</div></div>` };
     },
     about() {
       const S = Shop, A = ABOUT, title = S.L(A.title), lead = S.L(A.lead), fr = S.byId['f-milan'];
@@ -3204,6 +3253,8 @@ const THEME = (function () {
   }
   function renderCatalog() {
     if (state.cat !== 'all' && !PRODUCTS.some(p => inAud(p, state.aud) && p.cat === state.cat)) state.cat = 'all';
+    // Заголовок, текст и плитки разделов на странице каталога свои у каждого «для кого»: при смене отбора обновляем их
+    if (state.view === 'catalog' && state.viewInfo && (state.viewInfo.aud || '') !== state.aud) renderView();
     renderTabs();
     renderAudSwitch();
     renderBrands();
@@ -3747,10 +3798,15 @@ const THEME = (function () {
   }
   // Ссылки на страницы сайта: адрес с текущим языком и отметка открытой страницы в меню
   function syncNav() {
+    const top = state.aud ? (audParent[state.aud] || state.aud) : '';
     $$('a[data-view]').forEach(a => {
-      a.setAttribute('href', hrefView(a.dataset.view, a.dataset.post || ''));
+      // ссылка на раздел каталога или на страницу «для кого» сохраняет их в адресе (важно, когда её открывают в новой вкладке)
+      const sec = a.dataset.view === 'catalog' && a.dataset.goto;
+      a.setAttribute('href', sec ? hrefCatalog(a.dataset.goto, audById[a.dataset.aud] ? a.dataset.aud : '') : hrefView(a.dataset.view, a.dataset.post || ''));
       if (!a.closest('.nav, .ft-nav')) return;
-      if (a.dataset.view === state.view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      // «Каталог», «Взрослым» и «Детям» — одна страница с разным отбором: отмечается та ссылка, чей отбор открыт
+      const on = a.dataset.view === state.view && (a.dataset.view !== 'catalog' || (a.dataset.aud || '') === top);
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
   }
   // Мгновенный переход к месту на странице (без плавной прокрутки через весь сайт)
@@ -3769,7 +3825,8 @@ const THEME = (function () {
     const own = o => (o && typeof o === 'object' && typeof o[lang] === 'string' ? o[lang].trim() : '');
     const SE = (typeof SEO !== 'undefined' && SEO) || {};
     const post = v && state.view === 'blog' && state.post && typeof POSTS !== 'undefined' ? POSTS.find(x => x.id === state.post) : null;
-    const seo = p ? { title: p.seoTitle, desc: p.seoDesc } : post ? { title: post.seoTitle, desc: post.seoDesc } : (!inCat && !(v && state.post) && SE[v ? state.view : 'home']) || {};
+    const inAudPage = v && state.view === 'catalog' && state.aud;
+    const seo = p ? { title: p.seoTitle, desc: p.seoDesc } : post ? { title: post.seoTitle, desc: post.seoDesc } : (!inCat && !inAudPage && !(v && state.post) && SE[v ? state.view : 'home']) || {};
     const title = own(seo.title) || (p ? L(p.name) + ' — ' + CONFIG.shopName : v ? (inCat ? catName(inCat) + ' — ' : '') + v.title + ' — ' + CONFIG.shopName : t('meta.title'));
     if (title !== 'meta.title') document.title = title;
     const md = $('meta[name="description"]'), desc = own(seo.desc) || (p ? t('seo.product', { name: L(p.name), sub: L(p.sub), cat: catName(p.cat) }).replace(/\s*\.\s*\./g, '.') : v && v.desc ? v.desc : t('meta.desc'));
@@ -4577,16 +4634,27 @@ const THEME = (function () {
   }
 
   /* ---------- шапка, меню и клавиатура ---------- */
-  function closeMenu() {
-    document.body.classList.remove('menu-open');
-    $$('.js-menu-toggle').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  // Меню на телефоне открывается на весь экран. Пока оно открыто, остальная страница недоступна с клавиатуры.
+  function setMenu(on, focus) {
+    const was = document.body.classList.contains('menu-open');
+    document.body.classList.toggle('menu-open', on);
+    $$('.js-menu-toggle').forEach(b => b.setAttribute('aria-expanded', String(on)));
+    $$('main, .site-footer, .hdr-right, .hdr > .logo').forEach(el => { el.inert = on; });
+    if (!focus || was === on) return;
+    const to = on ? $('.nav-close') : $('.hdr-right .js-menu-toggle');
+    if (to && to.getClientRects().length) to.focus();
   }
+  function closeMenu() { setMenu(false); }
   function bindNav() {
-    $$('.js-menu-toggle').forEach(tg => tg.addEventListener('click', () => {
-      const on = !document.body.classList.contains('menu-open');
-      document.body.classList.toggle('menu-open', on);
-      tg.setAttribute('aria-expanded', on);
-    }));
+    // логотип для мобильного меню — копия логотипа из шапки
+    const slot = $('.nav-logo'), logo = $('.hdr > .logo');
+    if (slot && logo && !slot.firstChild) slot.appendChild(logo.cloneNode(true));
+    $$('.js-menu-toggle').forEach(tg => tg.addEventListener('click', () => setMenu(!document.body.classList.contains('menu-open'), true)));
+    // если экран стал широким (повернули планшет), открытое мобильное меню закрывается
+    if (window.matchMedia) {
+      const wide = window.matchMedia('(min-width:1101px)'), off = () => { if (wide.matches) closeMenu(); };
+      if (wide.addEventListener) wide.addEventListener('change', off); else if (wide.addListener) wide.addListener(off);
+    }
     const nav = $('#siteNav');
     if (nav) nav.addEventListener('click', e => { if (e.target.closest('a')) closeMenu(); });
     const header = $('.site-header');
@@ -4692,7 +4760,7 @@ const THEME = (function () {
   }
   function onKey(e) {
     if (!layers.length) {
-      if (e.key === 'Escape' && document.body.classList.contains('menu-open')) closeMenu();
+      if (e.key === 'Escape' && document.body.classList.contains('menu-open')) setMenu(false, true);
       return;
     }
     const top = layers[layers.length - 1].el;
@@ -4766,7 +4834,7 @@ const THEME = (function () {
 
   /* ---------- запуск ---------- */
   window.Shop = {
-    CONFIG, state, byId, art, glasses, money, esc, swatches, swAttr, badges, needsOptions, priceLabel, catName,
+    CONFIG, state, byId, art, glasses, money, esc, swatches, swAttr, badges, needsOptions, priceLabel, catName, audById, audParent, inAud,
     colorOf, hexA, icon: n => ICON[n] || '', toast, reduced, waUrl, t, L, setLang, href: hrefFor, hrefView, hrefCatalog, go: navigate, brandName,
     count: itemsCount, priceFrom,
     get lang() { return lang; },

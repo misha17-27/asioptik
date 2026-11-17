@@ -61,7 +61,7 @@ async def main(mode):
             await pg.screenshot(path=f'{SH}/v4-az-d-checkout-errors.png')
             # switch language with checkout open and errors shown
             await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
-            await pg.locator('[data-set-lang="ru"]').click(); await pg.wait_for_timeout(500)
+            await pg.locator('.hdr-right [data-set-lang=\"ru\"]').click(); await pg.wait_for_timeout(500)
             print('after RU switch title:', await pg.title(), '| cart item:', await pg.evaluate("document.querySelector('#cartList .ci-name')?.textContent"))
             await pg.locator('.site-header [data-open-cart]').click(); await pg.wait_for_timeout(400)
             await pg.locator('#cartDrawer [data-checkout]').click(); await pg.wait_for_timeout(500)
@@ -74,7 +74,7 @@ async def main(mode):
             await pg.fill('[name=od_sph]', '-2.00'); await pg.fill('[name=od_cyl]', '-0.50'); await pg.fill('[name=od_ax]', '180'); await pg.fill('[name=os_sph]', '-2.25'); await pg.fill('[name=pd]', '62')
             # switch to EN in the middle of filling: values must stay
             await pg.keyboard.press('Escape'); await pg.wait_for_timeout(200)
-            await pg.locator('[data-set-lang="en"]').click(); await pg.wait_for_timeout(400)
+            await pg.locator('.hdr-right [data-set-lang=\"en\"]').click(); await pg.wait_for_timeout(400)
             await pg.locator('.site-header [data-open-cart]').click(); await pg.wait_for_timeout(300)
             await pg.locator('#cartDrawer [data-checkout]').click(); await pg.wait_for_timeout(500)
             print('EN checkout title:', await pg.inner_text('#coTitle'), '| name kept:', await pg.input_value('#coName'), '| phone:', await pg.input_value('#coPhone'))
@@ -85,7 +85,7 @@ async def main(mode):
             await pg.screenshot(path=f'{SH}/v4-en-d-success.png')
             await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
             # back to AZ: order + repair in AZ
-            await pg.locator('[data-set-lang="az"]').click(); await pg.wait_for_timeout(400)
+            await pg.locator('.hdr-right [data-set-lang=\"az\"]').click(); await pg.wait_for_timeout(400)
             await pg.locator('#catTabs [data-cat="all"]').click(); await pg.wait_for_timeout(200)
             await pg.locator('#productsGrid [data-pid="f-oslo"] [data-add]').click(); await pg.wait_for_timeout(300)
             await pg.locator('.site-header [data-open-cart]').click(); await pg.wait_for_timeout(400)
@@ -120,7 +120,7 @@ async def main(mode):
             await pg.locator('#cartDrawer [data-checkout]').click(); await pg.wait_for_timeout(500)
             await pg.screenshot(path=f'{SH}/v4-az-m-checkout.png')
             await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
-            await pg.locator('.js-menu-toggle').click(); await pg.wait_for_timeout(300)
+            await pg.locator('.hdr-right .js-menu-toggle').click(); await pg.wait_for_timeout(300)
             await pg.screenshot(path=f'{SH}/v4-az-m-menu.png')
             await ctx.close()
         await b.close()

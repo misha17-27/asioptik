@@ -96,9 +96,9 @@ async def main():
         print('ok photo:', await pg.evaluate("document.getElementById('okPhoto').hidden"), '|', await pg.inner_text('#okPhotoText'), '| share btn hidden:', await pg.evaluate("document.getElementById('okShare').hidden"))
         await pg.screenshot(path=f'{SH}/p4-success.png')
         await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
-        # nav link from product page -> home section
-        await pg.locator('#siteNav a[href="#adults"]').click(); await pg.wait_for_timeout(600)
-        print('after nav:', pg.url.split('/')[-1], '| women top:', await pg.evaluate("Math.round(document.getElementById('adults').getBoundingClientRect().top)"), '| page:', await pg.evaluate('Shop.state.page'))
+        # ссылка меню со страницы товара открывает страницу каталога «Взрослым»
+        await pg.locator('#siteNav a[data-aud="adults"]').click(); await pg.wait_for_timeout(600)
+        print('after nav:', pg.url.split('/')[-1], '| h1:', await pg.inner_text('#pgTitle'), '| page:', await pg.evaluate('Shop.state.page'))
         await pg.go_back(); await pg.wait_for_timeout(400)
         print('back to product:', await pg.evaluate('Shop.state.page'), '| scrollY', await pg.evaluate('window.scrollY'))
         print('errors:', errs or 'none')

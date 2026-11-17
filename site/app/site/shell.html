@@ -32,16 +32,30 @@
       <svg class="logo-mark" viewBox="0 503.6 571.8 496.4" aria-hidden="true" focusable="false"><circle cx="237.4" cy="741.0" r="194.2" fill="none" stroke="currentColor" stroke-width="86.3"/><rect x="474.8" y="503.7" width="97.1" height="496.3" rx="48.6" fill="currentColor"/><path d="M129.5 708.7A118.7 118.7 0 0 1 205.0 633.1" fill="none" stroke="var(--coral,#F0643C)" stroke-width="48.6" stroke-linecap="round"/></svg>
     </a>
     <nav class="nav" id="siteNav" aria-label="Menu">
+      <!-- На телефоне меню открывается на весь экран: сверху логотип (копируется из шапки) и кнопка закрытия -->
+      <div class="nav-head"><span class="nav-logo"></span><button type="button" class="icon-btn nav-close js-menu-toggle" aria-expanded="false" aria-controls="siteNav" aria-label="Bağlayın" data-i18n-attr="aria-label:close"><span data-icon="x"></span></button></div>
+      <div class="nav-links">
       <a href="%%BASE%%catalog" data-view="catalog" data-goto="all" data-i18n="cat.title">Kataloq</a>
-      <a href="#adults" data-aud-name="adults">Böyüklər</a>
-      <a href="#kids" data-aud-name="kids">Uşaqlar</a>
+      <!-- «Взрослым» и «Детям» открывают страницу каталога с товарами и разделами только для них -->
+      <a href="%%BASE%%catalog?aud=adults" data-view="catalog" data-goto="all" data-aud="adults" data-aud-name="adults">Böyüklər</a>
+      <a href="%%BASE%%catalog?aud=kids" data-view="catalog" data-goto="all" data-aud="kids" data-aud-name="kids">Uşaqlar</a>
       <a class="nav-more" href="#catalog" data-goto="contacts" data-i18n="nav.contacts">Linzalar</a>
       <a class="nav-more" href="#eye" data-i18n="nav.eye">Görmə yoxlaması</a>
       <a href="#repair" data-i18n="nav.repair">Təmir</a>
       <a href="%%BASE%%about" data-view="about" data-i18n="nav.about">Haqqımızda</a>
       <a href="%%BASE%%blog" data-view="blog" data-i18n="nav.blog">Bloq</a>
       <a href="%%BASE%%contacts" data-view="contacts" data-i18n="nav.contact">Əlaqə</a>
-      <a class="nav-phone" data-cfg-href="tel" href="#" data-cfg="phone">+994 00 000 00 00</a>
+      </div>
+      <!-- Низ мобильного меню: язык сайта и контакты из настроек -->
+      <div class="nav-foot">
+        <div class="lang" data-lang-switch role="group" aria-label="Dil" data-i18n-attr="aria-label:lang.label"></div>
+        <div class="nav-call">
+          <a class="nav-tel" data-cfg-href="tel" href="#" data-cfg="phone">+994 00 000 00 00</a>
+          <a class="btn btn-primary nav-wa" data-cfg-href="wa" href="#" target="_blank" rel="noopener"><span data-icon="chat"></span><span data-i18n="c.waLink">WhatsApp-a yazın</span></a>
+        </div>
+        <p class="nav-info"><span data-icon="pin"></span><a data-cfg-href="map" href="#" target="_blank" rel="noopener" data-cfg="address"></a></p>
+        <p class="nav-info"><span data-icon="clock"></span><span data-cfg="hours"></span></p>
+      </div>
     </nav>
     <div class="hdr-right">
       <div class="lang" data-lang-switch role="group" aria-label="Dil" data-i18n-attr="aria-label:lang.label"></div>

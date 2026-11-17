@@ -22,8 +22,8 @@ async def main():
             await pg.screenshot(path=f'{SH}/a-{lang}-full.png', full_page=True)
             im = Image.open(f'{SH}/a-{lang}-full.png').crop((0, top - 60, 1440, bottom + 420)); im = im.resize((960, int(im.size[1] * 960 / 1440))); im.save(f'{SH}/a-{lang}-auds.png'); print(lang, 'crop', im.size)
             if lang == 'ru':
-                # nav -> adults section; filter two levels
-                await pg.locator('#siteNav a[href="#adults"]').click(); await pg.wait_for_timeout(700)
+                # секция главной «Для взрослых» и отбор в два уровня (ссылка меню «Взрослым» проверяется в aud_pages.py)
+                await pg.evaluate("document.getElementById('adults').scrollIntoView()"); await pg.wait_for_timeout(700)
                 print('adults top:', await pg.evaluate("Math.round(document.getElementById('adults').getBoundingClientRect().top)"))
                 await pg.locator('#women .aud-panel a.btn').click(); await pg.wait_for_timeout(800)
                 print('women CTA -> aud', await pg.evaluate('Shop.state.aud'), 'cards', await pg.locator('#productsGrid .card').count(), '| switch:', await pg.evaluate("[...document.querySelectorAll('[data-aud-switch] button')].map(b => b.textContent + (b.classList.contains('is-active') ? '*' : ''))"))

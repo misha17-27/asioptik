@@ -147,7 +147,7 @@ async def run(file, tag, flow=True):
             await page.screenshot(path=f'{ROOT}/shots/{tag}-m-checkout.png')
             await page.keyboard.press('Escape')
             await page.wait_for_timeout(300)
-            await page.locator('.js-menu-toggle').click()
+            await page.locator('.hdr-right .js-menu-toggle').click()
             await page.wait_for_timeout(300)
             await page.screenshot(path=f'{ROOT}/shots/{tag}-m-menu.png')
         await ctx.close()

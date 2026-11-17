@@ -42,7 +42,7 @@ async def main():
         await pg.go_back(); await pg.wait_for_timeout(500)
         i = await info(pg); print('back to catalog:', i['url'], '| view', i['view'], 'cat', i['cat'], 'cards', i['cards'])
         # меню «Каталог» сбрасывает раздел и показывает плитки
-        await pg.locator('#siteNav a[data-view="catalog"]').click(); await pg.wait_for_timeout(500)
+        await pg.locator('#siteNav a[data-view="catalog"]:not([data-aud])').click(); await pg.wait_for_timeout(500)
         i = await info(pg); print('nav catalog:', {k: i[k] for k in ('url', 'title', 'h1', 'cat', 'cards', 'y', 'cur')}, '| tiles:', await pg.locator('#pageView .ctile').count())
         await pg.screenshot(path=f'{SH}/pg-catalog.png', full_page=False)
         # «Для кого» попадает в адрес
@@ -74,9 +74,9 @@ async def main():
         i = await info(pg); print('post CTA:', i['url'], '| view', i['view'], 'cat', i['cat'], 'cards', i['cards'])
         # язык на странице статьи
         await pg.go_back(); await pg.wait_for_timeout(400)
-        await pg.locator('[data-set-lang="en"]').first.click(); await pg.wait_for_timeout(500)
+        await pg.locator('.hdr-right [data-set-lang=\"en\"]').click(); await pg.wait_for_timeout(500)
         i = await info(pg); print('post EN:', i['url'], '|', i['title'], '|', await pg.locator('.post-meta').inner_text(), '| nav:', await pg.locator('#siteNav a:visible').all_inner_texts())
-        await pg.locator('[data-set-lang="ru"]').first.click(); await pg.wait_for_timeout(400)
+        await pg.locator('.hdr-right [data-set-lang=\"ru\"]').click(); await pg.wait_for_timeout(400)
         # неизвестная статья → список
         await pg.goto(URL + '?lang=ru&page=blog&post=nope'); await pg.wait_for_timeout(1200)
         i = await info(pg); print('unknown post:', i['h1'], '| post', repr(i['post']), '| canon', i['canon'])
@@ -91,15 +91,15 @@ async def main():
         await pg.locator('#ctPhone').click(); await pg.keyboard.type('0551112233'); await pg.select_option('#ctTopic', 'glasses')   # в форме теперь есть телефон и услуга
         print('errors after typing:', [x for x in await pg.locator('#contactForm .field-error').all_inner_texts() if x])
         # смена языка не стирает набранное
-        await pg.locator('[data-set-lang="az"]').first.click(); await pg.wait_for_timeout(400)
+        await pg.locator('.hdr-right [data-set-lang=\"az\"]').click(); await pg.wait_for_timeout(400)
         print('kept after lang switch:', await pg.input_value('#ctName'), '|', await pg.input_value('#ctMsg'), '| label:', await pg.locator('label[for=ctMsg]').inner_text())
-        await pg.locator('[data-set-lang="ru"]').first.click(); await pg.wait_for_timeout(400)
+        await pg.locator('.hdr-right [data-set-lang=\"ru\"]').click(); await pg.wait_for_timeout(400)
         await pg.locator('#contactForm [type=submit]').click(); await pg.wait_for_timeout(500)
         opened = await pg.evaluate('window.__opened')
         path, text = decode(opened[-1]); print('WA →', path, '|', text.replace('\n', ' / '), '| toast:', await pg.locator('#toastText').inner_text(), '| message cleared:', repr(await pg.input_value('#ctMsg')))
 
         # логотип со страницы ведёт на главную; старые ссылки #catalog открывают страницу каталога
-        await pg.locator('.site-header .logo').click(); await pg.wait_for_timeout(500)
+        await pg.locator('.hdr > .logo').click(); await pg.wait_for_timeout(500)
         i = await info(pg); print('logo → home:', i['url'], '| view', repr(i['view']), 'y', i['y'], '| title', i['title'])
         await pg.locator('.hero a[data-goto="frames"]').first.click(); await pg.wait_for_timeout(500)
         i = await info(pg); print('hero CTA:', i['url'], '| view', i['view'], 'cat', i['cat'], 'cards', i['cards'], '| catalog top:', round((await pg.locator('#catalog').bounding_box())['y']))
@@ -120,13 +120,13 @@ async def main():
         ctx = await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True)
         pg = await ctx.new_page(); pg.on('pageerror', lambda e: errors.append(f'pageerror(m): {e}')); await setup(pg)
         await pg.goto(URL); await pg.wait_for_timeout(1800)
-        await pg.locator('.js-menu-toggle').click(); await pg.wait_for_timeout(300)
+        await pg.locator('.hdr-right .js-menu-toggle').click(); await pg.wait_for_timeout(300)
         print('m menu:', await pg.locator('#siteNav a:visible').all_inner_texts())
         await pg.screenshot(path=f'{SH}/pg-m-menu.png')
         for v in ('catalog', 'about', 'blog', 'contacts'):
             if not await pg.evaluate("document.body.classList.contains('menu-open')"):
-                await pg.locator('.js-menu-toggle').click(); await pg.wait_for_timeout(250)
-            await pg.locator(f'#siteNav a[data-view="{v}"]').click(); await pg.wait_for_timeout(600)
+                await pg.locator('.hdr-right .js-menu-toggle').click(); await pg.wait_for_timeout(250)
+            await pg.locator(f'#siteNav a[data-view="{v}"]:not([data-aud])').click(); await pg.wait_for_timeout(600)
             i = await info(pg); print('m', v, '|', i['url'], '|', i['h1'], '| overflow x:', i['ox'], '| menu open:', await pg.evaluate("document.body.classList.contains('menu-open')"))
             await pg.screenshot(path=f'{SH}/pg-m-{v}.png', full_page=True)
         await pg.goto(URL + '?page=blog&post=prescription'); await pg.wait_for_timeout(1200)

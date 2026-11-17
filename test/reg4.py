@@ -30,11 +30,11 @@ async def main():
         print(decode((await pg.evaluate('window.__opened'))[-1])[1].replace('\n', ' | '))
         await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
         # eye section CTA, hero CTA
-        await pg.locator('.site-header .logo').click(); await pg.wait_for_timeout(600)
+        await pg.locator('.hdr > .logo').click(); await pg.wait_for_timeout(600)
         await pg.locator('#heroInner .hero-cta a[data-goto="frames"]').click(); await pg.wait_for_timeout(900)
         print('hero CTA: cat', await pg.evaluate('Shop.state.cat'), 'aud', repr(await pg.evaluate('Shop.state.aud')), 'cards', await pg.locator('#productsGrid .card').count())
         # quick add a frame from an audience section, colour chosen on the card syncs everywhere
-        await pg.locator('.site-header .logo').click(); await pg.wait_for_timeout(500)   # каталог теперь на своей странице, секции — на главной
+        await pg.locator('.hdr > .logo').click(); await pg.wait_for_timeout(500)   # каталог теперь на своей странице, секции — на главной
         await pg.locator('#women [data-pid="f-florence"] [data-swatch="1"]').click(); await pg.wait_for_timeout(200)
         print('synced in catalog:', await pg.evaluate("document.querySelector('#productsGrid [data-pid=\"f-florence\"] [data-swatch=\"1\"]').classList.contains('is-active')"))
         await pg.locator('#women [data-pid="f-florence"] [data-add]').click(); await pg.wait_for_timeout(300)
@@ -57,10 +57,10 @@ async def main():
         ctx = await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True)
         pg = await ctx.new_page(); await setup(pg)
         await pg.goto(F + '?product=s-kids'); await pg.wait_for_timeout(900)
-        await pg.locator('.js-menu-toggle').click(); await pg.wait_for_timeout(300)
+        await pg.locator('.hdr-right .js-menu-toggle').click(); await pg.wait_for_timeout(300)
         await pg.screenshot(path=f'{SH}/r-m-menu.png')
-        await pg.locator('#siteNav a[href="#kids"]').click(); await pg.wait_for_timeout(700)
-        print('mobile nav from product:', pg.url.split('/')[-1], '| kids top:', await pg.evaluate("Math.round(document.getElementById('kids').getBoundingClientRect().top)"), '| menu open:', await pg.evaluate("document.body.classList.contains('menu-open')"))
+        await pg.locator('#siteNav a[data-aud="kids"]').click(); await pg.wait_for_timeout(700)
+        print('mobile nav from product:', pg.url.split('/')[-1], '| page:', await pg.inner_text('#pgTitle'), '| cards:', await pg.locator('#productsGrid .card').count(), '| menu open:', await pg.evaluate("document.body.classList.contains('menu-open')"))
         await pg.screenshot(path=f'{SH}/r-m-kids.png')
         await b.close()
 asyncio.run(main())
