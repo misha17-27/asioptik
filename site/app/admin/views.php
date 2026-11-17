@@ -27,6 +27,21 @@ function https_note(): string
         . __('Включите сертификат SSL в панели хостинга и уберите решётки в трёх строках файла .htaccess — после этого сайт всегда открывается по https.') . '</p>';
 }
 
+/**
+ * Подсказка на «Обзоре», пока сайт открыт по временному адресу (подпапка на другом домене): объясняет,
+ * почему сайта нет в поиске, и что после переезда на основной адрес ничего переключать не придётся.
+ */
+function preview_note(): string
+{
+    if (is_local() || !site_is_preview()) return '';
+    $show = function (string $url): string {
+        return '<b>' . e((string) preg_replace('~^https?://~i', '', $url)) . '</b>';
+    };
+    return '<p class="note note-top">' . strtr(e(__('Сайт открыт по временному адресу {here}. Поисковики его не показывают — так в поиске не окажется двух копий сайта. Когда сайт откроется на основном адресе {main}, поисковики увидят его сами: переключать ничего не нужно.')),
+        ['{here}' => $show(site_here_url()), '{main}' => $show(site_main_url())])
+        . ' <a href="' . e(admin_url('doc', ['name' => 'config'])) . '">' . e(__('Основной адрес задаётся в «Настройках сайта».')) . '</a></p>';
+}
+
 function csrf_field(): string
 {
     return '<input type="hidden" name="csrf" value="' . e(csrf_token()) . '">';
@@ -162,7 +177,7 @@ function admin_page(string $title, string $body, string $current = '', string $a
     $ver = substr(md5((string) @filemtime(ROOT . '/assets/css/admin.css') . @filemtime(ROOT . '/assets/js/admin.js')), 0, 8);
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html lang="' . ui_lang() . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
-        . '<title>' . e($doc !== '' ? $doc : $title) . ' ' . __('— админ-панель Asioptik') . '</title><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css?v=' . $ver . '"></head><body>'
+        . '<title>' . e($doc !== '' ? $doc : $title) . ' ' . __('— админ-панель Asioptik') . '</title><link rel="icon" href="' . e($base) . 'favicon.ico"><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css?v=' . $ver . '"></head><body>'
         . '<div class="adm"><aside class="side"><a class="brand" href="' . e(admin_url()) . '">asi<b>optik</b><small>Admin</small></a>'
         . '<button type="button" class="menu-btn" aria-expanded="false" aria-controls="adm-nav">' . __('Меню') . '</button>'
         . '<nav id="adm-nav" aria-label="' . e(__('Разделы админ-панели')) . '">' . $links . '</nav></aside>'
@@ -181,7 +196,7 @@ function admin_bare(string $title, string $body): void
     $base = base_path();
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html lang="' . ui_lang() . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
-        . '<title>' . e($title) . ' — Asioptik</title><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css"></head><body class="bare">'
+        . '<title>' . e($title) . ' — Asioptik</title><link rel="icon" href="' . e($base) . 'favicon.ico"><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css"></head><body class="bare">'
         . '<main class="card">' . ui_switch() . '<p class="brand">asi<b>optik</b></p><h1>' . e($title) . '</h1>' . https_note() . $body . '</main></body></html>';
     exit;
 }

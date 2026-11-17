@@ -90,8 +90,13 @@ function admin_security(): void
         }
     }
 
-    $host = (string) preg_replace('~^www\.~', '', strtolower((string) parse_url(site_origin_url(), PHP_URL_HOST)));
+    // Ключи Cloudflare привязаны к домену, на котором открыт сайт. Во временной папке это чужой домен, а не тот,
+    // что в «Адресе сайта»: виджету нужны оба, иначе после переезда капча перестанет проходить.
+    $preview = site_is_preview();
+    $main = host_key((string) parse_url(site_origin_url(), PHP_URL_HOST));
+    $host = $preview ? host_key((string) ($_SERVER['HTTP_HOST'] ?? '')) : $main;
     $domain = $host === '' || in_array($host, ['localhost', '127.0.0.1', '[::1]'], true) || preg_match('~\.(localhost|test)$~', $host) ? '' : $host;
+    $later = $preview && $domain !== '' && $main !== '' && $main !== $domain ? $main : '';
     $active = $hasKeys && $c['ok'] && ($c['login'] || $c['forms']);
     $blocked = !captcha_allowed();
     if ($c['login'] && $c['forms']) $where = __('{a} и {b}', ['a' => __('вход в админ-панель'), 'b' => __('формы сайта')]);
@@ -148,7 +153,8 @@ function admin_security(): void
     $steps = [
         strtr(__('Зайдите на {link} → раздел <b>Turnstile</b>. Регистрация бесплатная, переносить сайт в Cloudflare не нужно.'), ['{link}' => '<a href="https://dash.cloudflare.com/" target="_blank" rel="noopener">dash.cloudflare.com</a>']),
         __('Нажмите <b>Add widget</b> и назовите виджет, например Asioptik.'),
-        $domain !== '' ? strtr(__('<b>Hostname</b> — укажите {domain}.'), ['{domain}' => '<b>' . e($domain) . '</b>']) : __('<b>Hostname</b> — укажите домен сайта, например <b>asioptik.az</b>.'),
+        $later !== '' ? strtr(__('<b>Hostname</b> — добавьте {domain} и сразу {main}: когда сайт переедет на основной адрес, капча продолжит работать.'), ['{domain}' => '<b>' . e($domain) . '</b>', '{main}' => '<b>' . e($later) . '</b>'])
+            : ($domain !== '' ? strtr(__('<b>Hostname</b> — укажите {domain}.'), ['{domain}' => '<b>' . e($domain) . '</b>']) : __('<b>Hostname</b> — укажите домен сайта, например <b>asioptik.az</b>.')),
         __('<b>Widget Mode</b> — <b>Managed</b>.'),
         __('Нажмите <b>Create</b> и скопируйте <b>Site Key</b> и <b>Secret Key</b> в поля выше.'),
     ];

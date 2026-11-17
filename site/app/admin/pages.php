@@ -139,7 +139,7 @@ function admin_home(): void
         [$c['category'] ?? 0, n__($c['category'] ?? 0, 'раздел', 'раздела', 'разделов'), admin_url('list', ['type' => 'category']), false],
         [$c['brand'] ?? 0, n__($c['brand'] ?? 0, 'бренд', 'бренда', 'брендов'), admin_url('list', ['type' => 'brand']), false],
     ];
-    $out = '<div class="tiles">';
+    $out = preview_note() . '<div class="tiles">';
     foreach ($tiles as [$n, $label, $url, $hot]) {
         $out .= '<a class="tile' . ($hot && $n ? ' tile-hot' : '') . '" href="' . e($url) . '"><b>' . (int) $n . '</b><span>' . e($label) . '</span></a>';
     }
@@ -195,7 +195,7 @@ function admin_pages(): void
         }
         $n = count($keys);
         $out .= '<tr><td><a class="strong" href="' . e(admin_url('page', ['id' => $id])) . '">' . e(__($page['title'])) . '</a><small>' . $n . ' ' . n__($n, 'надпись', 'надписи', 'надписей') . '</small></td>'
-            . '<td class="nowrap">' . ($page['path'] === null ? '<span class="muted">' . __('на всех страницах') . '</span>' : '<code>/' . e($page['path']) . '</code>') . '</td>'
+            . '<td class="nowrap">' . ($page['path'] === null ? '<span class="muted">' . __('на всех страницах') . '</span>' : '<code>' . e($base . $page['path']) . '</code>') . '</td>'
             . '<td class="nowrap"><span class="dot dot-ok"></span>' . ($changed ? __('изменено: {n}', ['n' => $changed]) : __('стандартные')) . '</td>'
             . '<td class="nowrap">' . (!$page['seo'] ? '<span class="muted">' . ($id === 'product' ? __('в карточке товара') : '—') . '</span>'
                 : '<span class="dot ' . ($own === count(LANGS) ? 'dot-ok' : 'dot-auto') . '"></span>' . ($own === count(LANGS) ? __('заполнено') : ($own ? __('заполнено: {n} из 3 языков', ['n' => $own]) : __('автоматически')))) . '</td>'

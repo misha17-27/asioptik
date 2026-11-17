@@ -150,7 +150,7 @@ function doc_schemas(): array
                 ['key' => 'mapQuery', 'type' => 'text', 'label' => __('Адрес для карты'), 'hint' => __('Заполните, если карта показывает не то место: точный адрес или название на Google Картах.')],
                 ['key' => 'deliveryPrice', 'type' => 'number', 'label' => __('Доставка курьером, ₼')],
                 ['key' => 'freeDeliveryFrom', 'type' => 'number', 'label' => __('Бесплатная доставка от суммы, ₼'), 'hint' => __('0 — бесплатной доставки нет.')],
-                ['key' => 'siteUrl', 'type' => 'text', 'label' => __('Адрес сайта'), 'hint' => __('Например: https://asioptik.az/')],
+                ['key' => 'siteUrl', 'type' => 'text', 'label' => __('Адрес сайта'), 'hint' => __('Основной адрес сайта, например https://asioptik.az/. Пока сайт открыт во временной папке на другом домене, поисковики его не показывают.')],
             ],
         ],
         'about' => [

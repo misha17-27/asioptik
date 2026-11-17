@@ -4,6 +4,7 @@
    В ключах вида «товар|товара|товаров» перевод — две формы через черту: для одного и для многих. */
 return [
     '0 — бесплатной доставки нет.' => '0 means there is no free delivery.',
+    '<b>Hostname</b> — добавьте {domain} и сразу {main}: когда сайт переедет на основной адрес, капча продолжит работать.' => '<b>Hostname</b>: add {domain} and, right away, {main}, so the CAPTCHA keeps working when the site moves to its main address.',
     '<b>Hostname</b> — укажите {domain}.' => '<b>Hostname</b>: enter {domain}.',
     '<b>Hostname</b> — укажите домен сайта, например <b>asioptik.az</b>.' => '<b>Hostname</b>: enter the site\'s domain, for example <b>asioptik.az</b>.',
     '<b>Widget Mode</b> — <b>Managed</b>.' => '<b>Widget Mode</b>: <b>Managed</b>.',
@@ -210,7 +211,6 @@ return [
     'Найти' => 'Search',
     'Например «Мужская коллекция». Кнопка открывает каталог с этими моделями.' => 'For example “Men\'s collection”. The button opens the catalog with these models.',
     'Например: 15 минут, 1–2 дня.' => 'For example: 15 minutes, 1–2 days.',
-    'Например: https://asioptik.az/' => 'For example: https://asioptik.az/',
     'Например: Хит, Новинка. Можно не заполнять.' => 'For example: Bestseller, New. Optional.',
     'Настройки' => 'Settings',
     'Настройки сайта' => 'Site settings',
@@ -242,6 +242,8 @@ return [
     'Общие надписи' => 'Common texts',
     'Одна строка под названием: материал, форма, количество в упаковке.' => 'One line under the name: material, shape, quantity in the pack.',
     'Одно-два предложения: показываются в списке статей и под заголовком.' => 'One or two sentences: they are shown in the list of articles and under the heading.',
+    'Основной адрес задаётся в «Настройках сайта».' => 'The main address is set in Site settings.',
+    'Основной адрес сайта, например https://asioptik.az/. Пока сайт открыт во временной папке на другом домене, поисковики его не показывают.' => 'The main address of the site, for example https://asioptik.az/. While the site is open in a temporary folder on another domain, search engines do not show it.',
     'Отключена в config.php' => 'Turned off in config.php',
     'Отключена в файле storage/config.php.' => 'Turned off in the file storage/config.php.',
     'Открыть' => 'Open',
@@ -293,6 +295,7 @@ return [
     'Сайт открыт на этом компьютере. Настоящие ключи привязаны к домену и здесь проверку не пройдут: вводите их в админ-панели на хостинге. Посмотреть, как всё работает, можно с тестовыми ключами Cloudflare, которые пропускают всех: Site Key {site}, Secret Key {secret}.' => 'The site is open on this computer. Real keys are tied to the domain and will not pass the check here: enter them in the admin panel on the hosting. To see how it all works, you can use Cloudflare\'s test keys, which let everyone through: Site Key {site}, Secret Key {secret}.',
     'Сайт открыт по http, без шифрования. Включите сертификат SSL в панели хостинга и уберите решётки в трёх строках файла .htaccess.' => 'The site is open over http, without encryption. Turn on the SSL certificate in the hosting panel and remove the hash signs in three lines of the .htaccess file.',
     'Сайт открыт по https: пароль и данные покупателей передаются в зашифрованном виде.' => 'The site is open over https: the password and customer data are sent encrypted.',
+    'Сайт открыт по временному адресу {here}. Поисковики его не показывают — так в поиске не окажется двух копий сайта. Когда сайт откроется на основном адресе {main}, поисковики увидят его сами: переключать ничего не нужно.' => 'The site is open at a temporary address, {here}. Search engines do not show it, so two copies of the site never end up in search results. Once the site opens at its main address, {main}, search engines will find it on their own: there is nothing to switch.',
     'Сайт уже установлен, файл больше не нужен. Удалите его в файловом менеджере хостинга.' => 'The site is already installed and the file is no longer needed. Delete it in the hosting file manager.',
     'Сеанс входа' => 'Sign-in session',
     'Сейчас на слайде стоит временное фото с бесплатного фотостока. Загрузите своё, и временное уберётся само. Без фото на слайде показывается рисунок из товаров.' => 'The slide now shows a temporary photo from a free stock site. Upload your own and the temporary one will be removed automatically. Without a photo the slide shows a drawing made from the products.',

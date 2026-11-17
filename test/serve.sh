@@ -7,10 +7,19 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 RUN=/tmp/asioptik-test
 PHPMOD=$(ls /usr/lib/apache2/modules/libphp8*.so 2>/dev/null | tail -1)
 
+# Останавливает процесс из файла с его номером, только если это та самая программа: после перезагрузки
+# под старым номером может работать уже другой процесс.
+stop_pid() {
+  [ -f "$1" ] || return 0
+  pid=$(cat "$1" 2>/dev/null)
+  [ -n "$pid" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = "$2" ] && kill "$pid" 2>/dev/null
+  return 0
+}
+
 if [ "$1" = "stop" ]; then
-  [ -f "$RUN/httpd.pid" ] && kill "$(cat "$RUN/httpd.pid")" 2>/dev/null
-  [ -f "$RUN/mysqld.pid" ] && kill "$(cat "$RUN/mysqld.pid")" 2>/dev/null
-  [ -f "$RUN/static.pid" ] && kill "$(cat "$RUN/static.pid")" 2>/dev/null
+  stop_pid "$RUN/httpd.pid" apache2
+  stop_pid "$RUN/mysqld.pid" mariadbd
+  stop_pid "$RUN/static.pid" python3
   echo "остановлено"; exit 0
 fi
 
@@ -62,11 +71,12 @@ DocumentRoot "$ROOT/site"
 DirectoryIndex index.php index.html
 CONF
 chown -R www-data:www-data "$ROOT/site/storage" "$ROOT/site/uploads"
-[ -f "$RUN/httpd.pid" ] && kill "$(cat "$RUN/httpd.pid")" 2>/dev/null && sleep 1
+stop_pid "$RUN/httpd.pid" apache2 && sleep 1
+rm -f "$RUN/httpd.pid"
 apache2 -f "$RUN/httpd.conf" -k start
 
 # --- сайт одним файлом
-[ -f "$RUN/static.pid" ] && kill "$(cat "$RUN/static.pid")" 2>/dev/null
+stop_pid "$RUN/static.pid" python3
 (cd "$ROOT" && nohup python3 -m http.server 8765 --bind 127.0.0.1 >"$RUN/logs/static.log" 2>&1 & echo $! > "$RUN/static.pid")
 sleep 1
 echo "сайт на PHP:        http://127.0.0.1:8771/   (чистая установка: python3 test/php_reset.py)"

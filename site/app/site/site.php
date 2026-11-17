@@ -87,6 +87,9 @@ function site_run(): void
 
     $data = site_data();
     $cfg = $data['CONFIG'];
+    // Сайт во временной папке другого домена поисковикам не показываем (см. site_is_preview)
+    $preview = site_is_preview($cfg);
+    if ($preview) header('X-Robots-Tag: noindex, nofollow');
     $shop = (string) ($cfg['shopName'] ?? 'Asioptik');
     $T = SITE_TEXT[$lang];
     $title = str_replace('{shop}', $shop, $T['home'][0]);
@@ -161,8 +164,7 @@ function site_run(): void
         $desc = own_text($seo['desc'] ?? null, $lang) ?: $desc;
     }
 
-    $site = rtrim((string) ($cfg['siteUrl'] ?? ''), '/');
-    if ($site === '' || !preg_match('~^https?://~i', $site)) $site = origin() . rtrim($base, '/');
+    $site = site_origin_url($cfg);
     $canonQ = array_intersect_key($keep, $route === 'catalog' ? ['cat' => 1, 'aud' => 1] : []);
     $url = function (string $l) use ($site, $route, $canonQ, $query): string {
         return $site . '/' . $route . $query(($l === 'az' ? [] : ['lang' => $l]) + $canonQ);
@@ -197,7 +199,7 @@ function site_run(): void
         '%%CANON%%' => e($url($lang)),
         '%%HREFLANG%%' => $hreflang,
         '%%SHOP%%' => e($shop),
-        '%%ROBOTS%%' => $noindex ? '<meta name="robots" content="noindex">' . "\n" : '',
+        '%%ROBOTS%%' => $preview ? '<meta name="robots" content="noindex, nofollow">' . "\n" : ($noindex ? '<meta name="robots" content="noindex">' . "\n" : ''),
         '%%BASE%%' => e($base),
         '%%VER%%' => $ver,
         '%%DATA%%' => $js,
@@ -222,7 +224,9 @@ function site_headers(bool $captcha = false): void
     header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'$cf; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         . "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; frame-src https://www.google.com https://maps.google.com$cf; "
         . "connect-src 'self'$cf; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
-    if (is_https()) header('Strict-Transport-Security: max-age=15552000');
+    // Это правило браузер запоминает для всего домена, поэтому сайт задаёт его, только когда домен целиком его:
+    // в подпапке чужого сайта (временный адрес) решать за основной сайт нельзя
+    if (is_https() && base_path() === '/') header('Strict-Transport-Security: max-age=15552000');
 }
 
 /* ---------- приём заказа, заявки на ремонт или сообщения с сайта ---------- */
@@ -306,24 +310,58 @@ function order_details($d, callable $clean): array
     return $out;
 }
 
-function site_origin_url(): string
+/** Основной адрес сайта из «Настроек сайта», без косой черты на конце; пустая строка — адрес не задан. */
+function site_main_url(?array $cfg = null): string
 {
-    $cfg = setting('config', []);
-    $site = rtrim((string) ($cfg['siteUrl'] ?? ''), '/');
-    return ($site !== '' && preg_match('~^https?://~i', $site)) ? $site : origin() . rtrim(base_path(), '/');
+    $cfg = $cfg ?? setting('config', []);
+    $site = rtrim(trim((string) ($cfg['siteUrl'] ?? '')), '/');
+    return preg_match('~^https?://[^/\s]+~i', $site) ? $site : '';
+}
+
+/** Адрес, по которому сайт открыт сейчас, без косой черты на конце. */
+function site_here_url(): string
+{
+    return origin() . rtrim(base_path(), '/');
+}
+
+function site_origin_url(?array $cfg = null): string
+{
+    $main = site_main_url($cfg);
+    return $main !== '' ? $main : site_here_url();
+}
+
+/**
+ * Сайт открыт по временному адресу: лежит в подпапке, а домен не тот, что указан в «Адресе сайта»
+ * (например mguliyev.com/asioptik, пока основной домен ещё не подключён). Такую копию поисковикам не показываем:
+ * иначе в поиске окажутся два одинаковых сайта. На основном домене сайт виден поисковикам сам, без переключателей.
+ * Строка 'preview' => true или false в storage/config.php задаёт это вручную — для особых случаев.
+ */
+function site_is_preview(?array $cfg = null): bool
+{
+    $c = config();
+    if (is_array($c) && isset($c['preview']) && is_bool($c['preview'])) return $c['preview'];
+    $main = site_main_url($cfg);
+    if ($main === '' || base_path() === '/') return false;
+    return host_key((string) parse_url($main, PHP_URL_HOST)) !== host_key((string) ($_SERVER['HTTP_HOST'] ?? ''));
 }
 
 function site_robots(): void
 {
     header('Content-Type: text/plain; charset=utf-8');
-    echo "User-agent: *\nDisallow: " . base_path() . "admin/\nDisallow: " . base_path() . "api/\nDisallow: " . base_path() . "checkout\n\nSitemap: " . site_origin_url() . "/sitemap.xml\n";
+    $b = base_path();
+    $preview = site_is_preview();
+    if ($preview) header('X-Robots-Tag: noindex, nofollow');
+    // Запрет на обход здесь не ставится и для временного адреса: чтобы страница не попала в поиск,
+    // поисковик должен её открыть и увидеть «noindex»
+    echo "User-agent: *\nDisallow: {$b}admin/\nDisallow: {$b}api/\nDisallow: {$b}checkout\n" . ($preview ? '' : "\nSitemap: " . site_origin_url() . "/sitemap.xml\n");
     exit;
 }
 
 function site_sitemap(): void
 {
     $data = site_data();
-    $site = site_origin_url();
+    $site = site_origin_url($data['CONFIG']);
+    if (site_is_preview($data['CONFIG'])) header('X-Robots-Tag: noindex, nofollow');
     $urls = ['', 'catalog', 'about', 'blog', 'contacts'];
     foreach ($data['CATEGORIES'] as $c) $urls[] = 'catalog?cat=' . rawurlencode($c['id']);
     // страницы «для кого»: взрослым, мужчинам, женщинам, детям — если для них есть товары

@@ -15,7 +15,7 @@ function install_page(string $body): void
 {
     $base = base_path();
     echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">'
-        . '<title>Установка сайта — Asioptik</title><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css"></head><body class="bare">'
+        . '<title>Установка сайта — Asioptik</title><link rel="icon" href="' . e($base) . 'favicon.ico"><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css"></head><body class="bare">'
         . '<main class="card card-wide"><p class="brand">asi<b>optik</b></p><h1>Установка сайта</h1>' . $body . '</main></body></html>';
     exit;
 }

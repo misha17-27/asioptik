@@ -4,6 +4,7 @@
    В ключах вида «товар|товара|товаров» перевод — одно слово: в азербайджанском после числа форма не меняется. */
 return [
     '0 — бесплатной доставки нет.' => '0 — pulsuz çatdırılma yoxdur.',
+    '<b>Hostname</b> — добавьте {domain} и сразу {main}: когда сайт переедет на основной адрес, капча продолжит работать.' => '<b>Hostname</b> — {domain} və dərhal {main} əlavə edin: sayt əsas ünvana köçəndə CAPTCHA işləməyə davam edəcək.',
     '<b>Hostname</b> — укажите {domain}.' => '<b>Hostname</b> — {domain} yazın.',
     '<b>Hostname</b> — укажите домен сайта, например <b>asioptik.az</b>.' => '<b>Hostname</b> — saytın domenini yazın, məsələn <b>asioptik.az</b>.',
     '<b>Widget Mode</b> — <b>Managed</b>.' => '<b>Widget Mode</b> — <b>Managed</b>.',
@@ -210,7 +211,6 @@ return [
     'Найти' => 'Axtar',
     'Например «Мужская коллекция». Кнопка открывает каталог с этими моделями.' => 'Məsələn «Kişi kolleksiyası». Düymə bu modellərlə kataloqu açır.',
     'Например: 15 минут, 1–2 дня.' => 'Məsələn: 15 dəqiqə, 1–2 gün.',
-    'Например: https://asioptik.az/' => 'Məsələn: https://asioptik.az/',
     'Например: Хит, Новинка. Можно не заполнять.' => 'Məsələn: Hit, Yeni. Doldurmamaq da olar.',
     'Настройки' => 'Ayarlar',
     'Настройки сайта' => 'Saytın ayarları',
@@ -242,6 +242,8 @@ return [
     'Общие надписи' => 'Ümumi yazılar',
     'Одна строка под названием: материал, форма, количество в упаковке.' => 'Adın altında bir sətir: material, forma, qablaşdırmadakı say.',
     'Одно-два предложения: показываются в списке статей и под заголовком.' => 'Bir-iki cümlə: məqalələr siyahısında və başlığın altında göstərilir.',
+    'Основной адрес задаётся в «Настройках сайта».' => 'Əsas ünvan «Saytın ayarları» bölməsində göstərilir.',
+    'Основной адрес сайта, например https://asioptik.az/. Пока сайт открыт во временной папке на другом домене, поисковики его не показывают.' => 'Saytın əsas ünvanı, məsələn https://asioptik.az/. Sayt başqa domendəki müvəqqəti qovluqda açıq olduğu müddətdə axtarış sistemləri onu göstərmir.',
     'Отключена в config.php' => 'config.php-də söndürülüb',
     'Отключена в файле storage/config.php.' => 'storage/config.php faylında söndürülüb.',
     'Открыть' => 'Aç',
@@ -293,6 +295,7 @@ return [
     'Сайт открыт на этом компьютере. Настоящие ключи привязаны к домену и здесь проверку не пройдут: вводите их в админ-панели на хостинге. Посмотреть, как всё работает, можно с тестовыми ключами Cloudflare, которые пропускают всех: Site Key {site}, Secret Key {secret}.' => 'Sayt bu kompüterdə açılıb. Əsl açarlar domenə bağlıdır və burada yoxlamadan keçməyəcək: onları hostinqdəki admin paneldə daxil edin. Hər şeyin necə işlədiyinə baxmaq üçün Cloudflare-in hamını buraxan test açarlarından istifadə etmək olar: Site Key {site}, Secret Key {secret}.',
     'Сайт открыт по http, без шифрования. Включите сертификат SSL в панели хостинга и уберите решётки в трёх строках файла .htaccess.' => 'Sayt şifrələnməmiş http ilə açılıb. Hostinq panelində SSL sertifikatını qoşun və .htaccess faylının üç sətrində diyez işarələrini silin.',
     'Сайт открыт по https: пароль и данные покупателей передаются в зашифрованном виде.' => 'Sayt https ilə açılıb: parol və alıcıların məlumatları şifrələnmiş şəkildə ötürülür.',
+    'Сайт открыт по временному адресу {here}. Поисковики его не показывают — так в поиске не окажется двух копий сайта. Когда сайт откроется на основном адресе {main}, поисковики увидят его сами: переключать ничего не нужно.' => 'Sayt müvəqqəti {here} ünvanında açılıb. Axtarış sistemləri onu göstərmir — beləcə axtarışda saytın iki nüsxəsi olmayacaq. Sayt əsas {main} ünvanında açılanda axtarış sistemləri onu özləri görəcək: heç nəyi dəyişmək lazım deyil.',
     'Сайт уже установлен, файл больше не нужен. Удалите его в файловом менеджере хостинга.' => 'Sayt artıq quraşdırılıb, fayl daha lazım deyil. Onu hostinqin fayl menecerində silin.',
     'Сеанс входа' => 'Giriş seansı',
     'Сейчас на слайде стоит временное фото с бесплатного фотостока. Загрузите своё, и временное уберётся само. Без фото на слайде показывается рисунок из товаров.' => 'Hazırda slaydda pulsuz fotostokdan müvəqqəti foto dayanır. Öz fotonuzu yükləyin, müvəqqəti foto özü silinəcək. Foto olmadıqda slaydda məhsulların rəsmi göstərilir.',

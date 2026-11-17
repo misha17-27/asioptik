@@ -76,6 +76,13 @@ function is_local(): bool
     return in_array($host, ['localhost', '127.0.0.1', '[::1]'], true) || (bool) preg_match('~\.(localhost|test)$~', $host);
 }
 
+/** Домен для сравнения адресов: строчными буквами, без «www.», номера порта и точки на конце. */
+function host_key(string $host): string
+{
+    $h = rtrim((string) preg_replace('~:\d+$~', '', strtolower(trim($host))), '.');
+    return (string) preg_replace('~^www\.~', '', $h);
+}
+
 /** Пароль, который подбирают первым: из частых, из одинаковых знаков или совпадает с логином. */
 function weak_password(string $pass, string $login = ''): bool
 {
