@@ -55,7 +55,7 @@ def multipart(fields, files):
 sql('DELETE FROM ao_logins')
 print('--- закрытые папки и файлы')
 for p in ['/app/', '/app/core/bootstrap.php', '/app/core/db.php', '/app/data/seed.json', '/app/data/texts.json', '/app/site/shell.html', '/app/admin/admin.php', '/app/admin/pages.php', '/storage/', '/storage/config.php', '/storage/cache/site.json',
-          '/storage/logs/php-errors.log', '/.htaccess', '/app/.htaccess', '/uploads/.htaccess', '/.git/config', '/.env', '/README.md', '/composer.json', '/backup.sql', '/dump.sqlite', '/uploads/', '/assets/', '/assets/css/']:
+          '/storage/logs/php-errors.log', '/.htaccess', '/app/.htaccess', '/uploads/.htaccess', '/.git/config', '/.env', '/README.md', '/composer.json', '/backup.sql', '/dump.sqlite', '/asioptik-site.zip', '/backup.ZIP', '/site.tar.gz', '/DUMP.SQL', '/uploads/', '/assets/', '/assets/css/']:
     s = req('GET', p)[0]; check('closed ' + p, s in (403, 404), s)
 for p in ['/', '/catalog', '/about', '/blog', '/contacts', '/checkout', '/robots.txt', '/sitemap.xml', '/assets/js/app.js', '/assets/css/app.css', '/favicon.ico', '/admin/?p=login']:
     s = req('GET', p)[0]; check('open ' + p, s == 200, s)

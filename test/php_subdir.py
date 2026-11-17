@@ -148,6 +148,14 @@ for p in ['/app/', '/app/core/bootstrap.php', '/app/data/seed.json', '/app/site/
     s, h, t = req(SUB, 'GET', PRE + p)
     check(f'closed {p}', s in (403, 404) and not is_main_site(h) and 'MAIN SITE' not in t and '<?php' not in t, s)
 
+left = SITE / 'asioptik-site.zip'      # архив, из которого сайт распаковали и забыли удалить
+left.write_bytes(b'PK\x05\x06' + b'\0' * 18)
+try:
+    s, h, t = req(SUB, 'GET', PRE + '/asioptik-site.zip')
+    check('archive left in the site folder cannot be downloaded', s == 403 and not is_main_site(h), s)
+finally:
+    left.unlink()
+
 # ====================== временный адрес закрыт от поисковиков ======================
 print('--- поисковики и временный адрес')
 s, h, t = req(SUB, 'GET', PRE + '/')

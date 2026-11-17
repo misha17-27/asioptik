@@ -20,7 +20,7 @@ $deny = function (int $code = 403): void {
 if (strpos($path, "\0") !== false || strpos($path, '..') !== false) $deny();
 if (preg_match('~^/(app|storage)(/|$)~i', $path)) $deny();
 if (preg_match('~(^|/)\.(?!well-known/)~', $path)) $deny();
-if (preg_match('~\.(md|json|log|sql|sqlite|sh|py|lock|bak|ini)$~i', $path)) $deny();
+if (preg_match('~\.(md|json|log|sql|sqlite|sh|py|lock|bak|ini|zip|tar|gz|tgz|rar|7z)$~i', $path)) $deny();
 
 $file = $site . str_replace('/', DIRECTORY_SEPARATOR, $path);
 if (preg_match('~^/uploads(/|$)~i', $path)) {   // в папке с загруженными фото отдаются только картинки
