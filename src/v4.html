@@ -72,12 +72,12 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
 /* шапка */
 .site-header{position:sticky;top:0;z-index:50;border-bottom:1px solid transparent;transition:background-color .25s,border-color .25s}
 .site-header.is-scrolled{background:rgba(242,246,253,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom-color:var(--line)}
-.hdr{display:flex;align-items:center;gap:28px;height:var(--header)}
+.hdr{display:flex;align-items:center;gap:24px;height:var(--header)}
 .logo{display:inline-flex;flex:none;align-items:center;color:var(--accent);text-decoration:none}
 .logo svg{display:block;width:auto;height:36px}
 .logo-optik{fill:var(--ink)}
 .logo .logo-mark{display:none}
-.nav{display:flex;align-items:center;gap:20px}
+.nav{display:flex;align-items:center;gap:16px}
 .nav a{padding:6px 0;font-size:15.5px;font-weight:500;color:var(--ink-2);text-decoration:none;white-space:nowrap;transition:color .15s}
 .nav a:hover{color:var(--ink)}
 /* открытая страница отмечена в меню коралловой чертой */
@@ -90,7 +90,10 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
 .lang button{min-width:36px;height:30px;padding:0 8px;border:0;border-radius:999px;background:none;color:var(--ink-2);font-size:13px;font-weight:700;letter-spacing:.04em}
 .lang button:hover{color:var(--ink)}
 .lang button.is-active{background:var(--ink);color:#fff}
-.cart-btn{display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 6px 0 16px;border:1px solid var(--line-2);border-radius:999px;background:var(--white);font-size:15px;font-weight:600}
+/* В шапке восемь разделов, язык, телефон и корзина: чтобы всё помещалось в одну строку, у корзины остаются значок и число,
+   а слово «Корзина» слышат только программы чтения с экрана */
+.cart-btn{position:relative;display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 6px 0 14px;border:1px solid var(--line-2);border-radius:999px;background:var(--white);font-size:15px;font-weight:600}
+.cart-btn-label{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 .cart-btn:hover{border-color:var(--ink)}
 .count{display:inline-grid;place-items:center;min-width:30px;height:30px;padding:0 8px;border-radius:999px;background:var(--ink);color:#fff;font-family:var(--grot);font-size:13px;font-weight:700;line-height:1}
 .count.is-zero{background:var(--mist);color:var(--ink)}
@@ -113,8 +116,8 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
   .nav-logo .logo .logo-mark{display:none}
   .nav-close{margin-right:-8px;border:1px solid var(--line-2);background:var(--white)}
   .nav-links{display:flex;flex:none;flex-direction:column;padding:0 0 clamp(12px,2vh,24px)}
-  /* размер строк подстраивается под высоту экрана, чтобы меню целиком помещалось на обычном телефоне */
-  .nav-links a{padding:clamp(7px,1.3vh,13px) 0;padding:clamp(7px,1.3dvh,13px) 0;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:clamp(20px,3vh,27px);font-size:clamp(20px,3dvh,27px);font-weight:300;line-height:1.2;letter-spacing:-.01em;color:var(--ink);white-space:normal}
+  /* размер строк подстраивается под высоту экрана, чтобы меню (десять разделов) целиком помещалось на обычном телефоне */
+  .nav-links a{padding:clamp(7px,1vh,13px) 0;padding:clamp(7px,1dvh,13px) 0;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:clamp(20px,3vh,27px);font-size:clamp(20px,3dvh,27px);font-weight:300;line-height:1.2;letter-spacing:-.01em;color:var(--ink);white-space:normal}
   .nav-links a[aria-current]{text-underline-offset:7px}
   .nav-more{display:block}
   .nav-foot{display:grid;gap:12px;margin-top:auto;padding-top:2px}
@@ -127,7 +130,6 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
   .nav-info{display:flex;gap:10px;margin:0;font-size:15px;line-height:1.45;color:var(--ink-2)}
   .nav-info svg{flex:none;width:19px;height:19px;margin-top:1px;color:var(--accent)}
   .nav-foot .nav-info a{padding:0;font-size:inherit;font-weight:400;color:inherit;white-space:normal;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
-  .cart-btn-label{display:none}
   .cart-btn{padding-left:12px}
 }
 @media (max-width:480px){
@@ -360,16 +362,29 @@ body.is-view-catalog main>.catalog{display:block}
 .ctile-body span{font-family:var(--grot);font-size:13.5px;font-weight:500;color:var(--ink-2)}
 .pg .ctiles{padding-bottom:clamp(40px,5vw,72px)}
 .pg-parts{display:flex;flex-wrap:wrap;gap:10px;margin:calc(-1 * clamp(8px,2vw,28px)) 0 clamp(24px,3vw,40px)}
+/* страница «Бренды»: плитки брендов (те же, что у разделов каталога) и страница бренда с его товарами */
+.btiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pg .btiles{padding-bottom:0}
+.btiles .ctile,.btiles .ctile:nth-child(-n+2){grid-column:auto}
+.btile-logo{display:block;width:auto;max-width:min(100%,220px);height:clamp(32px,3.2vw,46px);object-fit:contain;object-position:left center}
+.ctile-body .btile-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:2px 0 4px;font-family:inherit;font-size:15px;font-weight:400;line-height:1.45}
+.br-logo{display:block;width:auto;max-width:min(100%,320px);height:clamp(44px,5.4vw,80px);margin-bottom:clamp(14px,1.6vw,22px);object-fit:contain;object-position:left center}
+.br-count{margin-bottom:16px;font-family:var(--grot);font-size:13.5px;font-weight:500;color:var(--ink-2)}
+.br-grid .brand-tag{display:none}
+.no-brands .nav a[data-view="brands"],.no-brands .ft-nav a[data-view="brands"]{display:none}
 @media (max-width:900px){
   .ctiles{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ctile,.ctile:nth-child(-n+2){grid-column:auto;min-height:190px}
   .ctile:first-child,.ctile:last-child:nth-child(even){grid-column:span 2}
+  .btiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .btiles .ctile:first-child,.btiles .ctile:last-child:nth-child(even){grid-column:auto}
 }
 @media (max-width:520px){
   .ctiles{gap:12px}
   .ctile,.ctile:nth-child(-n+2){min-height:158px;padding:14px}
   .ctile b{font-size:21px}
   .ctile-body span{font-size:12.5px}
+  .ctile-body .btile-text{-webkit-line-clamp:3;font-size:13px;line-height:1.4}
 }
 
 /* «О нас» */
@@ -566,6 +581,8 @@ body.is-view-catalog main>.catalog{display:block}
 /* бренд — стикер в углу фото товара */
 .brand-tag{position:absolute;top:10px;right:10px;z-index:1;max-width:calc(100% - 20px);padding:4px 10px;border-radius:4px;overflow:hidden;background:var(--ink);color:#fff;font-size:12px;font-weight:600;line-height:1.35;letter-spacing:.02em;white-space:nowrap;text-overflow:ellipsis;pointer-events:none}
 .pp-brand{margin-bottom:6px;font-size:14.5px;font-weight:600;color:var(--accent-d)}
+.pp-brand a{color:inherit;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:4px;transition:text-decoration-color .15s}
+.pp-brand a:hover{text-decoration-color:currentColor}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .catalog-empty{display:grid;justify-items:start;gap:16px;padding:32px 0;color:var(--ink-2)}
 .card{position:relative;display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:var(--r);background:var(--white)}
@@ -887,6 +904,8 @@ body.is-view-catalog main>.catalog{display:block}
       <!-- «Взрослым» и «Детям» открывают страницу каталога с товарами и разделами только для них -->
       <a href="?page=catalog&amp;aud=adults" data-view="catalog" data-goto="all" data-aud="adults" data-aud-name="adults">Böyüklər</a>
       <a href="?page=catalog&amp;aud=kids" data-view="catalog" data-goto="all" data-aud="kids" data-aud-name="kids">Uşaqlar</a>
+      <!-- «Бренды» — страница со всеми брендами; пока ни у одного бренда нет товаров, ссылка скрыта -->
+      <a href="?page=brands" data-view="brands" data-i18n="nav.brands">Brendlər</a>
       <a class="nav-more" href="#catalog" data-goto="contacts" data-i18n="nav.contacts">Linzalar</a>
       <a class="nav-more" href="#eye" data-i18n="nav.eye">Görmə yoxlaması</a>
       <a href="#repair" data-i18n="nav.repair">Təmir</a>
@@ -1094,6 +1113,7 @@ body.is-view-catalog main>.catalog{display:block}
     </div>
     <nav class="ft-nav" aria-label="Saytın bölmələri" data-i18n-attr="aria-label:ft.nav">
       <a href="?page=catalog" data-view="catalog" data-goto="all" data-i18n="cat.title">Kataloq</a>
+      <a href="?page=brands" data-view="brands" data-i18n="nav.brands">Brendlər</a>
       <a href="#repair" data-i18n="nav.repair">Təmir</a>
       <a href="?page=about" data-view="about" data-i18n="nav.about">Haqqımızda</a>
       <a href="?page=blog" data-view="blog" data-i18n="nav.blog">Bloq</a>
@@ -1111,7 +1131,7 @@ body.is-view-catalog main>.catalog{display:block}
 const THEME = (function () {
   const i18n = {
     az: {
-      'meta.title': 'Asioptik — eynək, linza və eynək təmiri',
+      'meta.title': '{shop} — eynək, linza və eynək təmiri',
       'meta.desc': 'Çərçivələr, günəş eynəkləri, kontakt linzaları və reseptlə eynək linzaları. Eynək təmiri. Saytda sifariş, WhatsApp-da təsdiq.',
       skip: 'Kataloqa keçin', 'nav.contacts': 'Linzalar', 'nav.eye': 'Görmə yoxlaması',
       'nav.repair': 'Təmir', 'nav.contact': 'Əlaqə', 'nav.menu': 'Menyu', 'cart.label': 'Səbət',
@@ -1144,6 +1164,19 @@ const THEME = (function () {
       s3t: 'Mesajı göndərin', s3p: 'Sayt sifarişin hazır mətni ilə WhatsApp-ı açacaq. Sadəcə «Göndər» düyməsini basın.',
       s4t: 'Sifarişi alın', s4p: 'Zəng edib mövcudluğu və müddəti təsdiqləyəcəyik, sifarişi gətirəcək və ya götürmək üçün hazırlayacağıq.',
       'nav.about': 'Haqqımızda', 'nav.blog': 'Bloq', 'pg.home': 'Ana səhifə', 'ft.nav': 'Saytın bölmələri',
+      // страница «Бренды» и страница бренда; brs.seo — описание страницы бренда для поисковиков
+      'nav.brands': 'Brendlər', 'brs.title': 'Brendlər',
+      'brs.lead': 'Salonumuzda olan çərçivə, eynək və linza markaları. Məhsullarına baxmaq üçün brendi açın.',
+      'brs.auto': '{shop} optika salonunda {name} brendinin məhsulları.',
+      'brs.empty': 'Bu brendin məhsulları hazırda kataloqda yoxdur.',
+      'brs.none': 'Brendlər tezliklə əlavə olunacaq. Hələlik bütün məhsullara kataloqda baxa bilərsiniz.',
+      'brs.all': 'Bütün brendlər',
+      'brs.seo': '{name}. {text} Bakıda {shop} optika salonu: saytda sifariş, WhatsApp-da təsdiq.',
+      'ct.seo': '{lead} Ünvan: {address}',
+      // описания для поисковиков: раздел каталога, страница «для кого» и раздел внутри неё
+      'cseo.cat': '{name} — Bakıda {shop} optika salonunda. Qiymətlər və şəkillər kataloqda, saytda sifariş, WhatsApp-da təsdiq.',
+      'cseo.aud': '{text} Bakıda {shop} optika salonu: saytda sifariş, WhatsApp-da təsdiq.',
+      'cseo.both': '{name}, «{aud}» bölməsi. {text} Bakıda {shop} optika salonu.',
       'cats.all': 'Bütün kataloq', 'cat.products': 'Məhsullar',
       'ab.canTitle': 'Nə ilə kömək edə bilərik', 'ab.ctaTitle': 'Salona gəlin və ya bizə yazın', 'ab.ctaText': 'Suallara WhatsApp-da cavab veririk.', 'ab.contacts': 'Ünvan və iş saatları',
       'bl.title': 'Bloq', 'bl.lead': 'Qısa və konkret: resepti necə oxumaq, eynəyi necə seçmək və ona necə qulluq etmək.',
@@ -1161,8 +1194,8 @@ const THEME = (function () {
       footer: 'Optika salonu və eynək təmiri emalatxanası.',
     },
     ru: {
-      'meta.title': 'Asioptik — очки, линзы и ремонт очков',
-      'meta.desc': 'Оправы, солнцезащитные очки, контактные линзы и линзы по рецепту. Ремонт очков. Заказ на сайте с подтверждением в WhatsApp.',
+      'meta.title': '{shop} — очки, линзы и ремонт очков',
+      'meta.desc': 'Оправы, солнцезащитные очки, контактные линзы и линзы для очков по рецепту. Ремонт очков. Заказ на сайте, подтверждение в WhatsApp.',
       skip: 'Перейти к каталогу', 'nav.contacts': 'Линзы', 'nav.eye': 'Проверка зрения',
       'nav.repair': 'Ремонт', 'nav.contact': 'Контакты', 'nav.menu': 'Меню', 'cart.label': 'Корзина',
       'hero.title': 'Очки, линзы и ремонт для тех, кто замечает детали',
@@ -1194,6 +1227,17 @@ const THEME = (function () {
       s3t: 'Отправьте сообщение', s3p: 'Сайт откроет WhatsApp с готовым текстом заказа. Останется нажать «Отправить».',
       s4t: 'Получите заказ', s4p: 'Мы перезвоним, подтвердим наличие и сроки, привезём заказ или подготовим его к самовывозу.',
       'nav.about': 'О нас', 'nav.blog': 'Блог', 'pg.home': 'Главная', 'ft.nav': 'Разделы сайта',
+      'nav.brands': 'Бренды', 'brs.title': 'Бренды',
+      'brs.lead': 'Марки оправ, очков и линз, которые есть в салоне. Откройте бренд, чтобы посмотреть его товары.',
+      'brs.auto': 'Товары бренда {name} в салоне оптики {shop}.',
+      'brs.empty': 'Товаров этого бренда сейчас нет в каталоге.',
+      'brs.none': 'Бренды скоро появятся. Пока все товары можно посмотреть в каталоге.',
+      'brs.all': 'Все бренды',
+      'brs.seo': '{name}. {text} Салон оптики {shop} в Баку: заказ на сайте, подтверждение в WhatsApp.',
+      'ct.seo': '{lead} Адрес: {address}',
+      'cseo.cat': '{name} в салоне оптики {shop} в Баку. Цены и фото в каталоге, заказ на сайте, подтверждение в WhatsApp.',
+      'cseo.aud': '{text} Салон оптики {shop} в Баку: заказ на сайте, подтверждение в WhatsApp.',
+      'cseo.both': '{name}, раздел «{aud}». {text} Салон оптики {shop} в Баку.',
       'cats.all': 'Весь каталог', 'cat.products': 'Товары',
       'ab.canTitle': 'Чем можем помочь', 'ab.ctaTitle': 'Приходите в салон или напишите нам', 'ab.ctaText': 'На вопросы отвечаем в WhatsApp.', 'ab.contacts': 'Адрес и часы работы',
       'bl.title': 'Блог', 'bl.lead': 'Коротко и по делу: как читать рецепт, как выбрать очки и как за ними ухаживать.',
@@ -1211,8 +1255,8 @@ const THEME = (function () {
       footer: 'Салон оптики и мастерская по ремонту очков.',
     },
     en: {
-      'meta.title': 'Asioptik — glasses, lenses and repairs',
-      'meta.desc': 'Frames, sunglasses, contact lenses and prescription lenses. Glasses repairs. Order online and confirm on WhatsApp.',
+      'meta.title': '{shop} — glasses, lenses and repairs',
+      'meta.desc': 'Frames, sunglasses, contact lenses and prescription lenses. Glasses repairs. Order online, confirm on WhatsApp.',
       skip: 'Skip to catalog', 'nav.contacts': 'Lenses', 'nav.eye': 'Eye test',
       'nav.repair': 'Repairs', 'nav.contact': 'Contacts', 'nav.menu': 'Menu', 'cart.label': 'Cart',
       'hero.title': 'Glasses, lenses and repairs for people who notice details',
@@ -1244,6 +1288,17 @@ const THEME = (function () {
       s3t: 'Send the message', s3p: 'The site opens WhatsApp with your order already written. Just press Send.',
       s4t: 'Receive your order', s4p: 'We’ll call to confirm availability and timing, then deliver the order or have it ready for pickup.',
       'nav.about': 'About us', 'nav.blog': 'Blog', 'pg.home': 'Home', 'ft.nav': 'Site sections',
+      'nav.brands': 'Brands', 'brs.title': 'Brands',
+      'brs.lead': 'The frame, eyewear and lens brands we stock. Open a brand to see its products.',
+      'brs.auto': '{name} products at the {shop} optician.',
+      'brs.empty': 'No products of this brand in the catalog right now.',
+      'brs.none': 'Brands are coming soon. Meanwhile, every product is in the catalog.',
+      'brs.all': 'All brands',
+      'brs.seo': '{name}. {text} {shop} optician in Baku: order online, confirm on WhatsApp.',
+      'ct.seo': '{lead} Address: {address}',
+      'cseo.cat': '{name} at the {shop} optician in Baku. Prices and photos in the catalog; order online, confirm on WhatsApp.',
+      'cseo.aud': '{text} {shop} optician in Baku: order online, confirm on WhatsApp.',
+      'cseo.both': '{name}, “{aud}” section. {text} {shop} optician in Baku.',
       'cats.all': 'Full catalog', 'cat.products': 'Products',
       'ab.canTitle': 'How we can help', 'ab.ctaTitle': 'Visit the shop or write to us', 'ab.ctaText': 'We answer questions on WhatsApp.', 'ab.contacts': 'Address and opening hours',
       'bl.title': 'Blog', 'bl.lead': 'Short and practical: how to read a prescription, choose glasses and look after them.',
@@ -1666,6 +1721,37 @@ const THEME = (function () {
         </div>
         ${others.length ? `<div class="pg-sec is-paper"><div class="wrap"><h2>${S.esc(S.t('bl.more'))}</h2><div class="bl-grid bl-two">${others.map(x => postCard(x, 'h3')).join('')}</div></div></div>` : ''}`;
       return { post: p.id, title, desc: lead, html };
+    },
+    // Страница «Бренды»: плитки брендов, у которых есть товары. С кодом бренда в адресе (/brands/код) —
+    // страница бренда: его описание и все его товары (те же карточки, что в каталоге).
+    brands(id) {
+      const S = Shop, b = id ? S.brandById[id] : null;
+      const toCatalog = `<a class="btn btn-line" href="${S.esc(S.hrefCatalog('all', ''))}" data-view="catalog" data-goto="all">${S.esc(S.t('cats.all'))}</a>`;
+      if (!b) {
+        const title = S.t('brs.title'), lead = S.t('brs.lead');
+        const tiles = S.brands.map(x => {
+          const list = S.brandItems(x.id), text = S.L(x.text);
+          if (!list.length) return '';
+          const min = Math.min.apply(null, list.map(p => p.price));
+          return `<a class="ctile btile" href="${S.esc(S.hrefView('brands', x.id))}" data-view="brands" data-post="${S.esc(x.id)}">
+            <span class="ctile-arts" aria-hidden="true">${arts(list.slice(0, 3).map(p => p.id))}</span>
+            <span class="ctile-body">${x.img ? `<img class="btile-logo" src="${S.esc(x.img)}" alt="${S.esc(x.name)}" loading="lazy">` : `<b>${S.esc(x.name)}</b>`}${text ? `<span class="btile-text">${S.esc(text)}</span>` : ''}<span>${S.esc(S.count(list.length) + ', ' + S.priceFrom(min))}</span></span>
+          </a>`;
+        }).join('');
+        return { post: '', title, desc: lead, html: `<div class="wrap pg-end">${pgHead(title, lead, [homeCrumb()])}${tiles ? `<div class="ctiles btiles">${tiles}</div>` : `<div class="catalog-empty"><p>${S.esc(S.t('brs.none'))}</p>${toCatalog}</div>`}</div>` };
+      }
+      const list = S.brandItems(b.id), text = S.L(b.text) || S.t('brs.auto', { name: b.name });
+      const html = `<div class="wrap pg-end">
+          ${crumbs([homeCrumb(), [S.hrefView('brands'), S.t('brs.title'), ' data-view="brands"']])}
+          <header class="pg-head">
+            ${b.img ? `<img class="br-logo" src="${S.esc(b.img)}" alt="">` : ''}
+            <h1 id="pgTitle" tabindex="-1">${S.esc(b.name)}</h1>
+            <p class="pg-lead">${S.esc(text)}</p>
+          </header>
+          ${list.length ? `<p class="br-count">${S.esc(S.count(list.length))}</p><div class="grid br-grid">${list.map(p => THEME.card(p)).join('')}</div>` : `<div class="catalog-empty"><p>${S.esc(S.t('brs.empty'))}</p></div>`}
+          <p class="post-cta"><a class="btn btn-line" href="${S.esc(S.hrefView('brands'))}" data-view="brands">${S.esc(S.t('brs.all'))}</a>${toCatalog}</p>
+        </div>`;
+      return { post: b.id, title: b.name, desc: text, html };
     },
     contacts() {
       const S = Shop, T = k => S.esc(S.t(k)), title = S.t('ct.title'), lead = S.t('ct.lead');

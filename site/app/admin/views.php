@@ -105,11 +105,18 @@ function admin_js_texts(): array
     ];
 }
 
-/** Переключатель языка для форм: показывает поля одного языка за раз. Без скриптов видны все три. */
+/**
+ * Языки в формах — для перевода: слева всегда основной язык сайта (AZ), справа второй язык.
+ * Кнопки выбирают, какой язык открыт справа. Без скриптов видны все три языка.
+ */
 function lang_switch(): string
 {
-    $out = '<div class="lgs" role="group" aria-label="' . e(__('Язык текстов')) . '">';
-    foreach (['ru', 'az', 'en'] as $l) $out .= '<button type="button" class="lg-btn" data-lg-set="' . $l . '" aria-pressed="false">' . strtoupper($l) . '</button>';
+    $main = LANGS[0];
+    $out = '<div class="lgs" role="group" aria-label="' . e(__('Языки в форме')) . '" data-lg-main="' . $main . '">'
+        . '<span class="lg-main" title="' . e(__('Основной язык сайта: всегда слева')) . '">' . strtoupper($main) . '</span><span class="lg-sep" aria-hidden="true"></span>';
+    foreach (array_slice(LANGS, 1) as $l) {
+        $out .= '<button type="button" class="lg-btn" data-lg-set="' . $l . '" aria-pressed="false" title="' . e(__('Показать справа: {lang}', ['lang' => strtoupper($l)])) . '">' . strtoupper($l) . '</button>';
+    }
     return $out . '</div>';
 }
 

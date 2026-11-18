@@ -91,11 +91,12 @@ function cache_clear(): void
 
 /* Версия первых данных. Когда в новых файлах сайта появляются данные, которых нет в уже установленном
    сайте (например, временные фото слайдов), число увеличивается, и data_upgrade() дополняет базу. */
-const DATA_VERSION = 2;
+const DATA_VERSION = 3;
 
 /**
  * Дополняет уже установленный сайт тем, что появилось в первых данных позже. Своё не трогает:
- * временное фото получает только слайд раздела, у которого нет ни своего фото, ни временного.
+ * временное фото получает только слайд раздела, у которого нет ни своего фото, ни временного;
+ * описание — только условный бренд из начального набора, если его не переименовали и описания у него нет.
  */
 function data_upgrade(): void
 {
@@ -113,6 +114,18 @@ function data_upgrade(): void
                 if (isset($b[$k])) $d['banner'][$k] = $b[$k];
             }
             item_save($it['id'], 'category', $it['slug'], $it['position'], $it['active'], $d);
+        }
+    }
+    // 3: у брендов появились описания — условным брендам из начального набора, у которых описания ещё нет, ставится своё
+    if ($have < 3 && is_array($seed)) {
+        $bySlug = [];
+        foreach ($seed['items']['brand'] ?? [] as $r) $bySlug[$r['slug']] = $r['data'];
+        foreach (items('brand') as $it) {
+            $b = $bySlug[$it['slug']] ?? null;
+            $d = $it['data'];
+            if (!$b || empty($b['text']) || !empty($d['text']) || ($d['name'] ?? '') !== ($b['name'] ?? null)) continue;
+            $d['text'] = $b['text'];
+            item_save($it['id'], 'brand', $it['slug'], $it['position'], $it['active'], $d);
         }
     }
     set_setting('data_version', DATA_VERSION);
@@ -150,8 +163,17 @@ function site_data_build(): array
     };
     $cats = $withId(items('category', true));
     $catIds = array_column($cats, 'id');
+    // у бренда, кроме названия, могут быть описание, логотип и свои заголовок с описанием для поисковиков
     $brands = array_map(function ($r) {
-        return ['id' => $r['slug'], 'name' => (string) ($r['data']['name'] ?? $r['slug'])];
+        $b = ['id' => $r['slug'], 'name' => (string) ($r['data']['name'] ?? $r['slug'])];
+        foreach (['text', 'img', 'seoTitle', 'seoDesc'] as $k) {
+            $v = $r['data'][$k] ?? null;
+            $filled = is_array($v) ? array_filter($v, function ($x) {
+                return is_string($x) && $x !== '';
+            }) : [];
+            if ($filled || is_string($v) && $v !== '') $b[$k] = $v;
+        }
+        return $b;
     }, items('brand', true));
     $brandIds = array_column($brands, 'id');
 

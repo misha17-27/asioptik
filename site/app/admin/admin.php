@@ -280,15 +280,18 @@ function admin_type(): array
     return [$type, $all[$type]];
 }
 
-/** Заголовок и описание страницы товара или статьи, которые сайт ставит сам, пока свои не заданы. */
+/** Заголовок и описание страницы товара, статьи, бренда или раздела каталога, которые сайт ставит сам, пока свои не заданы. */
 function item_seo_auto(string $type, array $d, string $lang, array $catRows, string $shop): array
 {
-    $name = tr($d['name'] ?? ($d['title'] ?? ''), $lang);
+    $name = $type === 'brand' ? (string) ($d['name'] ?? '') : tr($d['name'] ?? ($d['title'] ?? ''), $lang);
     if ($name === '') return ['', ''];
-    return [$name . ' — ' . $shop, $type === 'product' ? product_desc($d, $lang, ['CATEGORIES' => $catRows, 'CONFIG' => ['shopName' => $shop]]) : tr($d['lead'] ?? '', $lang)];
+    return seo_auto($type, $lang, ['CATEGORIES' => $catRows, 'CONFIG' => ['shopName' => $shop]], $d);
 }
 
-/** Разделы каталога в том виде, в каком их ждёт product_desc(). */
+/** Типы записей, у которых на сайте есть своя страница (и свои заголовок с описанием для поисковиков): тип => начало адреса. */
+const ITEM_PAGES = ['product' => 'product/', 'post' => 'blog/', 'brand' => 'brands/', 'category' => 'catalog?cat='];
+
+/** Разделы каталога в том виде, в каком их ждёт seo_auto(). */
 function category_rows(): array
 {
     return array_map(function ($r) {
@@ -328,7 +331,7 @@ function admin_list(): void
     if ($tools !== '') $out .= '<div class="card-tools">' . $tools . '</div>';
     if (!$rows) admin_page($S['title'], $out . '<p class="empty">' . __('Здесь пока пусто.') . '</p></section>', 'list:' . $type, $actions);
 
-    $hasPage = $type === 'product' || $type === 'post';   // у товара и статьи есть своя страница на сайте
+    $hasPage = isset(ITEM_PAGES[$type]);   // у товара, статьи, бренда и раздела каталога есть своя страница на сайте
     $catRows = category_rows();
     $head = $type === 'product' ? ['', __('Название'), __('Раздел'), __('Цена')] : [__('Название')];
     if ($type === 'service') $head[] = __('Цена');
@@ -343,7 +346,7 @@ function admin_list(): void
         $edit = admin_url('edit', ['type' => $type, 'id' => $r['id']]);
         $name = $type === 'brand' ? (string) ($d['name'] ?? '') : tr_admin($d['name'] ?? ($d['title'] ?? ''));
         if ($name === '') $name = $r['slug'];
-        $path = $type === 'product' ? 'product/' . rawurlencode($r['slug']) : ($type === 'post' ? 'blog/' . rawurlencode($r['slug']) : '');
+        $path = $hasPage ? ITEM_PAGES[$type] . rawurlencode($r['slug']) : '';
         $sub = $path !== '' ? '/' . $path : $r['slug'];
         if ($type === 'product' && isset($brands[$d['brand'] ?? ''])) $sub .= ' · ' . $brands[$d['brand']];
         $cells = '<td><a class="strong" href="' . e($edit) . '">' . e($name) . '</a>' . ($r['active'] ? '' : ' <span class="st st-cancel">' . __('скрыт') . '</span>') . '<small>' . e($sub) . '</small></td>';
@@ -462,7 +465,7 @@ function admin_edit(): void
     $own = $type === 'brand' ? (string) ($data['name'] ?? '') : tr_admin($data['name'] ?? $data['title'] ?? '');
     $head = $item && $own !== '' ? $own : ($item ? $slug : ($copyOf ? __('Копия товара') : ($S['add'] ?? $S['one'])));
     $fields = $S['fields'];
-    if ($type === 'product' || $type === 'post') {   // в пустых полях SEO серым показан текст, который сайт поставит сам
+    if (isset(ITEM_PAGES[$type])) {   // в пустых полях SEO серым показан текст, который сайт поставит сам
         $catRows = category_rows();
         $shop = (string) (setting('config', [])['shopName'] ?? 'Asioptik');
         foreach ($fields as $i => $f) {

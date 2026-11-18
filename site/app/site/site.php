@@ -2,31 +2,7 @@
 /* Публичная часть: адреса страниц, заголовки для поисковиков и мессенджеров, приём заказов с сайта. */
 declare(strict_types=1);
 
-/** Заголовки и описания страниц на трёх языках (то же, что показывает сама страница). */
-const SITE_TEXT = [
-    'az' => [
-        'home' => ['{shop} — eynək, linza və eynək təmiri', 'Çərçivələr, günəş eynəkləri, kontakt linzaları və reseptlə eynək linzaları. Eynək təmiri. Saytda sifariş, WhatsApp-da təsdiq.'],
-        'catalog' => ['Kataloq', 'Çərçivənin qiyməti linzasız göstərilib. Eynək linzaları cüt, kontakt linzaları isə qutu ilə satılır.'],
-        'blog' => ['Bloq', 'Qısa və konkret: resepti necə oxumaq, eynəyi necə seçmək və ona necə qulluq etmək.'],
-        'contacts' => ['Əlaqə', 'WhatsApp-a yazın, zəng edin və ya salona gəlin.'],
-        'checkout' => ['Sifarişin rəsmiləşdirilməsi', ''],
-    ],
-    'ru' => [
-        'home' => ['{shop} — очки, линзы и ремонт очков', 'Оправы, солнцезащитные очки, контактные линзы и линзы для очков по рецепту. Ремонт очков. Заказ на сайте, подтверждение в WhatsApp.'],
-        'catalog' => ['Каталог', 'Цена оправы указана без линз. Линзы для очков продаются парой, контактные линзы — упаковками.'],
-        'blog' => ['Блог', 'Коротко и по делу: как читать рецепт, как выбрать очки и как за ними ухаживать.'],
-        'contacts' => ['Контакты', 'Напишите в WhatsApp, позвоните или приходите в салон.'],
-        'checkout' => ['Оформление заказа', ''],
-    ],
-    'en' => [
-        'home' => ['{shop} — glasses, lenses and repairs', 'Frames, sunglasses, contact lenses and prescription lenses. Eyewear repairs. Order on the site, confirm on WhatsApp.'],
-        'catalog' => ['Catalog', 'Frame prices don’t include lenses. Spectacle lenses are sold in pairs, contact lenses by the box.'],
-        'blog' => ['Blog', 'Short and practical: how to read a prescription, choose glasses and look after them.'],
-        'contacts' => ['Contacts', 'Message us on WhatsApp, call or visit the shop.'],
-        'checkout' => ['Checkout', ''],
-    ],
-];
-
+/** Значение на нужном языке; если перевода нет — на основном (az), иначе какое есть. */
 function tr($v, string $lang): string
 {
     if (is_array($v)) return (string) ($v[$lang] ?? $v['az'] ?? reset($v) ?: '');
@@ -39,19 +15,107 @@ function site_text(string $key, string $lang, array $vars = []): string
     $own = setting('texts', []);
     $def = texts_default();
     $s = is_array($own) && isset($own[$lang][$key]) && is_string($own[$lang][$key]) && $own[$lang][$key] !== '' ? $own[$lang][$key] : (string) ($def[$key][$lang] ?? ($def[$key]['az'] ?? ''));
-    foreach ($vars as $k => $v) $s = str_replace('{' . $k . '}', (string) $v, $s);
-    return $s;
+    // слова подставляются за один проход, как в скрипте сайта: подставленное значение второй раз не разбирается
+    return (string) preg_replace_callback('~\{(\w+)\}~', function (array $m) use ($vars): string {
+        return isset($vars[$m[1]]) ? (string) $vars[$m[1]] : $m[0];
+    }, $s);
 }
 
-/** Описание страницы товара для поисковиков, когда своё не задано: название, короткое описание, раздел и салон. */
-function product_desc(array $p, string $lang, array $data): string
+/* ---------- заголовок и описание страницы для поисковиков (title и description) ----------
+   Правила одни для сервера и для скрипта сайта (assets/js/app.js, функция pageMeta): страница, отданная сервером,
+   и страница после перехода по сайту должны называться одинаково. Это проверяет test/php_seo.py.
+   Свой текст из админ-панели ставится как есть; текст, который сайт собирает сам, укладывается в SEO_MAX знаков. */
+const SEO_MAX = 160;
+
+/** Две точки подряд и лишние пробелы (остаются, когда в шаблон подставлено пустое значение). */
+function seo_clean(string $s): string
 {
-    $cat = '';
-    foreach ($data['CATEGORIES'] ?? [] as $c) {
-        if (($c['id'] ?? '') === ($p['cat'] ?? null)) $cat = tr($c['name'] ?? '', $lang);
+    $s = (string) preg_replace('~[ \t\r\n]*\.[ \t\r\n]*\.~u', '.', $s);
+    return trim((string) preg_replace('~[ \t\r\n]+~u', ' ', $s), ' ');
+}
+
+/** Текст, который встаёт в середину описания, должен кончаться точкой. */
+function seo_sentence(string $s): string
+{
+    $s = trim($s, " \t\r\n");
+    return $s !== '' && !preg_match('~[.!?…]\z~u', $s) ? $s . '.' : $s;
+}
+
+/** Описание не длиннее SEO_MAX знаков: длинный текст обрезается по слову и кончается многоточием. */
+function seo_clip(string $s): string
+{
+    $s = seo_clean($s);
+    if (mb_strlen($s) <= SEO_MAX) return $s;
+    $cut = mb_substr($s, 0, SEO_MAX - 3);
+    $sp = mb_strrpos($cut, ' ');
+    if ($sp !== false && $sp > 100) $cut = mb_substr($cut, 0, $sp);
+    return (string) preg_replace('~[ ,;:.!?—–\-]+\z~u', '', $cut) . '…';
+}
+
+/** Товар относится к странице «для кого»: у раздела из частей («Взрослым») — к любой из частей. */
+function in_audience(array $p, ?array $aud): bool
+{
+    if (!$aud) return true;
+    $ids = array_column(is_array($aud['parts'] ?? null) ? $aud['parts'] : [], 'id') ?: [(string) ($aud['id'] ?? '')];
+    return (bool) array_intersect($ids, is_array($p['for'] ?? null) ? $p['for'] : []);
+}
+
+/**
+ * Заголовок и описание, которые сайт ставит сам, пока свои не заданы: [title, description].
+ * $kind — страница сайта: home, catalog, brands, blog, about, contacts, checkout;
+ *         или то, у чего своя страница: product (товар), post (статья), brand (бренд), category (раздел каталога) — тогда $item.
+ * $aud  — открытая страница «для кого» (у каталога и у раздела каталога).
+ */
+function seo_auto(string $kind, string $lang, array $data, ?array $item = null, ?array $aud = null): array
+{
+    $shop = (string) ($data['CONFIG']['shopName'] ?? 'Asioptik');
+    $T = function (string $key, array $vars = []) use ($lang, $shop): string {
+        return site_text($key, $lang, $vars + ['shop' => $shop]);
+    };
+    $item = $item ?? [];
+    $an = $aud ? (tr($aud['title'] ?? '', $lang) ?: tr($aud['name'] ?? '', $lang)) : '';
+    $at = $aud ? seo_sentence(tr($aud['text'] ?? '', $lang)) : '';
+    switch ($kind) {
+        case 'product':
+            $cat = '';
+            foreach ($data['CATEGORIES'] ?? [] as $c) {
+                if (($c['id'] ?? '') === ($item['cat'] ?? null)) $cat = tr($c['name'] ?? '', $lang);
+            }
+            $name = tr($item['name'] ?? '', $lang);
+            return [$name . ' — ' . $shop, seo_clip($T('seo.product', ['name' => $name, 'sub' => tr($item['sub'] ?? '', $lang), 'cat' => $cat]))];
+        case 'post':
+            return [tr($item['title'] ?? '', $lang) . ' — ' . $shop, seo_clip(tr($item['lead'] ?? '', $lang)) ?: seo_clip($T('bl.lead'))];
+        case 'brand':
+            $name = (string) ($item['name'] ?? '');
+            return [$name . ' — ' . $shop, seo_clip($T('brs.seo', ['name' => $name, 'text' => seo_sentence(tr($item['text'] ?? '', $lang))]))];
+        case 'category':
+            $name = tr($item['name'] ?? '', $lang);
+            if ($aud) return [$name . ' — ' . $an . ' — ' . $shop, seo_clip($T('cseo.both', ['name' => $name, 'aud' => $an, 'text' => $at]))];
+            return [$name . ' — ' . $T('cat.title') . ' — ' . $shop, seo_clip($T('cseo.cat', ['name' => $name]))];
+        case 'catalog':
+            if ($aud) return [$an . ' — ' . $shop, seo_clip($T('cseo.aud', ['name' => $an, 'text' => $at]))];
+            return [$T('cat.title') . ' — ' . $shop, seo_clip($T('cat.lead'))];
+        case 'brands':
+            return [$T('brs.title') . ' — ' . $shop, seo_clip($T('brs.lead'))];
+        case 'blog':
+            return [$T('bl.title') . ' — ' . $shop, seo_clip($T('bl.lead'))];
+        case 'about':
+            $about = is_array($data['ABOUT'] ?? null) ? $data['ABOUT'] : [];
+            return [tr($about['title'] ?? 'About', $lang) . ' — ' . $shop, seo_clip(tr($about['lead'] ?? '', $lang))];
+        case 'contacts':   // в описании, кроме текста страницы, стоит адрес салона
+            $addr = seo_sentence(tr($data['CONFIG']['address'] ?? '', $lang));
+            return [$T('ct.title') . ' — ' . $shop, seo_clip($addr !== '' ? $T('ct.seo', ['lead' => seo_sentence($T('ct.lead')), 'address' => $addr]) : $T('ct.lead'))];
+        case 'checkout':
+            return [$T('co.title') . ' — ' . $shop, ''];
     }
-    $s = site_text('seo.product', $lang, ['name' => tr($p['name'] ?? '', $lang), 'sub' => tr($p['sub'] ?? '', $lang), 'cat' => $cat, 'shop' => (string) ($data['CONFIG']['shopName'] ?? 'Asioptik')]);
-    return (string) preg_replace('~\s*\.\s*\.~u', '.', $s);   // у товара без короткого описания не остаётся двух точек подряд
+    return [$T('meta.title'), seo_clip($T('meta.desc'))];
+}
+
+/** Итог: свои заголовок и описание ($own: ['title' => […], 'desc' => […]] или seoTitle/seoDesc записи), иначе собранные сайтом. */
+function seo_meta(array $auto, $ownTitle, $ownDesc, string $lang, array $data): array
+{
+    $desc = own_text($ownDesc, $lang) ?: $auto[1];
+    return [own_text($ownTitle, $lang) ?: $auto[0], $desc !== '' ? $desc : seo_auto('home', $lang, $data)[1]];
 }
 
 function site_run(): void
@@ -91,78 +155,85 @@ function site_run(): void
     $preview = site_is_preview($cfg);
     if ($preview) header('X-Robots-Tag: noindex, nofollow');
     $shop = (string) ($cfg['shopName'] ?? 'Asioptik');
-    $T = SITE_TEXT[$lang];
-    $title = str_replace('{shop}', $shop, $T['home'][0]);
-    $desc = $T['home'][1];
     $route = '';
     $noindex = false;
+    // Что открыто: $kind и $item — для заголовка и описания (см. seo_auto), $page — страница из раздела «Страницы» админ-панели
+    $kind = 'home';
+    $page = 'home';
+    $item = null;
+    $aud = null;
+    $find = function (array $rows, string $id): ?array {
+        foreach ($rows as $x) {
+            if (is_array($x) && (string) ($x['id'] ?? '') === $id) return $x;
+        }
+        return null;
+    };
+    $onlyLang = array_intersect_key($keep, ['lang' => 1]);
 
     $first = $seg[0] ?? '';
     if ($first === '') {
         $route = '';
     } elseif ($first === 'product' && isset($seg[1]) && count($seg) === 2) {
-        $p = null;
-        foreach ($data['PRODUCTS'] as $x) {
-            if ($x['id'] === $seg[1]) $p = $x;
-        }
-        if (!$p) redirect($base . 'catalog' . $query($keep));
-        $route = 'product/' . rawurlencode($p['id']);
-        $title = own_text($p['seoTitle'] ?? null, $lang) ?: tr($p['name'] ?? '', $lang) . ' — ' . $shop;
-        $desc = own_text($p['seoDesc'] ?? null, $lang) ?: product_desc($p, $lang, $data);
+        $item = $find($data['PRODUCTS'], $seg[1]);
+        if (!$item) redirect($base . 'catalog' . $query($keep));
+        $route = 'product/' . rawurlencode($item['id']);
+        $kind = 'product';
+        $page = '';
     } elseif ($first === 'blog' && count($seg) <= 2) {
-        $route = 'blog';
-        $title = $T['blog'][0] . ' — ' . $shop;
-        $desc = $T['blog'][1];
+        $route = $kind = $page = 'blog';
         if (isset($seg[1])) {
-            $post = null;
-            foreach ($data['POSTS'] as $x) {
-                if ($x['id'] === $seg[1]) $post = $x;
-            }
-            if (!$post) redirect($base . 'blog' . $query($keep));
-            $route = 'blog/' . rawurlencode($post['id']);
-            $title = own_text($post['seoTitle'] ?? null, $lang) ?: tr($post['title'] ?? '', $lang) . ' — ' . $shop;
-            $desc = own_text($post['seoDesc'] ?? null, $lang) ?: tr($post['lead'] ?? '', $lang);
+            $item = $find($data['POSTS'], $seg[1]);
+            if (!$item) redirect($base . 'blog' . $query($keep));
+            $route = 'blog/' . rawurlencode($item['id']);
+            $kind = 'post';
+            $page = '';
         }
-    } elseif ($first === 'about' && count($seg) === 1) {
-        $route = 'about';
-        $about = is_array($data['ABOUT']) ? $data['ABOUT'] : [];
-        $title = (tr($about['title'] ?? 'About', $lang)) . ' — ' . $shop;
-        $desc = tr($about['lead'] ?? '', $lang);
-    } elseif (in_array($first, ['catalog', 'contacts', 'checkout'], true) && count($seg) === 1) {
-        $route = $first;
-        $title = $T[$first][0] . ' — ' . $shop;
-        $desc = $T[$first][1] ?: $T['home'][1];
+    } elseif ($first === 'brands' && count($seg) <= 2) {
+        // Все бренды и страница бренда с его товарами. Бренд без товаров на сайте не показывается, поэтому поисковикам его страница не нужна
+        $route = $kind = $page = 'brands';
+        $filled = array_flip(array_filter(array_column($data['PRODUCTS'], 'brand'), 'is_string'));
+        $noindex = !$filled;
+        if (isset($seg[1])) {
+            $item = $find($data['BRANDS'], $seg[1]);
+            if (!$item) redirect($base . 'brands' . $query($onlyLang));
+            $route = 'brands/' . rawurlencode($item['id']);
+            $kind = 'brand';
+            $page = '';
+            $noindex = !isset($filled[$item['id']]);
+        }
+    } elseif (in_array($first, ['about', 'catalog', 'contacts', 'checkout'], true) && count($seg) === 1) {
+        $route = $kind = $page = $first;
         $noindex = $first === 'checkout';
         if ($first === 'catalog') {
             // Страница «для кого» (?aud=adults, men, women, kids): свой заголовок и текст, как на самой странице
-            $aud = null;
             foreach ($data['AUDIENCES'] as $a) {
                 foreach (array_merge([$a], is_array($a['parts'] ?? null) ? $a['parts'] : []) as $x) {
                     if (isset($keep['aud']) && ($x['id'] ?? '') === $keep['aud']) $aud = $x;
                 }
             }
             if (!$aud) unset($keep['aud']);   // незнакомое значение в адрес страницы не попадает
-            if ($aud) {
-                $title = (tr($aud['title'] ?? '', $lang) ?: tr($aud['name'] ?? '', $lang)) . ' — ' . $shop;
-                $desc = tr($aud['text'] ?? '', $lang) ?: $desc;
-            }
-            $cat = null;
-            foreach ($data['CATEGORIES'] as $c) {
-                if (isset($keep['cat']) && $c['id'] === $keep['cat']) $cat = $c;
+            // Раздел каталога (?cat=frames) открывается, когда в нём есть товары для выбранных «для кого»: так же решает страница
+            $cat = isset($keep['cat']) ? $find($data['CATEGORIES'], $keep['cat']) : null;
+            if ($cat) {
+                $has = false;
+                foreach ($data['PRODUCTS'] as $x) $has = $has || (($x['cat'] ?? '') === $cat['id'] && in_audience($x, $aud));
+                if (!$has) $cat = null;
             }
             if (!$cat) unset($keep['cat']);
-            if ($cat) $title = tr($cat['name'] ?? '', $lang) . ' — ' . $title;
+            if ($cat) {
+                $kind = 'category';
+                $item = $cat;
+            }
+            if ($cat || $aud) $page = '';
         }
     } else {
-        redirect($base . $query(array_intersect_key($keep, ['lang' => 1])));   // неизвестный адрес — на главную
+        redirect($base . $query($onlyLang));   // неизвестный адрес — на главную
     }
-    // Свои заголовок и описание страницы из раздела «Страницы» админ-панели (у раздела каталога и у статьи остаются свои)
-    $pageId = $route === '' ? 'home' : $route;
-    $seo = is_array($data['SEO'] ?? null) ? ($data['SEO'][$pageId] ?? null) : null;
-    if (is_array($seo) && !($route === 'catalog' && (isset($keep['cat']) || isset($keep['aud'])))) {
-        $title = own_text($seo['title'] ?? null, $lang) ?: $title;
-        $desc = own_text($seo['desc'] ?? null, $lang) ?: $desc;
-    }
+    // Свои заголовок и описание: у товара, статьи, бренда и раздела каталога — из их карточки (на странице «для кого» у раздела своих нет),
+    // у страниц сайта — из раздела «Страницы» админ-панели
+    $own = $page !== '' && is_array($data['SEO'] ?? null) && is_array($data['SEO'][$page] ?? null) ? $data['SEO'][$page] : [];
+    if ($item && !($kind === 'category' && $aud)) $own = ['title' => $item['seoTitle'] ?? null, 'desc' => $item['seoDesc'] ?? null];
+    [$title, $desc] = seo_meta(seo_auto($kind, $lang, $data, $item, $aud), $own['title'] ?? null, $own['desc'] ?? null, $lang, $data);
 
     $site = site_origin_url($cfg);
     $canonQ = array_intersect_key($keep, $route === 'catalog' ? ['cat' => 1, 'aud' => 1] : []);
@@ -359,8 +430,12 @@ function site_sitemap(): void
     $data = site_data();
     $site = site_origin_url($data['CONFIG']);
     if (site_is_preview($data['CONFIG'])) header('X-Robots-Tag: noindex, nofollow');
-    $urls = ['', 'catalog', 'about', 'blog', 'contacts'];
-    foreach ($data['CATEGORIES'] as $c) $urls[] = 'catalog?cat=' . rawurlencode($c['id']);
+    $urls = ['', 'catalog'];
+    // разделы каталога и бренды попадают в карту, когда в них есть товары
+    $inCat = array_flip(array_column($data['PRODUCTS'], 'cat'));
+    foreach ($data['CATEGORIES'] as $c) {
+        if (isset($inCat[$c['id']])) $urls[] = 'catalog?cat=' . rawurlencode($c['id']);
+    }
     // страницы «для кого»: взрослым, мужчинам, женщинам, детям — если для них есть товары
     $for = [];
     foreach ($data['PRODUCTS'] as $p) foreach ((array) ($p['for'] ?? []) as $f) $for[$f] = true;
@@ -369,6 +444,13 @@ function site_sitemap(): void
         if (array_intersect_key($for, array_flip($parts ?: [$a['id']]))) $urls[] = 'catalog?aud=' . rawurlencode($a['id']);
         foreach ($parts as $id) if (isset($for[$id])) $urls[] = 'catalog?aud=' . rawurlencode($id);
     }
+    $inBrand = array_flip(array_filter(array_column($data['PRODUCTS'], 'brand'), 'is_string'));
+    $brands = array_values(array_filter($data['BRANDS'], function ($x) use ($inBrand) {
+        return isset($inBrand[$x['id']]);
+    }));
+    if ($brands) $urls[] = 'brands';
+    foreach ($brands as $x) $urls[] = 'brands/' . rawurlencode($x['id']);
+    array_push($urls, 'about', 'blog', 'contacts');
     foreach ($data['PRODUCTS'] as $p) $urls[] = 'product/' . rawurlencode($p['id']);
     foreach ($data['POSTS'] as $p) $urls[] = 'blog/' . rawurlencode($p['id']);
     header('Content-Type: application/xml; charset=utf-8');

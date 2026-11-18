@@ -14,7 +14,7 @@ def head(html):
     t = re.search(r'<title>([^<]*)', html); d = re.search(r'name="description" content="([^"]*)"', html)
     return (t.group(1) if t else '—') + ' | ' + (d.group(1) if d else '—')
 async def fill(pg, sel, val):
-    """Поле на одном из трёх языков видно только при своей вкладке — сначала открываем её."""
+    """Поля основного языка (az) видны всегда — слева. Поле второго языка (ru или en) видно, когда он выбран справа: сначала выбираем его."""
     m = re.search(r'-(az|ru|en)$', sel)
     if m and not await pg.locator(sel).is_visible(): await pg.locator(f'[data-lg-set={m.group(1)}]').first.click()
     await pg.fill(sel, val)
@@ -71,12 +71,18 @@ async def main():
         await pg.screenshot(path=f'{SH}/adm-pages.png')
         await pg.locator('.table tbody tr .acts a').first.click(); await pg.wait_for_load_state()
         print('page editor:', await pg.inner_text('.card-head h2'), '| address:', await pg.input_value('.addr input'), '| blocks:', await pg.locator('h3.block').all_inner_texts(), '| fields:', await pg.locator('.field .langs').count())
-        print('language tabs:', await pg.locator('.lg-btn').all_inner_texts(), '| active:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"),
-              '| visible inputs of hero.title:', await pg.evaluate("[...document.querySelectorAll('[name^=\"t[hero.title]\"]')].filter(x => x.offsetParent).map(x => x.lang)"))
+        # перевод в две колонки: слева всегда основной язык сайта (AZ), справа второй язык — по кнопке RU или EN
+        VIS = "[...document.querySelectorAll('[name^=\"t[hero.title]\"]')].filter(x => x.offsetParent).map(x => x.lang + '@' + Math.round(x.getBoundingClientRect().left) + ',' + Math.round(x.getBoundingClientRect().top))"
+        print('translation columns: left', await pg.inner_text('.lg-main'), '| buttons:', await pg.locator('.lg-btn').all_inner_texts(), '| right:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"),
+              '| visible inputs of hero.title (lang@left,top):', await pg.evaluate(VIS))
+        await pg.locator('[data-lg-set=en]').first.click()
+        print('after EN:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"), '| pressed:', await pg.evaluate("[...document.querySelectorAll('.lg-btn')].map(b => b.textContent + '=' + b.getAttribute('aria-pressed'))"), '| visible:', await pg.evaluate(VIS))
+        await pg.set_viewport_size({'width': 390, 'height': 800}); print('phone: columns one under another:', await pg.evaluate(VIS), '| sideways scroll:', await pg.evaluate('document.documentElement.scrollWidth - innerWidth'))
+        await pg.set_viewport_size({'width': 1440, 'height': 900}); await pg.locator('[data-lg-set=ru]').first.click()
         print('seo placeholder:', (await pg.get_attribute('#f-seo-title--ru', 'placeholder'))[:60], '| counter:', await pg.inner_text('.lang[data-lg=ru] .count >> nth=0'))
         await fill(pg, '#f-t-hero-title--ru', 'Очки и линзы в Баку — проверка админки'); await fill(pg, '#f-t-hero-title--az', 'Bakıda eynək və linzalar — yoxlama'); await fill(pg, '#f-seo-title--ru', 'Оптика Asioptik в Баку: очки, линзы, ремонт')
         await fill(pg, '#f-seo-desc--ru', 'Свой текст описания главной страницы для поисковиков: оправы, линзы и ремонт очков в Баку.'); await fill(pg, '#f-t-fact2--ru', 'Доставка бесплатно')
-        print('active tab after az and ru edits:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"), '| counter:', await pg.inner_text('.lang[data-lg=ru] .count >> nth=0'))
+        print('right column after az and ru edits:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"), '| counter:', await pg.inner_text('.lang[data-lg=ru] .count >> nth=0'))
         await pg.locator('.actions .btn').click(); await pg.wait_for_load_state()
         print('lost {freeFrom}:', await flash(), '|', await pg.locator('.field.is-invalid .err').first.inner_text(), '| kept typed title:', await pg.input_value('#f-t-hero-title--ru'))
         await fill(pg, '#f-t-fact2--ru', 'Бесплатная доставка от {freeFrom}'); await pg.locator('.actions .btn').click(); await pg.wait_for_load_state()
@@ -84,8 +90,8 @@ async def main():
         print('db seo:', sql("SELECT value FROM ao_settings WHERE name='seo'")[:170])
         await pg.goto(B + '/admin/?p=pages'); print('pages status:', ' '.join((await pg.locator('.table tbody tr').first.inner_text()).split()))
         html = raw('/?lang=ru'); print('server head ru:', head(html)[:150]); print('server head az:', head(raw('/?lang=az'))[:110])
-        # на другой странице вкладка языка остаётся той же, что выбрана
-        await pg.goto(B + '/admin/?p=page&id=catalog'); print('tab kept on next page:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"), '| catalog blocks:', await pg.locator('h3.block').all_inner_texts())
+        # на другой странице справа остаётся тот же язык, что выбран
+        await pg.goto(B + '/admin/?p=page&id=catalog'); print('right column kept on next page:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"), '| catalog blocks:', await pg.locator('h3.block').all_inner_texts())
         await fill(pg, '#f-seo-title--ru', 'Каталог очков и линз — Asioptik'); await pg.locator('.actions .btn').click(); await pg.wait_for_load_state()
         print('catalog seo:', await flash(), '|', head(raw('/catalog?lang=ru'))[:80], '| section page keeps its own:', head(raw('/catalog?cat=frames&lang=ru'))[:40])
         # товары: список, разделы-кнопки, поиск, правка цены, фото
@@ -128,8 +134,9 @@ async def main():
         await pg.set_input_files('input[name="file[img]"]', f'{ROOT}/test/fake/evil.php'); await pg.wait_for_timeout(200)
         print('php file chosen:', await pg.inner_text('.file-note'), '| still selected:', await pg.evaluate("document.querySelector('input[name=\"file[img]\"]').files.length"))
         # пустое название
-        await pg.locator('[data-lg-set=ru]').first.click(); await fill(pg, '#f-name-az', ''); await pg.locator('[data-lg-set=ru]').first.click(); await pg.locator('.actions .btn').click(); await pg.wait_for_load_state()
-        print('empty name:', await pg.locator('.field.is-invalid .err').first.inner_text(), '| tab opened on the empty language:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"))
+        await pg.locator('[data-lg-set=en]').first.click(); await fill(pg, '#f-name-az', ''); await pg.locator('.actions .btn').click(); await pg.wait_for_load_state()
+        print('empty name:', await pg.locator('.field.is-invalid .err').first.inner_text(), '| the empty field (az) is in view:', await pg.locator('#f-name-az').is_visible(), '| right column stays:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"))
+        await pg.locator('[data-lg-set=ru]').first.click()
         # новый бренд и новый товар
         await pg.goto(B + '/admin/?p=edit&type=brand'); await pg.fill('#f-name', 'Baku Vision'); await pg.locator('.actions .btn').click(); print('brand:', await flash(), '|', sql("SELECT slug FROM ao_items WHERE type='brand' ORDER BY id DESC LIMIT 1"))
         await pg.goto(B + '/admin/?p=edit&type=product'); print('new product starts with:', await pg.locator('.choose a').all_inner_texts())

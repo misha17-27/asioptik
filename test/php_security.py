@@ -257,12 +257,31 @@ check('old data: cache dropped', refresh() == 302)
 b = slides()
 check('upgrade keeps the own slide photo and adds nothing to it', b['frames'].get('img', '').endswith('/uploads/b/own-photo.jpg') and 'demo' not in b['frames'], b['frames'].get('img'))
 check('upgrade gives the other slides a temporary photo', all('images.pexels.com' in b[k].get('demo', '') for k in ('sun', 'contacts', 'lenses')), [k for k in b if b[k].get('demo')])
-check('upgrade is recorded', sql("SELECT value FROM ao_settings WHERE name='data_version'") == '2')
+check('upgrade is recorded', sql("SELECT value FROM ao_settings WHERE name='data_version'") == '3')
 sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.banner.demo', '$.banner.pos', '$.banner.flip') WHERE type='category' AND slug='sun'"); refresh()
 check('a temporary photo removed by the owner does not come back', 'demo' not in slides()['sun'])
 # вернуть как после чистой установки
 sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.banner.img') WHERE type='category' AND slug='frames'"); sql("DELETE FROM ao_settings WHERE name='data_version'"); refresh()
 check('slides restored', all('demo' in v for v in slides().values()))
+# сайт версии до страниц брендов: у брендов нет описаний, один бренд переименован владельцем, у другого описание своё
+def brands():
+    t = req('GET', '/?lang=ru')[2]
+    return {b['id']: b for b in json.loads(re.search(r'const BRANDS = (\[.*?\]);\n', t).group(1))}
+seed_text = brands()['asi-sun'].get('text', {})
+sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.text') WHERE type='brand'")
+sql("UPDATE ao_items SET data = JSON_SET(data, '$.name', 'Sun Line') WHERE type='brand' AND slug='asi-metal'")
+sql("UPDATE ao_items SET data = JSON_SET(data, '$.text', JSON_OBJECT('ru', 'Своё описание')) WHERE type='brand' AND slug='asi-kids'")
+sql("UPDATE ao_settings SET value = '2' WHERE name='data_version'"); refresh()
+b = brands()
+check('upgrade gives the starter brands their descriptions', bool(seed_text.get('ru')) and b['asi-sun'].get('text') == seed_text and bool(b['asi-classic'].get('text', {}).get('az')), b['asi-sun'].get('text'))
+check('upgrade leaves a renamed brand and an own description alone', 'text' not in b['asi-metal'] and b['asi-kids'].get('text') == {'ru': 'Своё описание'}, (b['asi-metal'], b['asi-kids'].get('text')))
+check('brand upgrade is recorded', sql("SELECT value FROM ao_settings WHERE name='data_version'") == '3')
+sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.text') WHERE type='brand' AND slug='asi-sun'"); refresh()
+check('a description removed by the owner does not come back', 'text' not in brands()['asi-sun'])
+# вернуть как после чистой установки
+sql("UPDATE ao_items SET data = JSON_SET(data, '$.name', 'Asi Metal') WHERE type='brand' AND slug='asi-metal'"); sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.text') WHERE type='brand'")
+sql("UPDATE ao_settings SET value = '2' WHERE name='data_version'"); refresh()
+check('brands restored', all(x.get('text', {}).get('ru') for k, x in brands().items() if k.startswith('asi-')), [k for k, x in brands().items() if not x.get('text')])
 
 print('--- загрузка файлов')
 up = ROOT / 'site' / 'uploads' / 'p'; up.mkdir(parents=True, exist_ok=True)

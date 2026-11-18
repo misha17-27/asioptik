@@ -503,12 +503,15 @@ const PRODUCTS = [
 
 /* ---------- Бренды очков ----------
    Названия ниже условные — замените своими брендами. У товара бренд задаётся полем brand: 'код бренда'.
-   Бренд показывается на карточке и странице товара, а в каталоге по брендам можно фильтровать. */
+   Бренд показывается на карточке и странице товара, а в каталоге по брендам можно фильтровать.
+   У каждого бренда с товарами есть своя страница (?page=brands&post=код), а все бренды собраны на странице «Бренды».
+   text — одно-два предложения о бренде; img — логотип (необязательно); seoTitle и seoDesc — свои заголовок
+   и описание страницы бренда для поисковиков: { az: '…', ru: '…', en: '…' } (необязательно). */
 const BRANDS = [
-  { id: 'asi-classic', name: 'Asi Classic' },
-  { id: 'asi-metal',   name: 'Asi Metal' },
-  { id: 'asi-sun',     name: 'Asi Sun' },
-  { id: 'asi-kids',    name: 'Asi Kids' },
+  { id: 'asi-classic', name: 'Asi Classic', text: { az: 'Hər gün üçün klassik formalı çərçivələr.', ru: 'Оправы классических форм на каждый день.', en: 'Classic-shaped frames for every day.' } },
+  { id: 'asi-metal',   name: 'Asi Metal',   text: { az: 'Nazik metal çərçivələr.', ru: 'Тонкие металлические оправы.', en: 'Slim metal frames.' } },
+  { id: 'asi-sun',     name: 'Asi Sun',     text: { az: 'Şəhər və istirahət üçün günəş eynəkləri.', ru: 'Солнцезащитные очки для города и отдыха.', en: 'Sunglasses for the city and for holidays.' } },
+  { id: 'asi-kids',    name: 'Asi Kids',    text: { az: 'Uşaqlar üçün çərçivələr və günəş eynəkləri.', ru: 'Детские оправы и солнцезащитные очки.', en: 'Frames and sunglasses for children.' } },
 ];
 
 /* ---------- Услуги мастерской (from: true — цена «от») ---------- */

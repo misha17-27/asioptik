@@ -160,7 +160,7 @@
       'co.summary': 'Your order', 'co.items': 'Items', 'co.deliveryRow': 'Delivery', 'co.total': 'Total',
       'co.submit': 'Send order via WhatsApp', 'co.note': 'WhatsApp will open with your order already written. Press Send there and the order reaches us.',
       'dn.free': 'Within the city, free', 'dn.price': 'Within the city, {price}', 'dn.priceFree': 'Within the city, {price}. Free from {lim}',
-      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'seo.product': '{name}. {sub}. {cat} at the {shop} optician in Baku. Order on the site, confirm in WhatsApp.', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
+      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'seo.product': '{name}. {sub}. {cat} at the {shop} optician in Baku. Order online, confirm on WhatsApp.', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
       'e.svc': 'Choose at least one service', 'e.pickupAddr': 'Enter the address to collect your glasses from',
       'ok.orderTitle': 'Now send the order',
       'ok.orderText': 'We’ve opened WhatsApp with order {id}. Press Send in the chat and our manager will confirm the order and delivery time.',
@@ -593,6 +593,8 @@
   const brandById = {};
   BRAND_LIST.forEach(b => { brandById[b.id] = b; });
   const brandName = p => (p && p.brand && brandById[p.brand] ? brandById[p.brand].name : '');
+  // Товары бренда. У бренда с товарами есть своя страница: /brands/код (без товаров бренд на сайте не показывается)
+  const brandItems = id => PRODUCTS.filter(p => p.brand === id);
 
   /* ---------- каталог ---------- */
   const norm = s => String(s || '').toLowerCase().replace(/ё/g, 'е');
@@ -936,7 +938,7 @@
       <div class="pp-grid">
         <div class="pp-media"><div class="pp-stage"><div class="js-pp-art"></div>${bd ? `<div class="card-badges">${bd}</div>` : ''}</div></div>
         <div class="pp-main">
-          ${brandName(p) ? `<p class="pp-brand">${esc(brandName(p))}</p>` : ''}
+          ${brandName(p) ? `<p class="pp-brand">${VIEWS.indexOf('brands') !== -1 ? `<a href="${esc(hrefView('brands', p.brand))}" data-view="brands" data-post="${esc(p.brand)}">${esc(brandName(p))}</a>` : esc(brandName(p))}</p>` : ''}
           <h1 class="pp-name" id="ppName" tabindex="-1">${esc(L(p.name))}</h1>
           <p class="pp-sub">${esc(L(p.sub))}</p>
           <p class="pp-price">${priceLabel(p)}${p.old ? `<s><span class="vh">${esc(t('oldPrice'))} </span>${money(p.old)}</s>` : ''}</p>
@@ -1126,10 +1128,13 @@
 
   /* ---------- адреса страниц: главная, страницы товаров и страницы сайта («Каталог», «О нас», «Блог», «Контакты») ----------
      ?product=код — страница товара;  ?page=catalog|about|blog|contacts — страница сайта;
-     ?page=catalog&cat=раздел&aud=для-кого — раздел каталога;  ?page=blog&post=код — статья блога */
+     ?page=catalog&cat=раздел&aud=для-кого — раздел каталога;  ?page=blog&post=код — статья блога;
+     ?page=brands — все бренды;  ?page=brands&post=код — страница бренда с его товарами */
   const ROUTE_KEYS = ['product', 'page', 'post', 'cat', 'aud', 'brand'];
   let homeScroll = 0;
   const VIEWS = (TH.views || []).concat(TH.view ? ['checkout'] : []);
+  // Страницы, у которых есть вложенные: статья блога и страница бренда
+  const SUBPAGES = { blog: 1, brands: 1 };
   // Когда сайт работает на сервере (PHP), адреса обычные: /catalog, /product/f-milan, /blog/care.
   // Когда страница открыта как файл — прежние: ?page=catalog, ?product=f-milan.
   const PATHS = !!CONFIG.pathRoutes;
@@ -1142,11 +1147,11 @@
         if (path.indexOf(BASE) === 0) path = path.slice(BASE.length);
         const seg = path.replace(/^\/+|\/+$/g, '').split('/');
         if (seg[0] === 'product' && byId[seg[1]]) out.product = seg[1];
-        else if (VIEWS.indexOf(seg[0]) !== -1) { out.view = seg[0]; out.post = seg[0] === 'blog' ? (seg[1] || '') : ''; }
+        else if (VIEWS.indexOf(seg[0]) !== -1) { out.view = seg[0]; out.post = SUBPAGES[seg[0]] ? (seg[1] || '') : ''; }
       } else {
         const sp = new URLSearchParams(window.location.search), id = sp.get('product'), v = sp.get('page');
         if (id && byId[id]) out.product = id;
-        else if (v && VIEWS.indexOf(v) !== -1) { out.view = v; out.post = sp.get('post') || ''; }
+        else if (v && VIEWS.indexOf(v) !== -1) { out.view = v; out.post = SUBPAGES[v] ? (sp.get('post') || '') : ''; }
       }
     } catch (e) { /* ничего */ }
     return out;
@@ -1242,20 +1247,67 @@
     else if (target) target.scrollIntoView({ block: 'start' });
     root.style.scrollBehavior = prev;
   }
+  /* Заголовок и описание страницы для поисковиков (title и description).
+     Те же правила повторяет сервер — app/site/site.php, функция page_meta(): страница, отданная сервером,
+     и страница после перехода по сайту должны называться одинаково (проверяет test/php_seo.py).
+     Свой текст из админ-панели ставится как есть; текст, который сайт собирает сам, укладывается в 160 знаков. */
+  const SEO_MAX = 160;
+  const seoClean = s => String(s == null ? '' : s).replace(/[ \t\r\n]*\.[ \t\r\n]*\./g, '.').replace(/[ \t\r\n]+/g, ' ').replace(/^ | $/g, '');
+  // Текст, который встаёт в середину описания, должен кончаться точкой
+  const seoSentence = s => { s = String(s == null ? '' : s).replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, ''); return s && !/[.!?…]$/.test(s) ? s + '.' : s; };
+  function seoClip(s) {
+    const a = Array.from(seoClean(s));
+    if (a.length <= SEO_MAX) return a.join('');
+    const part = a.slice(0, SEO_MAX - 3), sp = part.lastIndexOf(' ');
+    if (sp > 100) part.length = sp;
+    return part.join('').replace(/[ ,;:.!?—–-]+$/, '') + '…';
+  }
+  function pageMeta() {
+    const p = state.page ? byId[state.page] : null, v = !p && state.view && state.viewInfo && state.viewInfo.title ? state.viewInfo : null;
+    const own = o => (o && typeof o === 'object' && typeof o[lang] === 'string' ? o[lang].trim() : '');
+    const shop = CONFIG.shopName, SE = (typeof SEO !== 'undefined' && SEO) || {};
+    // page — страница из раздела «Страницы» админ-панели (свои title и description задаются там);
+    // item — товар, статья, бренд или раздел каталога (свои title и description — в их карточке)
+    let title = t('meta.title'), desc = t('meta.desc'), page = 'home', item = null;
+    if (p) {
+      item = p;
+      title = L(p.name) + ' — ' + shop;
+      desc = t('seo.product', { name: L(p.name), sub: L(p.sub), cat: catName(p.cat) });
+    } else if (v) {
+      page = state.view;
+      title = v.title + ' — ' + shop;
+      desc = v.desc || '';
+      if (state.view === 'catalog') {
+        const a = state.aud && audById[state.aud] ? audById[state.aud] : null, c = state.cat !== 'all' && catById[state.cat] ? catById[state.cat] : null;
+        const an = a ? L(a.title) || L(a.name) : '';
+        if (a || c) page = '';
+        if (c && !a) item = c;
+        title = (c ? L(c.name) + ' — ' : '') + (a ? an : t('cat.title')) + ' — ' + shop;
+        desc = a && c ? t('cseo.both', { name: L(c.name), aud: an, text: seoSentence(L(a.text)) })
+          : a ? t('cseo.aud', { name: an, text: seoSentence(L(a.text)) })
+          : c ? t('cseo.cat', { name: L(c.name) }) : t('cat.lead');
+      } else if (state.post && state.view === 'blog') {
+        const x = typeof POSTS !== 'undefined' ? POSTS.find(y => y.id === state.post) : null;
+        if (x) { page = ''; item = x; title = L(x.title) + ' — ' + shop; desc = L(x.lead) || t('bl.lead'); }
+      } else if (state.post && state.view === 'brands') {
+        const b = brandById[state.post];
+        if (b) { page = ''; item = b; title = b.name + ' — ' + shop; desc = t('brs.seo', { name: b.name, text: seoSentence(L(b.text)) }); }
+      } else if (state.view === 'contacts') {
+        // в описании страницы контактов, кроме её текста, стоит адрес салона
+        const addr = seoSentence(L(CONFIG.address));
+        if (addr) desc = t('ct.seo', { lead: seoSentence(t('ct.lead')), address: addr });
+      }
+    }
+    const seo = item ? { title: item.seoTitle, desc: item.seoDesc } : (page && SE[page]) || {};
+    return { title: own(seo.title) || title, desc: own(seo.desc) || seoClip(desc) || seoClip(t('meta.desc')) };
+  }
   function setMeta() {
     const p = state.page ? byId[state.page] : null, v = !p && state.view && state.viewInfo && state.viewInfo.title ? state.viewInfo : null;
     const inCat = v && state.view === 'catalog' && state.cat !== 'all' && catById[state.cat] ? state.cat : '';
-    // Свои заголовок и описание для поисковиков: у товара и статьи — из их карточки, у страниц — из раздела «Страницы».
-    // Берётся только текст на языке страницы; если его нет, заголовок собирается сам.
-    const own = o => (o && typeof o === 'object' && typeof o[lang] === 'string' ? o[lang].trim() : '');
-    const SE = (typeof SEO !== 'undefined' && SEO) || {};
-    const post = v && state.view === 'blog' && state.post && typeof POSTS !== 'undefined' ? POSTS.find(x => x.id === state.post) : null;
-    const inAudPage = v && state.view === 'catalog' && state.aud;
-    const seo = p ? { title: p.seoTitle, desc: p.seoDesc } : post ? { title: post.seoTitle, desc: post.seoDesc } : (!inCat && !inAudPage && !(v && state.post) && SE[v ? state.view : 'home']) || {};
-    const title = own(seo.title) || (p ? L(p.name) + ' — ' + CONFIG.shopName : v ? (inCat ? catName(inCat) + ' — ' : '') + v.title + ' — ' + CONFIG.shopName : t('meta.title'));
-    if (title !== 'meta.title') document.title = title;
-    const md = $('meta[name="description"]'), desc = own(seo.desc) || (p ? t('seo.product', { name: L(p.name), sub: L(p.sub), cat: catName(p.cat) }).replace(/\s*\.\s*\./g, '.') : v && v.desc ? v.desc : t('meta.desc'));
-    if (md && desc !== 'meta.desc') md.setAttribute('content', desc);
+    const m = pageMeta(), title = m.title, desc = m.desc, known = t('meta.title') !== 'meta.title';
+    if (known) document.title = title;
+    const md = $('meta[name="description"]');
+    if (md && known) md.setAttribute('content', desc);
     // Адрес страницы для поисковиков и для ссылок, которыми делятся в мессенджерах
     const put = (sel, attr, v) => { const el = $(sel); if (el && v) el.setAttribute(attr, v); };
     if (CONFIG.siteUrl) {
@@ -1273,8 +1325,8 @@
       put('link[rel="canonical"]', 'href', url);
       put('meta[property="og:url"]', 'content', url);
     }
-    put('meta[property="og:title"]', 'content', title !== 'meta.title' ? title : '');
-    put('meta[property="og:description"]', 'content', desc !== 'meta.desc' ? desc : '');
+    put('meta[property="og:title"]', 'content', known ? title : '');
+    put('meta[property="og:description"]', 'content', known ? desc : '');
     put('meta[property="og:site_name"]', 'content', CONFIG.shopName);
   }
   function showPage(o) {
@@ -2335,6 +2387,7 @@
   window.Shop = {
     CONFIG, state, byId, art, glasses, money, esc, swatches, swAttr, badges, needsOptions, priceLabel, catName, audById, audParent, inAud,
     colorOf, hexA, icon: n => ICON[n] || '', toast, reduced, waUrl, t, L, setLang, href: hrefFor, hrefView, hrefCatalog, go: navigate, brandName,
+    brands: BRAND_LIST, brandById, brandItems, pageMeta,
     count: itemsCount, priceFrom,
     get lang() { return lang; },
     render: () => renderProducts(),
@@ -2354,6 +2407,8 @@
     const cpage = $('#checkoutPage'), mainEl = $('main');
     if (cpage && mainEl) mainEl.appendChild(cpage);
     renderServices();
+    // Пока ни у одного бренда нет товаров, ссылка «Бренды» в меню и в подвале не показывается
+    document.body.classList.toggle('no-brands', !BRAND_LIST.some(b => brandItems(b.id).length));
     $$('[data-icon]').forEach(el => { el.innerHTML = ICON[el.dataset.icon] || ''; });
     loadCart();
     bindAll();

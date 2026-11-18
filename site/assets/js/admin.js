@@ -36,10 +36,12 @@
     if (sw) sw.style.background = /^#[0-9a-f]{3,8}$/i.test(el.value.trim()) ? el.value.trim() : 'transparent';
   });
 
-  /* Язык текстов в формах: видны поля одного языка, выбор держится до закрытия вкладки.
-     Сначала открыт язык админ-панели. Если форма вернулась с ошибкой в поле другого языка, открывается он. */
-  var LG = ['ru', 'az', 'en'];
-  var UI = LG.indexOf(document.documentElement.lang) < 0 ? 'ru' : document.documentElement.lang, KEEP = 'ao-lg-' + UI;
+  /* Языки в формах — для перевода: слева всегда основной язык сайта (AZ), справа второй язык.
+     Кнопки в шапке формы выбирают, какой язык справа; выбор держится до закрытия вкладки.
+     Сначала справа язык админ-панели, а если она на основном языке — первый из остальных (RU).
+     Если форма вернулась с ошибкой в поле языка, который не открыт, справа открывается он. */
+  var LGS = document.querySelector('.lgs'), LG = [].map.call(document.querySelectorAll('[data-lg-set]'), function (b) { return b.getAttribute('data-lg-set'); });
+  var UI = LG.indexOf(document.documentElement.lang) < 0 ? LG[0] : document.documentElement.lang, KEEP = 'ao-lg2';
   function setLang(l) {
     if (LG.indexOf(l) < 0) l = UI;
     document.documentElement.setAttribute('data-lg', l);
@@ -48,7 +50,7 @@
     });
     try { sessionStorage.setItem(KEEP, l); } catch (err) { /* без памяти вкладки просто не запоминаем */ }
   }
-  if (document.querySelector('.lang[data-lg]') && document.querySelector('[data-lg-set]')) {
+  if (LGS && LG.length && document.querySelector('.lang[data-lg]')) {
     var first = UI;
     try { first = sessionStorage.getItem(KEEP) || UI; } catch (err) { /* ничего */ }
     var bad = document.querySelector('.field.is-invalid .lang .err');
@@ -62,7 +64,8 @@
         })[0] || null;
       }
     }
-    setLang(bad ? bad.getAttribute('data-lg') : first);
+    bad = bad ? bad.getAttribute('data-lg') : '';
+    setLang(LG.indexOf(bad) < 0 ? first : bad);
     document.addEventListener('click', function (e) {
       var b = e.target.closest ? e.target.closest('[data-lg-set]') : null;
       if (b) setLang(b.getAttribute('data-lg-set'));

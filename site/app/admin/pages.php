@@ -18,7 +18,9 @@ const SITE_PAGES = [
     ], 'more' => [['banners', 'Баннеры и фото'], ['list:category', 'Слайды первого экрана'], ['list:service', 'Услуги мастерской']]],
     'catalog' => ['title' => 'Каталог', 'path' => 'catalog', 'seo' => true, 'blocks' => [
         'Каталог' => ['cat', 'sort', 'brand', 'aud', 'all', 'toCart', 'choose', 'chooseFor', 'toCartFor', 'oldPrice', 'priceFrom', 'pcs'],
+        'Описания разделов для поисковиков' => ['cseo'],
     ], 'more' => [['list:product', 'Товары'], ['list:category', 'Разделы'], ['list:brand', 'Бренды']]],
+    'brands' => ['title' => 'Бренды', 'path' => 'brands', 'seo' => true, 'blocks' => ['Надписи страницы' => ['brs']], 'more' => [['list:brand', 'Список брендов']]],
     'product' => ['title' => 'Страница товара', 'path' => 'product/…', 'seo' => false, 'blocks' => [
         'Страница товара' => ['pp', 'pm', 'color', 'select', 'chooseMissing', 'optional', 'mm', 'forFrame', 'skip', 'seo'],
         'Параметры контактных линз' => ['rxc'],
@@ -73,16 +75,12 @@ function page_blocks(string $id): array
     return $out;
 }
 
-/** Заголовок и описание страницы, которые сайт ставит сам, если свои не заданы. */
+/** Заголовок и описание страницы, которые сайт ставит сам, если свои не заданы (те же правила, что на сайте: seo_auto). */
 function page_seo_default(string $id, string $lang): array
 {
-    $shop = (string) (setting('config', [])['shopName'] ?? 'Asioptik');
-    if ($id === 'about') {
-        $about = setting('about', []);
-        return [tr($about['title'] ?? '', $lang) . ' — ' . $shop, tr($about['lead'] ?? '', $lang)];
-    }
-    $t = SITE_TEXT[$lang][$id] ?? ['', ''];
-    return [$id === 'home' ? str_replace('{shop}', $shop, $t[0]) : $t[0] . ' — ' . $shop, $t[1] ?: (SITE_TEXT[$lang]['home'][1] ?? '')];
+    $data = ['CONFIG' => setting('config', []), 'ABOUT' => setting('about', [])];
+    $auto = seo_auto($id, $lang, $data);
+    return [$auto[0], $auto[1] !== '' ? $auto[1] : seo_auto('home', $lang, $data)[1]];
 }
 
 /** Что в записи: первая строка и пояснение для таблицы заказов. */
@@ -267,7 +265,7 @@ function admin_page_edit(): void
         $out = '<div class="field' . ($errs ? ' is-invalid' : '') . '"><span class="lbl">' . e($label) . ($chip !== '' ? ' <code class="key">' . e($chip) . '</code>' : '') . '</span><div class="langs">';
         foreach (LANGS as $l) {
             $v = (string) ($vals[$l] ?? '');
-            $rows = max(2, min(6, (int) ceil(mb_strlen($v !== '' ? $v : (string) ($hints[$l] ?? '')) / 80) + 1));
+            $rows = max(2, min(8, (int) ceil(mb_strlen($v !== '' ? $v : (string) ($hints[$l] ?? '')) / 46) + 1));   // поле занимает половину ширины формы
             $out .= '<div class="lang" data-lg="' . $l . '"><label for="' . $fid . '-' . $l . '">' . strtoupper($l) . '</label>'
                 . ($area
                     ? '<textarea id="' . $fid . '-' . $l . '" name="' . e($name) . '[' . $l . ']" rows="' . $rows . '" lang="' . $l . '" placeholder="' . e((string) ($hints[$l] ?? '')) . '"' . $cnt . '>' . e($v) . '</textarea>'

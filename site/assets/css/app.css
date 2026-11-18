@@ -92,12 +92,12 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
 /* шапка */
 .site-header{position:sticky;top:0;z-index:50;border-bottom:1px solid transparent;transition:background-color .25s,border-color .25s}
 .site-header.is-scrolled{background:rgba(242,246,253,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom-color:var(--line)}
-.hdr{display:flex;align-items:center;gap:28px;height:var(--header)}
+.hdr{display:flex;align-items:center;gap:24px;height:var(--header)}
 .logo{display:inline-flex;flex:none;align-items:center;color:var(--accent);text-decoration:none}
 .logo svg{display:block;width:auto;height:36px}
 .logo-optik{fill:var(--ink)}
 .logo .logo-mark{display:none}
-.nav{display:flex;align-items:center;gap:20px}
+.nav{display:flex;align-items:center;gap:16px}
 .nav a{padding:6px 0;font-size:15.5px;font-weight:500;color:var(--ink-2);text-decoration:none;white-space:nowrap;transition:color .15s}
 .nav a:hover{color:var(--ink)}
 /* открытая страница отмечена в меню коралловой чертой */
@@ -110,7 +110,10 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
 .lang button{min-width:36px;height:30px;padding:0 8px;border:0;border-radius:999px;background:none;color:var(--ink-2);font-size:13px;font-weight:700;letter-spacing:.04em}
 .lang button:hover{color:var(--ink)}
 .lang button.is-active{background:var(--ink);color:#fff}
-.cart-btn{display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 6px 0 16px;border:1px solid var(--line-2);border-radius:999px;background:var(--white);font-size:15px;font-weight:600}
+/* В шапке восемь разделов, язык, телефон и корзина: чтобы всё помещалось в одну строку, у корзины остаются значок и число,
+   а слово «Корзина» слышат только программы чтения с экрана */
+.cart-btn{position:relative;display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 6px 0 14px;border:1px solid var(--line-2);border-radius:999px;background:var(--white);font-size:15px;font-weight:600}
+.cart-btn-label{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 .cart-btn:hover{border-color:var(--ink)}
 .count{display:inline-grid;place-items:center;min-width:30px;height:30px;padding:0 8px;border-radius:999px;background:var(--ink);color:#fff;font-family:var(--grot);font-size:13px;font-weight:700;line-height:1}
 .count.is-zero{background:var(--mist);color:var(--ink)}
@@ -133,8 +136,8 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
   .nav-logo .logo .logo-mark{display:none}
   .nav-close{margin-right:-8px;border:1px solid var(--line-2);background:var(--white)}
   .nav-links{display:flex;flex:none;flex-direction:column;padding:0 0 clamp(12px,2vh,24px)}
-  /* размер строк подстраивается под высоту экрана, чтобы меню целиком помещалось на обычном телефоне */
-  .nav-links a{padding:clamp(7px,1.3vh,13px) 0;padding:clamp(7px,1.3dvh,13px) 0;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:clamp(20px,3vh,27px);font-size:clamp(20px,3dvh,27px);font-weight:300;line-height:1.2;letter-spacing:-.01em;color:var(--ink);white-space:normal}
+  /* размер строк подстраивается под высоту экрана, чтобы меню (десять разделов) целиком помещалось на обычном телефоне */
+  .nav-links a{padding:clamp(7px,1vh,13px) 0;padding:clamp(7px,1dvh,13px) 0;border-bottom:1px solid var(--line);font-family:var(--serif);font-size:clamp(20px,3vh,27px);font-size:clamp(20px,3dvh,27px);font-weight:300;line-height:1.2;letter-spacing:-.01em;color:var(--ink);white-space:normal}
   .nav-links a[aria-current]{text-underline-offset:7px}
   .nav-more{display:block}
   .nav-foot{display:grid;gap:12px;margin-top:auto;padding-top:2px}
@@ -147,7 +150,6 @@ h2{font-family:var(--serif);font-size:clamp(32px,4vw,54px);font-weight:300;line-
   .nav-info{display:flex;gap:10px;margin:0;font-size:15px;line-height:1.45;color:var(--ink-2)}
   .nav-info svg{flex:none;width:19px;height:19px;margin-top:1px;color:var(--accent)}
   .nav-foot .nav-info a{padding:0;font-size:inherit;font-weight:400;color:inherit;white-space:normal;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
-  .cart-btn-label{display:none}
   .cart-btn{padding-left:12px}
 }
 @media (max-width:480px){
@@ -380,16 +382,29 @@ body.is-view-catalog main>.catalog{display:block}
 .ctile-body span{font-family:var(--grot);font-size:13.5px;font-weight:500;color:var(--ink-2)}
 .pg .ctiles{padding-bottom:clamp(40px,5vw,72px)}
 .pg-parts{display:flex;flex-wrap:wrap;gap:10px;margin:calc(-1 * clamp(8px,2vw,28px)) 0 clamp(24px,3vw,40px)}
+/* страница «Бренды»: плитки брендов (те же, что у разделов каталога) и страница бренда с его товарами */
+.btiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pg .btiles{padding-bottom:0}
+.btiles .ctile,.btiles .ctile:nth-child(-n+2){grid-column:auto}
+.btile-logo{display:block;width:auto;max-width:min(100%,220px);height:clamp(32px,3.2vw,46px);object-fit:contain;object-position:left center}
+.ctile-body .btile-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:2px 0 4px;font-family:inherit;font-size:15px;font-weight:400;line-height:1.45}
+.br-logo{display:block;width:auto;max-width:min(100%,320px);height:clamp(44px,5.4vw,80px);margin-bottom:clamp(14px,1.6vw,22px);object-fit:contain;object-position:left center}
+.br-count{margin-bottom:16px;font-family:var(--grot);font-size:13.5px;font-weight:500;color:var(--ink-2)}
+.br-grid .brand-tag{display:none}
+.no-brands .nav a[data-view="brands"],.no-brands .ft-nav a[data-view="brands"]{display:none}
 @media (max-width:900px){
   .ctiles{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ctile,.ctile:nth-child(-n+2){grid-column:auto;min-height:190px}
   .ctile:first-child,.ctile:last-child:nth-child(even){grid-column:span 2}
+  .btiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .btiles .ctile:first-child,.btiles .ctile:last-child:nth-child(even){grid-column:auto}
 }
 @media (max-width:520px){
   .ctiles{gap:12px}
   .ctile,.ctile:nth-child(-n+2){min-height:158px;padding:14px}
   .ctile b{font-size:21px}
   .ctile-body span{font-size:12.5px}
+  .ctile-body .btile-text{-webkit-line-clamp:3;font-size:13px;line-height:1.4}
 }
 
 /* «О нас» */
@@ -586,6 +601,8 @@ body.is-view-catalog main>.catalog{display:block}
 /* бренд — стикер в углу фото товара */
 .brand-tag{position:absolute;top:10px;right:10px;z-index:1;max-width:calc(100% - 20px);padding:4px 10px;border-radius:4px;overflow:hidden;background:var(--ink);color:#fff;font-size:12px;font-weight:600;line-height:1.35;letter-spacing:.02em;white-space:nowrap;text-overflow:ellipsis;pointer-events:none}
 .pp-brand{margin-bottom:6px;font-size:14.5px;font-weight:600;color:var(--accent-d)}
+.pp-brand a{color:inherit;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:4px;transition:text-decoration-color .15s}
+.pp-brand a:hover{text-decoration-color:currentColor}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .catalog-empty{display:grid;justify-items:start;gap:16px;padding:32px 0;color:var(--ink-2)}
 .card{position:relative;display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:var(--r);background:var(--white)}
