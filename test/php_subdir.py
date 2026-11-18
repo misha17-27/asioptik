@@ -165,7 +165,7 @@ s, h, t = req(SUB, 'GET', '/'); check('main site is still intact after install',
 
 # ====================== страницы сайта во временной подпапке ======================
 print('--- страницы сайта')
-PAGES = ['/', '/catalog', '/catalog?cat=frames', '/catalog?aud=kids', '/about', '/blog', '/blog/care', '/contacts', '/checkout', '/product/f-milan', '/?lang=ru', '/catalog?lang=en', '/index.php']
+PAGES = ['/', '/catalog', '/catalog?cat=frames', '/catalog?aud=kids', '/brands', '/brands/asi-sun', '/about', '/blog', '/blog/care', '/contacts', '/checkout', '/product/f-milan', '/?lang=ru', '/catalog?lang=en', '/index.php']
 home = ''
 for p in PAGES:
     s, h, t = req(SUB, 'GET', PRE + p)
@@ -185,7 +185,7 @@ for a in sorted(set(re.findall(r'(?:href|src)="(' + PRE + r'/assets/[^"?]*)', ho
     s, h, t = req(SUB, 'GET', a)
     check(f'asset {a.replace(PRE, "")}', s == 200 and not is_main_site(h) and len(t) > 1000, s)
 s, h, t = req(SUB, 'GET', PRE + '/favicon.ico'); check('site icon is served from the folder', s == 200 and 'icon' in one(h, 'content-type'))
-for p, to in [('/?page=about', '/about'), ('/?product=f-milan', '/product/f-milan'), ('/?page=blog&post=care&lang=ru', '/blog/care?lang=ru'), ('/nope', '/'), ('/nope/deeper?lang=ru', '/?lang=ru'), ('/product/no-such', '/catalog'), ('/blog/no-such', '/blog')]:
+for p, to in [('/?page=about', '/about'), ('/?product=f-milan', '/product/f-milan'), ('/?page=blog&post=care&lang=ru', '/blog/care?lang=ru'), ('/nope', '/'), ('/nope/deeper?lang=ru', '/?lang=ru'), ('/product/no-such', '/catalog'), ('/blog/no-such', '/blog'), ('/?page=brands&post=asi-sun&lang=ru', '/brands/asi-sun?lang=ru'), ('/brands/no-such?lang=ru', '/brands?lang=ru')]:
     s, h, t = req(SUB, 'GET', PRE + p)
     check(f'redirect {p} stays in the folder', s in (301, 302) and one(h, 'location') == PRE + to, f'{s} {one(h, "location")}')
 print('--- закрытые папки и файлы')
@@ -211,6 +211,8 @@ canon = re.search(r'rel="canonical" href="([^"]*)"', t).group(1)
 check('page address for search engines is the main one, not the temporary', canon == f'https://{MAIN}/' and 'stage.example' not in t, canon)
 s, h, t = req(SUB, 'GET', PRE + '/product/f-milan?lang=ru')
 check('product page on the temporary address is closed too', 'noindex' in one(h, 'x-robots-tag') and t.count('name="robots"') == 1 and f'href="https://{MAIN}/product/f-milan?lang=ru"' in t)
+s, h, t = req(SUB, 'GET', PRE + '/brands/asi-sun?lang=ru')
+check('brand page on the temporary address: closed, with its own title and the main address', 'noindex' in one(h, 'x-robots-tag') and t.count('name="robots"') == 1 and f'href="https://{MAIN}/brands/asi-sun?lang=ru"' in t and '<title>Asi Sun — Asioptik</title>' in t)
 s, h, t = req(SUB, 'GET', PRE + '/about', headers={'X-Forwarded-Proto': 'https'})
 check('this site adds no domain-wide https rule of its own from a folder of another site', h.get('strict-transport-security') == ['max-age=31536000; includeSubDomains'], h.get('strict-transport-security'))
 s, h, t = req(SUB, 'GET', PRE + '/about', host='evil.example')
@@ -338,6 +340,17 @@ async def browser():
         await pg.locator('.hdr-right [data-set-lang="ru"]').click(); await pg.wait_for_timeout(300)
         robots = await pg.evaluate("(document.querySelector('meta[name=robots]') || {}).content || ''")
         check('temporary address stays closed for search engines while browsing', 'noindex' in robots, robots)
+        # бренды: меню → страница брендов → бренд → товар, всё внутри папки
+        nav = pg.locator('#siteNav a[data-view="brands"]')
+        check('brands link in the menu stays in the folder', await nav.get_attribute('href') == PRE + '/brands?lang=ru', await nav.get_attribute('href'))
+        await nav.click(); await pg.wait_for_timeout(400)
+        check('brands page', tail() == PRE + '/brands?lang=ru' and await pg.locator('.btile').count() == 4, tail())
+        await pg.locator('.btile').nth(2).click(); await pg.wait_for_timeout(400)
+        check('brand page with its products', tail() == PRE + '/brands/asi-sun?lang=ru' and await pg.locator('#pageView .br-grid .card').count() == 5 and await pg.title() == 'Asi Sun — Asioptik', tail())
+        await pg.reload(); await pg.wait_for_timeout(1200)
+        check('brand page survives a reload', tail() == PRE + '/brands/asi-sun?lang=ru' and await pg.inner_text('#pgTitle') == 'Asi Sun', tail())
+        await pg.locator('#pageView .br-grid .card-title a').first.click(); await pg.wait_for_timeout(400)
+        check('brand → product, and the brand line links back', tail().startswith(PRE + '/product/') and await pg.locator('.pp-brand a').get_attribute('href') == PRE + '/brands/asi-sun?lang=ru', tail())
         # заказ: товар → корзина → оформление
         await pg.goto(B + '/product/f-milan?lang=ru'); await pg.wait_for_timeout(1200)
         await pg.locator('#ppAdd').click(); await pg.wait_for_timeout(300)
@@ -415,7 +428,7 @@ check('main address: open for search engines', 'x-robots-tag' not in h and 'name
 check('main address: page address for search engines', f'<link rel="canonical" href="https://{MAIN}/">' in t)
 check('main address over https: browser is told to always use https', 'max-age' in one(h, 'strict-transport-security'))
 check('own domain in a folder of the main site still gets the policy of this site', csp(h) == [CSP['site']], [c[:80] for c in csp(h)])
-for p in ['/catalog', '/product/f-milan', '/blog/care', '/about', '/contacts']:
+for p in ['/catalog', '/brands', '/brands/asi-kids', '/product/f-milan', '/blog/care', '/about', '/contacts']:
     s, h, t = req(OWN, 'GET', p, host=MAIN, headers=LIVE)
     check(f'main address {p}', s == 200 and not stuck(t) and 'x-robots-tag' not in h, stuck(t) or s)
 s, h, t = req(OWN, 'GET', '/checkout', host=MAIN, headers=LIVE)
