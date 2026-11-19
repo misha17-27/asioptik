@@ -2,7 +2,7 @@
 Запускается на чистой копии проекта во временной папке, рабочую папку не трогает."""
 import asyncio, json, pathlib, shutil, sqlite3, subprocess, tempfile, time, urllib.request
 from playwright.async_api import async_playwright
-from run import setup, ROOT
+from run import setup, ROOT, pick_branch
 PORT = 8089
 B = f'http://127.0.0.1:{PORT}'
 SH = ROOT / 'shots'
@@ -48,7 +48,7 @@ async def main():
             await pg.goto(B + '/catalog?lang=ru&cat=frames'); await pg.wait_for_timeout(1200); print('catalog:', tail(), '| cards', await pg.locator('#productsGrid .card').count())
             await pg.goto(B + '/product/f-milan?lang=ru'); await pg.wait_for_timeout(1200); await pg.locator('#ppAdd').click(); await pg.wait_for_timeout(300)
             await pg.goto(B + '/checkout?lang=ru'); await pg.wait_for_timeout(1000)
-            await pg.fill('#coName', 'Локальная проверка'); await pg.fill('#coPhone', '0501234567'); await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(1200)
+            await pg.fill('#coName', 'Локальная проверка'); await pick_branch(pg); await pg.fill('#coPhone', '0501234567'); await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(1200)
             db = sqlite3.connect(tmp / 'site/storage/site.sqlite'); print('order saved:', db.execute('SELECT number, kind, name, phone, total, status FROM ao_orders').fetchall()); db.close()
             await pg.goto(B + '/admin/'); print('admin →', tail())
             await pg.fill('#login', 'admin'); await pg.fill('#password', PW); await pg.locator('button[type=submit]').click(); await pg.wait_for_load_state()

@@ -18,7 +18,7 @@ Content-Security-Policy без встроенных скриптов, чужих
 """
 import asyncio, hashlib, http.client, json, os, pathlib, re, stat, subprocess, sys, time, urllib.parse
 from playwright.async_api import async_playwright
-from run import setup, ROOT
+from run import setup, ROOT, pick_branch
 SUB, OWN = 8772, 8773                 # сайт в подпапке «основного» и та же папка корнем своего домена
 PRE = '/asioptik'
 TEMP = f'stage.example:{SUB}'         # временный адрес: домен «основного сайта»
@@ -357,12 +357,12 @@ async def browser():
         await pg.locator('.site-header [data-open-cart]').first.click(); await pg.wait_for_timeout(300)
         await pg.locator('#cartDrawer [data-checkout]').click(); await pg.wait_for_timeout(500)
         check('checkout page', tail() == PRE + '/checkout?lang=ru', tail())
-        await pg.fill('#coName', 'Браузер Тест'); await pg.fill('#coPhone', '0501234567')
+        await pg.fill('#coName', 'Браузер Тест'); await pick_branch(pg); await pg.fill('#coPhone', '0501234567')
         await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(1200); await pg.keyboard.press('Escape')
         check('order from the browser is saved', api == [f'200 {PRE}/api/order'] and sql("SELECT CONCAT(kind, ' ', total) FROM ao_orders WHERE name = 'Браузер Тест'") == 'order 140.00', api)
         wa = await pg.evaluate('window.__opened'); check('WhatsApp opens with the order', len(wa) == 1 and wa[0].startswith('https://wa.me/'), wa[:1])
         await pg.goto(B + '/?lang=ru#repair'); await pg.wait_for_timeout(1300)
-        await pg.locator('#servicesList [data-svc="pads"]').click(); await pg.fill('#rpName', 'Ремонт Тест'); await pg.fill('#rpPhone', '0551112233')
+        await pg.locator('#servicesList [data-svc="pads"]').click(); await pg.fill('#rpName', 'Ремонт Тест'); await pick_branch(pg, '#repairForm'); await pg.fill('#rpPhone', '0551112233')
         await pg.locator('#repairForm [type=submit]').click(); await pg.wait_for_timeout(900); await pg.keyboard.press('Escape')
         await pg.goto(B + '/contacts?lang=ru'); await pg.wait_for_timeout(1200)
         await pg.fill('#ctName', 'Вопрос Тест'); await pg.locator('#ctPhone').click(); await pg.fill('#ctPhone', '0557778899'); await pg.select_option('#ctTopic', 'exam'); await pg.fill('#ctMsg', 'Можно прийти в субботу?')

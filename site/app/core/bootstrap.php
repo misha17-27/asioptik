@@ -38,6 +38,9 @@ set_exception_handler(function (Throwable $e): void {
  * и фото. Строка в .htaccess выполняется последней и возвращает политику этого сайта. Меняете политику здесь —
  * поменяйте и в .htaccess: совпадение проверяет test/php_security.py.
  */
+/** Середина карты в форме филиала, пока метка не поставлена: центр Баку (широта, долгота). */
+const MAP_CENTER = '40.3777, 49.8920';
+
 const CSP_SITE = "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; "
     . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; "
     . "img-src 'self' data: blob: https:; frame-src https://www.google.com https://maps.google.com https://challenges.cloudflare.com; "

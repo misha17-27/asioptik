@@ -1,7 +1,7 @@
 """Бренды, сортировка над товарами, оформление заказа отдельной страницей, форма «Напишите нам» с телефоном, услугой и рецептом."""
 import asyncio, re
 from playwright.async_api import async_playwright
-from run import setup, BASE, ROOT, decode
+from run import setup, BASE, ROOT, decode, pick_branch
 URL = f'{BASE}/dist/optika-4-lupa.html'
 SH = f'{ROOT}/shots'
 async def fake(route):
@@ -63,7 +63,7 @@ async def main():
         await pg.locator('.hdr-right [data-set-lang=\"az\"]').click(); await pg.wait_for_timeout(400)
         print('AZ:', await pg.inner_text('#coTitle'), '| pickup:', (await pg.locator('#checkoutForm .choice').first.inner_text()).split('\n')[0], '| delivery row:', await pg.inner_text('#coDelivery'))
         await pg.locator('.hdr-right [data-set-lang=\"ru\"]').click(); await pg.wait_for_timeout(300)
-        await pg.fill('#coName', 'Лейла'); await pg.fill('#coPhone', '0501234567')
+        await pg.fill('#coName', 'Лейла'); await pick_branch(pg); await pg.fill('#coPhone', '0501234567')
         await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(700)
         path, text = decode((await pg.evaluate('window.__opened'))[-1])
         print('order →', path, '|', ' / '.join(text.split('\n')[:3]), '… |', [l for l in text.split('\n') if 'Получение' in l or 'Доставка' in l])

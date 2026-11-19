@@ -1,6 +1,6 @@
 import asyncio, sys
 sys.path.insert(0, __import__('os').path.dirname(__import__('os').path.abspath(__file__)))
-from run import setup, BASE, ROOT, decode
+from run import setup, BASE, ROOT, decode, pick_branch
 from playwright.async_api import async_playwright
 F = f'{BASE}/dist/optika-4-lupa.html'
 SH = f'{ROOT}/shots'
@@ -89,7 +89,7 @@ async def main():
         print('cart lines:', await pg.evaluate("[...document.querySelectorAll('#cartList .ci')].map(li => li.querySelector('.ci-name').textContent + ' :: ' + [...li.querySelectorAll('.ci-opts')].map(p => p.textContent).join(' | ') + ' :: x' + li.querySelector('output').textContent)"))
         await pg.locator('#cartDrawer [data-checkout]').click(); await pg.wait_for_timeout(500)
         await pg.screenshot(path=f'{SH}/p4-checkout.png')
-        await pg.fill('#coName', 'Leyla'); await pg.fill('#coPhone', '0501234567')
+        await pg.fill('#coName', 'Leyla'); await pick_branch(pg); await pg.fill('#coPhone', '0501234567')
         await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(600)
         opened = await pg.evaluate('window.__opened')
         print('=== AZ message ==='); print(decode(opened[-1])[1])

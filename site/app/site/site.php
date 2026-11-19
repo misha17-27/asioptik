@@ -102,9 +102,14 @@ function seo_auto(string $kind, string $lang, array $data, ?array $item = null, 
         case 'about':
             $about = is_array($data['ABOUT'] ?? null) ? $data['ABOUT'] : [];
             return [tr($about['title'] ?? 'About', $lang) . ' — ' . $shop, seo_clip(tr($about['lead'] ?? '', $lang))];
-        case 'contacts':   // в описании, кроме текста страницы, стоит адрес салона
-            $addr = seo_sentence(tr($data['CONFIG']['address'] ?? '', $lang));
-            return [$T('ct.title') . ' — ' . $shop, seo_clip($addr !== '' ? $T('ct.seo', ['lead' => seo_sentence($T('ct.lead')), 'address' => $addr]) : $T('ct.lead'))];
+        case 'contacts':   // в описании, кроме текста страницы, стоят адреса филиалов: один — «Адрес: …», несколько — «Адреса: …; …»
+            $addrs = [];
+            foreach (is_array($data['BRANCHES'] ?? null) ? $data['BRANCHES'] : [] as $b) {
+                $a = trim(tr($b['address'] ?? '', $lang), " \t\r\n");
+                if ($a !== '') $addrs[] = $a;
+            }
+            $addr = seo_sentence(implode('; ', $addrs));
+            return [$T('ct.title') . ' — ' . $shop, seo_clip($addr !== '' ? $T(count($addrs) > 1 ? 'ct.seoMany' : 'ct.seo', ['lead' => seo_sentence($T('ct.lead')), 'address' => $addr]) : $T('ct.lead'))];
         case 'checkout':
             return [$T('co.title') . ' — ' . $shop, ''];
     }
@@ -256,7 +261,7 @@ function site_run(): void
     $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP;
     $js = '';
     // TEXTS и SEO — надписи и заголовки страниц, изменённые в админ-панели (раздел «Страницы»)
-    foreach (['CONFIG', 'CATEGORIES', 'RX', 'AUDIENCES', 'PRODUCTS', 'BRANDS', 'SERVICES', 'ABOUT', 'POSTS', 'TEXTS', 'SEO'] as $k) {
+    foreach (['CONFIG', 'BRANCHES', 'CATEGORIES', 'RX', 'AUDIENCES', 'PRODUCTS', 'BRANDS', 'SERVICES', 'ABOUT', 'POSTS', 'TEXTS', 'SEO'] as $k) {
         $v = $data[$k] ?? [];
         if (in_array($k, ['CONFIG', 'RX', 'ABOUT', 'TEXTS', 'SEO'], true) && ($v === [] || !is_array($v) && !is_object($v))) $v = new stdClass();
         $js .= "const $k = " . json_encode($v, $flags) . ";\n";
@@ -352,7 +357,8 @@ function order_details($d, callable $clean): array
         return is_numeric($v) && $v >= 0 && $v < 1000000 ? round((float) $v, 2) : null;
     };
     $out = [];
-    foreach (['delivery' => 20, 'payment' => 20, 'handover' => 20, 'date' => 20, 'topic' => 120, 'address' => 300, 'comment' => 1500] as $k => $max) {
+    // branch — филиал, выбранный для самовывоза или для передачи очков в ремонт (название, как его видел покупатель)
+    foreach (['delivery' => 20, 'payment' => 20, 'handover' => 20, 'date' => 20, 'topic' => 120, 'branch' => 200, 'address' => 300, 'comment' => 1500] as $k => $max) {
         $v = $clean($d[$k] ?? '', $max);
         if ($v !== '') $out[$k] = $v;
     }

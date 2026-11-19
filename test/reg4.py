@@ -1,6 +1,6 @@
 import asyncio, sys
 sys.path.insert(0, __import__('os').path.dirname(__import__('os').path.abspath(__file__)))
-from run import setup, BASE, ROOT, decode
+from run import setup, BASE, ROOT, decode, pick_branch
 from playwright.async_api import async_playwright
 F = f'{BASE}/dist/optika-4-lupa.html'
 SH = f'{ROOT}/shots'
@@ -25,7 +25,7 @@ async def main():
         await pg.locator('#ppForm a[data-pick-svc="exam"]').click(); await pg.wait_for_timeout(1500)
         print('exam link:', pg.url.split('/')[-1], '| page:', repr(await pg.evaluate('Shop.state.page')), '| exam checked:', await pg.is_checked('#rpServices input[data-svc-id="exam"]'), '| form top:', await pg.evaluate("Math.round(document.getElementById('repairForm').getBoundingClientRect().top)"), '| title:', await pg.title())
         # repair request still works
-        await pg.fill('#rpName', 'Камран'); await pg.fill('#rpPhone', '0551112233'); await pg.locator('#rpDesc').click()
+        await pg.fill('#rpName', 'Камран'); await pick_branch(pg, '#repairForm'); await pg.fill('#rpPhone', '0551112233'); await pg.locator('#rpDesc').click()
         await pg.locator('#repairForm [type=submit]').click(); await pg.wait_for_timeout(500)
         print(decode((await pg.evaluate('window.__opened'))[-1])[1].replace('\n', ' | '))
         await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)

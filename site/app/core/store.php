@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 const LANGS = ['az', 'ru', 'en'];
-const ITEM_TYPES = ['product', 'category', 'brand', 'service', 'post'];
+const ITEM_TYPES = ['product', 'category', 'brand', 'service', 'post', 'branch'];
 
 /* ---------- настройки (по одному документу на имя) ---------- */
 function setting(string $name, $default = null)
@@ -91,12 +91,13 @@ function cache_clear(): void
 
 /* Версия первых данных. Когда в новых файлах сайта появляются данные, которых нет в уже установленном
    сайте (например, временные фото слайдов), число увеличивается, и data_upgrade() дополняет базу. */
-const DATA_VERSION = 3;
+const DATA_VERSION = 4;
 
 /**
  * Дополняет уже установленный сайт тем, что появилось в первых данных позже. Своё не трогает:
  * временное фото получает только слайд раздела, у которого нет ни своего фото, ни временного;
- * описание — только условный бренд из начального набора, если его не переименовали и описания у него нет.
+ * описание — только условный бренд из начального набора, если его не переименовали и описания у него нет;
+ * первый филиал создаётся из прежнего адреса в настройках, только пока филиалов нет совсем.
  */
 function data_upgrade(): void
 {
@@ -128,7 +129,49 @@ function data_upgrade(): void
             item_save($it['id'], 'brand', $it['slug'], $it['position'], $it['active'], $d);
         }
     }
+    // 4: адрес салона переехал из настроек сайта в «Филиалы». Если филиалов ещё нет, первый создаётся из прежних настроек
+    if ($have < 4 && !items('branch')) {
+        $cfg = setting('config', []);
+        $cfg = is_array($cfg) ? $cfg : [];
+        if (!empty($cfg['address'])) {
+            $d = ['name' => array_fill_keys(LANGS, (string) ($cfg['shopName'] ?? 'Asioptik')), 'address' => $cfg['address']];
+            if (!empty($cfg['hours'])) $d['hours'] = $cfg['hours'];
+            if (is_string($cfg['mapQuery'] ?? null) && $cfg['mapQuery'] !== '') $d['mapQuery'] = $cfg['mapQuery'];   // что прежде искали на карте
+            item_save(null, 'branch', 'main', 1, true, $d);
+        }
+    }
     set_setting('data_version', DATA_VERSION);
+}
+
+/** Филиалы, как их видит сайт: название, адрес, часы работы, свой телефон, метка на карте (lat, lng) и ссылка на карту. */
+function branches_public(): array
+{
+    $out = [];
+    foreach (items('branch', true) as $r) {
+        $d = $r['data'];
+        $b = ['id' => $r['slug']];
+        foreach (['name', 'address', 'hours'] as $k) {
+            if (is_array($d[$k] ?? null) && $d[$k]) $b[$k] = $d[$k];
+        }
+        foreach (['phone', 'mapLink', 'mapQuery'] as $k) {
+            if (is_string($d[$k] ?? null) && $d[$k] !== '') $b[$k] = $d[$k];
+        }
+        $c = parse_coords((string) ($d['coords'] ?? ''));
+        if ($c) [$b['lat'], $b['lng']] = $c;
+        if (!empty($b['name'])) $out[] = $b;
+    }
+    return $out;
+}
+
+/**
+ * Координаты места на карте из строки «40.377195, 49.853989» (так их копируют Google Карты): [широта, долгота] или null.
+ */
+function parse_coords(string $s): ?array
+{
+    if (!preg_match('~^\s*(-?\d{1,2}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)\s*$~', $s, $m)) return null;
+    $lat = round((float) $m[1], 6);
+    $lng = round((float) $m[2], 6);
+    return abs($lat) <= 90 && abs($lng) <= 180 ? [$lat, $lng] : null;
 }
 
 /** Своё фото вместо временного: временное и его кадрирование больше не нужны. */
@@ -215,8 +258,14 @@ function site_data_build(): array
         return !empty($p['title']);
     }));
 
+    // адрес и часы работы прежде лежали в настройках сайта — теперь они у филиалов, на страницу старые значения не уходят
+    $config = setting('config', []);
+    $config = is_array($config) ? $config : [];
+    unset($config['address'], $config['hours'], $config['mapQuery']);
+
     return [
-        'CONFIG' => setting('config', []),
+        'CONFIG' => $config,
+        'BRANCHES' => branches_public(),
         'CATEGORIES' => $cats,
         'RX' => setting('rx', new stdClass()),
         'AUDIENCES' => $aud,

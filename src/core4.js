@@ -40,6 +40,9 @@
       'dn.free': 'Şəhər daxilində pulsuz', 'dn.price': 'Şəhər daxilində {price}', 'dn.priceFree': 'Şəhər daxilində {price}. {lim}-dan pulsuz',
       'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'seo.product': '{name}. {sub}. {cat} — Bakıda {shop} optika salonunda. Saytda sifariş, WhatsApp-da təsdiq.', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
       'e.svc': 'Ən azı bir xidmət seçin', 'e.pickupAddr': 'Eynəyin götürüləcəyi ünvanı yazın',
+      // филиалы: список салонов, карта, выбор салона в заказе и в заявке на ремонт
+      'loc.list': 'Salonlarımız', 'loc.route': 'Marşrut', 'loc.show': 'Xəritədə göstər', 'co.branch': 'Sifarişi hansı salondan götürəcəksiniz',
+      'rp.branch': 'Eynəyi hansı salona gətirəcəksiniz', 'e.branch': 'Salonu seçin', 'm.branch': 'Salon: {v}', 'loc.zoomIn': 'Yaxınlaşdır', 'loc.zoomOut': 'Uzaqlaşdır',
       'ok.orderTitle': 'Sifarişi göndərmək qalıb',
       'ok.orderText': '{id} sifarişinin mətni ilə WhatsApp-ı açdıq. Çatda «Göndər» düyməsini basın, menecer sifarişi və çatdırılma vaxtını təsdiqləyəcək.',
       'ok.repairTitle': 'Müraciəti göndərmək qalıb',
@@ -101,6 +104,8 @@
       'dn.free': 'По городу, бесплатно', 'dn.price': 'По городу, {price}', 'dn.priceFree': 'По городу, {price}. Бесплатно от {lim}',
       'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'seo.product': '{name}. {sub}. {cat} в салоне оптики {shop} в Баку. Заказ на сайте, подтверждение в WhatsApp.', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
       'e.svc': 'Выберите хотя бы одну услугу', 'e.pickupAddr': 'Укажите адрес, откуда забрать очки',
+      'loc.list': 'Наши салоны', 'loc.route': 'Маршрут', 'loc.show': 'Показать на карте', 'co.branch': 'В каком салоне заберёте заказ',
+      'rp.branch': 'В какой салон принесёте очки', 'e.branch': 'Выберите салон', 'm.branch': 'Салон: {v}', 'loc.zoomIn': 'Приблизить', 'loc.zoomOut': 'Отдалить',
       'ok.orderTitle': 'Осталось отправить заказ',
       'ok.orderText': 'Мы открыли WhatsApp с текстом заказа {id}. Нажмите в чате «Отправить», и менеджер подтвердит заказ и время доставки.',
       'ok.repairTitle': 'Осталось отправить заявку',
@@ -162,6 +167,8 @@
       'dn.free': 'Within the city, free', 'dn.price': 'Within the city, {price}', 'dn.priceFree': 'Within the city, {price}. Free from {lim}',
       'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'seo.product': '{name}. {sub}. {cat} at the {shop} optician in Baku. Order online, confirm on WhatsApp.', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
       'e.svc': 'Choose at least one service', 'e.pickupAddr': 'Enter the address to collect your glasses from',
+      'loc.list': 'Our shops', 'loc.route': 'Directions', 'loc.show': 'Show on the map', 'co.branch': 'Which shop will you collect from',
+      'rp.branch': 'Which shop will you bring them to', 'e.branch': 'Choose a shop', 'm.branch': 'Shop: {v}', 'loc.zoomIn': 'Zoom in', 'loc.zoomOut': 'Zoom out',
       'ok.orderTitle': 'Now send the order',
       'ok.orderText': 'We’ve opened WhatsApp with order {id}. Press Send in the chat and our manager will confirm the order and delivery time.',
       'ok.repairTitle': 'Now send the request',
@@ -579,7 +586,7 @@
   }
 
   /* ---------- состояние ---------- */
-  const state = { cat: 'all', aud: '', brands: [], q: '', sort: 'default', sel: {}, cart: [], ok: null, page: '', view: '', post: '', viewInfo: null, pps: {} };
+  const state = { cat: 'all', aud: '', brands: [], q: '', sort: 'default', sel: {}, cart: [], ok: null, page: '', view: '', post: '', viewInfo: null, pps: {}, branch: '', branchPicked: false };
   // Разделы «для кого»: взрослым (внутри мужчины и женщины) и детям
   const AUDS = (typeof AUDIENCES !== 'undefined' && Array.isArray(AUDIENCES)) ? AUDIENCES : [];
   const audById = {}, audParent = {};
@@ -595,6 +602,20 @@
   const brandName = p => (p && p.brand && brandById[p.brand] ? brandById[p.brand].name : '');
   // Товары бренда. У бренда с товарами есть своя страница: /brands/код (без товаров бренд на сайте не показывается)
   const brandItems = id => PRODUCTS.filter(p => p.brand === id);
+
+  /* ---------- филиалы ----------
+     BRANCHES — салоны: название, адрес, часы работы, свой телефон, метка на карте (lat, lng), ссылка на карту.
+     В старых данных списка нет: тогда единственный филиал собирается из настроек (CONFIG.address, hours, mapQuery). */
+  const BRANCH_LIST = (typeof BRANCHES !== 'undefined' && Array.isArray(BRANCHES) ? BRANCHES : []).filter(b => b && b.id && b.name);
+  if (typeof BRANCHES === 'undefined' && CONFIG.address) BRANCH_LIST.push({ id: 'main', name: CONFIG.shopName, address: CONFIG.address, hours: CONFIG.hours, mapQuery: CONFIG.mapQuery });
+  const branchById = {};
+  BRANCH_LIST.forEach(b => { branchById[b.id] = b; });
+  const hasPin = b => !!b && typeof b.lat === 'number' && typeof b.lng === 'number';
+  // Куда ведёт «Маршрут»: своя ссылка на карту, иначе маршрут Google Карт к метке, иначе поиск по адресу
+  const branchRoute = b => (/^https?:\/\//i.test(b.mapLink || '') ? b.mapLink : '') || (hasPin(b) ? 'https://www.google.com/maps/dir/?api=1&destination=' + b.lat + '%2C' + b.lng
+    : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(b.mapQuery || L(b.address)));
+  // Филиал строкой для сообщения в WhatsApp и для заказа: «Название, адрес»
+  const branchLine = (b, l) => [L(b.name, l), L(b.address, l)].filter(Boolean).join(', ');
 
   /* ---------- каталог ---------- */
   const norm = s => String(s || '').toLowerCase().replace(/ё/g, 'е');
@@ -1233,7 +1254,7 @@
       // ссылка на раздел каталога или на страницу «для кого» сохраняет их в адресе (важно, когда её открывают в новой вкладке)
       const sec = a.dataset.view === 'catalog' && a.dataset.goto;
       a.setAttribute('href', sec ? hrefCatalog(a.dataset.goto, audById[a.dataset.aud] ? a.dataset.aud : '') : hrefView(a.dataset.view, a.dataset.post || ''));
-      if (!a.closest('.nav, .ft-nav')) return;
+      if (!a.closest('.nav, .ft-nav') || a.dataset.branchGo) return;   // адрес филиала в меню — не пункт меню
       // «Каталог», «Взрослым» и «Детям» — одна страница с разным отбором: отмечается та ссылка, чей отбор открыт
       const on = a.dataset.view === state.view && (a.dataset.view !== 'catalog' || (a.dataset.aud || '') === top);
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
@@ -1293,9 +1314,9 @@
         const b = brandById[state.post];
         if (b) { page = ''; item = b; title = b.name + ' — ' + shop; desc = t('brs.seo', { name: b.name, text: seoSentence(L(b.text)) }); }
       } else if (state.view === 'contacts') {
-        // в описании страницы контактов, кроме её текста, стоит адрес салона
-        const addr = seoSentence(L(CONFIG.address));
-        if (addr) desc = t('ct.seo', { lead: seoSentence(t('ct.lead')), address: addr });
+        // в описании страницы контактов, кроме её текста, стоят адреса филиалов: один — «Адрес: …», несколько — «Адреса: …; …»
+        const addrs = BRANCH_LIST.map(b => String(L(b.address) || '').replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, '')).filter(Boolean), addr = seoSentence(addrs.join('; '));
+        if (addr) desc = t(addrs.length > 1 ? 'ct.seoMany' : 'ct.seo', { lead: seoSentence(t('ct.lead')), address: addr });
       }
     }
     const seo = item ? { title: item.seoTitle, desc: item.seoDesc } : (page && SE[page]) || {};
@@ -1671,6 +1692,7 @@
             ${choice('delivery', 'pickup', 'ml.pickup', 'co.pickup', '<small data-cfg="address"></small>', true)}
             ${choice('delivery', 'courier', 'ml.courier', 'co.courier', '<small class="js-delivery-note"></small>')}
           </div>
+          ${branchField('coBranchField', 'co.branch')}
           <div class="field" id="coAddressField" hidden><label for="coAddress" data-i18n="co.address">${esc(t('co.address'))}</label><textarea id="coAddress" name="address" rows="2" autocomplete="street-address" ${A('placeholder', 'co.addressPh')}></textarea><p class="field-error"></p></div>
         </fieldset>
         <fieldset class="co-set">
@@ -1729,6 +1751,7 @@
           <label class="choice"><input type="radio" name="handover" value="courier" data-msg="ml.courierPick"><span><b data-i18n="rp.courier">${esc(t('rp.courier'))}</b></span></label>
         </div>
       </fieldset>
+      ${branchField('rpBranchField', 'rp.branch')}
       <div class="field" id="rpAddressField" hidden><label for="rpAddress" data-i18n="rp.address">${esc(t('rp.address'))}</label><textarea id="rpAddress" name="address" rows="2" autocomplete="street-address" ${A('placeholder', 'rp.addressPh')}></textarea><p class="field-error"></p></div>
       <div class="field"><label for="rpDate">${T('rp.date')} <span class="opt-note" data-i18n="optional">${esc(t('optional'))}</span></label><input id="rpDate" name="date" type="date"></div>
       <button type="submit" class="btn btn-primary btn-block btn-wa">${ICON.chat}${T('rp.submit')}</button>
@@ -1760,6 +1783,12 @@
   const radioMsg = (f, n, ml) => { const r = f.querySelector(`input[name="${n}"]:checked`); return r ? t(r.dataset.msg, null, ml) : ''; };
 
   function toggleField(f, name, value, sel) { const el = $(sel); if (el) el.hidden = radioVal(f, name) !== value; }
+  // Выбор филиала в форме заказа (самовывоз) и ремонта (принесу в салон): нужен, когда филиалов больше одного
+  const branchField = (id, key) => (BRANCH_LIST.length > 1 ? `<fieldset class="field" id="${id}"><legend data-i18n="${key}">${esc(t(key))}</legend>
+        <div class="choices">${BRANCH_LIST.map(b => `<label class="choice"><input type="radio" name="branch" value="${esc(b.id)}"><span><b data-branch-t="name:${esc(b.id)}">${esc(L(b.name))}</b><small data-branch-t="address:${esc(b.id)}">${esc(L(b.address))}</small></span></label>`).join('')}</div>
+        <p class="field-error"></p></fieldset>` : '');
+  // Филиал, выбранный в форме: при одном филиале выбирать нечего — это он и есть
+  const formBranch = f => (BRANCH_LIST.length > 1 ? branchById[radioVal(f, 'branch')] || null : BRANCH_LIST[0] || null);
 
   function bindPhone(inp) {
     const pre = CONFIG.phonePrefix || '';
@@ -1797,10 +1826,12 @@
     const c = store.get(CUSTOMER_KEY, null);
     if (!c || !f) return;
     ['name', 'phone', 'address'].forEach(k => { if (f.elements[k] && !f.elements[k].value && c[k]) f.elements[k].value = c[k]; });
+    if (c.branch && !radioVal(f, 'branch')) { const r = $(`input[name="branch"][value="${cssEsc(c.branch)}"]`, f); if (r) r.checked = true; }
   }
   function saveCustomer(f) {
     const c = store.get(CUSTOMER_KEY, {}) || {};
     ['name', 'phone', 'address'].forEach(k => { const v = val(f, k); if (v) c[k] = v; });
+    if (radioVal(f, 'branch')) c.branch = radioVal(f, 'branch');
     store.set(CUSTOMER_KEY, c);
   }
   // Если сайт работает на сервере (PHP), заказ, заявка и сообщение сохраняются ещё и там: список виден в админ-панели.
@@ -1941,6 +1972,7 @@
     f.hidden = none;
     prefill(f);
     toggleField(f, 'delivery', 'courier', '#coAddressField');
+    toggleField(f, 'delivery', 'pickup', '#coBranchField');
     renderCheckoutSummary();
     if (!none) capStart();
   }
@@ -1966,6 +1998,7 @@
     { const n = digitsCount(val(f, 'phone')); if (n < 9) errs.push([f.elements.phone, 'e.phone']); else if (n > 15) errs.push([f.elements.phone, 'e.phoneLong']); }
     const method = radioVal(f, 'delivery');
     if (method === 'courier' && val(f, 'address').length < 5) errs.push([f.elements.address, 'e.address']);
+    if (method === 'pickup' && BRANCH_LIST.length > 1 && !formBranch(f)) errs.push([$('input[name="branch"]', f), 'e.branch']);
     if (errs.length) { errs.forEach(x => setError(x[0], x[1])); errs[0][0].focus(); return; }
 
     const ml = msgLang(), M = (k, v) => t(k, v, ml), $m = n => money(n, ml);
@@ -1981,6 +2014,8 @@
     out.push(M('m.delivery', { v: method === 'courier' ? (del ? $m(del) : M('free')) : M('pickupShort') }));
     out.push(M('m.total', { v: $m(sub + del) }), '', M('m.customer'));
     out.push(M('m.name', { v: val(f, 'name') }), M('m.phone', { v: val(f, 'phone') }), M('m.receive', { v: radioMsg(f, 'delivery', ml) }));
+    const br = method === 'pickup' ? formBranch(f) : null;
+    if (br && BRANCH_LIST.length > 1) out.push(M('m.branch', { v: branchLine(br, ml) }));
     if (method === 'courier') out.push(M('m.address', { v: val(f, 'address') }));
     out.push(M('m.payment', { v: radioMsg(f, 'payment', ml) }));
     if (val(f, 'comment')) out.push('', M('m.comment', { v: val(f, 'comment') }));
@@ -1989,7 +2024,7 @@
     sendToServer('order', {
       number: id, name: val(f, 'name'), phone: val(f, 'phone'), total: sub + del, text: out.join('\n'),
       details: {
-        delivery: method, address: method === 'courier' ? val(f, 'address') : '', payment: radioVal(f, 'payment'), comment: val(f, 'comment'), subtotal: sub, deliveryCost: del,
+        delivery: method, branch: br ? L(br.name, ml) : '', address: method === 'courier' ? val(f, 'address') : '', payment: radioVal(f, 'payment'), comment: val(f, 'comment'), subtotal: sub, deliveryCost: del,
         items: state.cart.map(it => { const p = byId[it.id], u = unitPrice(p, it.sel); return { id: it.id, name: L(p.name, ml), lines: itemLines(it, ml, true), qty: it.qty, price: u, sum: u * it.qty }; }),
       },
     });
@@ -2086,6 +2121,8 @@
     if (!ids.length) errs.push([$('input[name="svc"]', f), 'e.svc']);
     const how = radioVal(f, 'handover');
     if (how === 'courier' && val(f, 'address').length < 5) errs.push([f.elements.address, 'e.pickupAddr']);
+    const br = how === 'salon' ? formBranch(f) : null;
+    if (how === 'salon' && BRANCH_LIST.length > 1 && !br) errs.push([$('input[name="branch"]', f), 'e.branch']);
     if (errs.length) { errs.forEach(x => setError(x[0], x[1])); errs[0][0].focus(); return; }
 
     const ml = msgLang(), M = (k, v) => t(k, v, ml);
@@ -2094,13 +2131,14 @@
     const out = [M('m.helloRepair'), '', M('m.request', { id }), nowStr(), '', M('m.services', { v: names.join(', ') })];
     if (val(f, 'desc')) out.push(M('m.desc', { v: val(f, 'desc') }));
     out.push(M('m.handover', { v: radioMsg(f, 'handover', ml) }));
+    if (br && BRANCH_LIST.length > 1) out.push(M('m.branch', { v: branchLine(br, ml) }));
     if (how === 'courier') out.push(M('m.address', { v: val(f, 'address') }));
     const d = val(f, 'date');
     if (d) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d); out.push(M('m.date', { v: m ? `${m[3]}.${m[2]}.${m[1]}` : d })); }
     out.push('', M('m.client'), M('m.name', { v: val(f, 'name') }), M('m.phone', { v: val(f, 'phone') }));
 
     const url = waUrl(out.join('\n'));
-    sendToServer('repair', { number: id, name: val(f, 'name'), phone: val(f, 'phone'), text: out.join('\n'), details: { services: names, handover: how, address: how === 'courier' ? val(f, 'address') : '', date: val(f, 'date'), comment: val(f, 'desc') } });
+    sendToServer('repair', { number: id, name: val(f, 'name'), phone: val(f, 'phone'), text: out.join('\n'), details: { services: names, handover: how, branch: br ? L(br.name, ml) : '', address: how === 'courier' ? val(f, 'address') : '', date: val(f, 'date'), comment: val(f, 'desc') } });
     saveCustomer(f);
     prefill($('#checkoutForm'));
     openWA(url);
@@ -2114,15 +2152,16 @@
   /* ---------- контакты из настроек ---------- */
   function fillConfig() {
     const map = {
-      shopName: CONFIG.shopName, phone: CONFIG.phone, address: L(CONFIG.address),
+      shopName: CONFIG.shopName, phone: CONFIG.phone,
+      // адрес рядом с «Самовывозом»: при одном филиале — его адрес, при нескольких салон выбирают ниже
+      address: BRANCH_LIST.length === 1 ? L(BRANCH_LIST[0].address) : '',
       year: String(new Date().getFullYear()), instagram: CONFIG.instagram ? '@' + CONFIG.instagram : '',
       delivery: deliveryNote(), freeFrom: CONFIG.freeDeliveryFrom ? money(CONFIG.freeDeliveryFrom) : '',
       deliveryPrice: money(CONFIG.deliveryPrice || 0),
     };
     $$('[data-cfg]').forEach(el => {
       const k = el.dataset.cfg;
-      if (k === 'hours') el.innerHTML = (L(CONFIG.hours) || []).map(esc).join('<br>');
-      else if (map[k] != null) el.textContent = map[k];
+      if (map[k] != null) el.textContent = map[k];
     });
     $$('.js-delivery-note').forEach(el => { el.textContent = deliveryNote(); });
     const wa = waUrl(t('m.question', null, msgLang()));
@@ -2130,17 +2169,195 @@
       const k = el.dataset.cfgHref;
       if (k === 'wa') el.href = wa;
       else if (k === 'tel') el.href = 'tel:' + String(CONFIG.phone).replace(/[^\d+]/g, '');
-      else if (k === 'map') el.href = 'https://maps.google.com/?q=' + encodeURIComponent(CONFIG.mapQuery || L(CONFIG.address));
       else if (k === 'ig') {
         if (CONFIG.instagram) el.href = 'https://instagram.com/' + encodeURIComponent(CONFIG.instagram);
         else (el.closest('[data-cfg-wrap]') || el).hidden = true;
       }
     });
-    $$('iframe[data-cfg-map]').forEach(fr => {
-      const src = 'https://maps.google.com/maps?q=' + encodeURIComponent(CONFIG.mapQuery || L(CONFIG.address)) + '&z=15&hl=' + lang + '&output=embed';
-      if (!fr.dataset.src || fr.dataset.lang !== lang) { fr.src = src; fr.dataset.src = '1'; fr.dataset.lang = lang; }
-    });
+    renderBranches();
     if (!fillConfig.warned && /^9940+$/.test(String(CONFIG.whatsapp)) && (fillConfig.warned = true)) console.warn('Optika: укажите свой номер WhatsApp в CONFIG.whatsapp, чтобы заказы приходили вам.');
+  }
+
+  /* ---------- филиалы на странице и на карте ----------
+     [data-branches] — список салонов: название, адрес, часы работы, телефон, «Маршрут».
+     [data-branches-mini] — короткий список в меню на телефоне.
+     [data-branch-map] — карта. Когда у филиалов стоят метки, это своя карта (Leaflet, картинки OpenStreetMap):
+     у каждой метки подпись — название филиала из админ-панели, по нажатию открывается карточка с названием, адресом
+     и маршрутом. Пока меток нет, место ищет по адресу карта Google — на ней своего названия не видно.
+     Нажатие на филиал в списке показывает его на карте. */
+  const tel = v => 'tel:' + String(v).replace(/[^\d+]/g, '');
+  const branchCard = b => `<b class="mp-name">${esc(L(b.name))}</b>${L(b.address) ? `<span class="mp-addr">${esc(L(b.address))}</span>` : ''}${(L(b.hours) || []).length ? `<span class="mp-hours">${(L(b.hours) || []).map(esc).join('<br>')}</span>` : ''}<a class="mp-route" href="${esc(branchRoute(b))}" target="_blank" rel="noopener">${esc(t('loc.route'))}</a>`;
+  function renderBranches() {
+    if (!branchById[state.branch]) state.branch = BRANCH_LIST.length ? BRANCH_LIST[0].id : '';
+    $$('[data-branches]').forEach(box => {
+      box.hidden = !BRANCH_LIST.length;
+      box.setAttribute('aria-label', t('loc.list'));
+      box.innerHTML = BRANCH_LIST.map(b => {
+        // телефон в карточке — только свой у филиала: общий стоит ниже, в списке контактов
+        const hours = (L(b.hours) || []).map(esc).join('<br>'), phone = b.phone || '';
+        return `<article class="loc${state.branchPicked && b.id === state.branch ? ' is-on' : ''}" data-branch="${esc(b.id)}">
+          <span class="loc-pin" aria-hidden="true">${ICON.pin}</span>
+          <div class="loc-body">
+            <button type="button" class="loc-name" data-branch-show="${esc(b.id)}" title="${esc(t('loc.show'))}">${esc(L(b.name))}</button>
+            ${L(b.address) ? `<p class="loc-addr">${esc(L(b.address))}</p>` : ''}
+            ${hours ? `<p class="loc-hours">${hours}</p>` : ''}
+            <p class="loc-links">${phone ? `<a href="${esc(tel(phone))}">${esc(phone)}</a>` : ''}<a href="${esc(branchRoute(b))}" target="_blank" rel="noopener">${esc(t('loc.route'))}</a></p>
+          </div>
+        </article>`;
+      }).join('');
+    });
+    $$('[data-branches-mini]').forEach(box => {
+      const one = BRANCH_LIST.length === 1 ? BRANCH_LIST[0] : null, hours = one ? (L(one.hours) || []).map(esc).join('<br>') : '';
+      box.innerHTML = BRANCH_LIST.map(b => `<p class="nav-info">${ICON.pin}<a href="${esc(hrefView('contacts'))}" data-view="contacts" data-branch-go="${esc(b.id)}">${BRANCH_LIST.length > 1 ? `<b>${esc(L(b.name))}</b> ` : ''}${esc(L(b.address))}</a></p>`).join('')
+        + (hours ? `<p class="nav-info">${ICON.clock}<span>${hours}</span></p>` : '');
+    });
+    $$('[data-branch-t]').forEach(el => {
+      const x = el.dataset.branchT.split(':'), b = branchById[x[1]];
+      if (b) el.textContent = L(b[x[0]]) || '';
+    });
+    syncBranchMaps();
+  }
+
+  // Библиотека карты загружается один раз и только когда карта подошла к экрану
+  const MAP_LIB = PATHS ? BASE + 'assets/vendor/leaflet/' : 'https://unpkg.com/leaflet@1.9.4/dist/';
+  const MAP_TILES = CONFIG.mapTiles || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const MAP_CREDIT = CONFIG.mapCredit || '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+  let mapLib = null;
+  function loadMapLib() {
+    if (mapLib) return mapLib;
+    mapLib = new Promise((ok, fail) => {
+      if (window.L && window.L.map) { ok(window.L); return; }
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = MAP_LIB + 'leaflet.css' + (PATHS ? '?v=1.9.4' : '');
+      document.head.appendChild(css);
+      const js = document.createElement('script');
+      js.src = MAP_LIB + 'leaflet.js' + (PATHS ? '?v=1.9.4' : '');
+      js.onload = () => (window.L && window.L.map ? ok(window.L) : fail(new Error('map')));
+      js.onerror = () => fail(new Error('map'));
+      document.head.appendChild(js);
+    });
+    return mapLib;
+  }
+  const PIN_SVG = '<svg viewBox="0 0 30 40" aria-hidden="true"><path d="M15 39S29 24.500 29 14.500a14 14 0 0 0-28 0C1 24.500 15 39 15 39z"/><circle cx="15" cy="14.500" r="5.200"/></svg>';
+  const maps = [];   // открытые карты: { box, map, marks: { код филиала: метка } } или { box, frame } для карты Google
+  let mapWatch = null;
+  function syncBranchMaps() {
+    // карта, блок которой убран со страницы (страница сменилась), закрывается
+    for (let i = maps.length - 1; i >= 0; i--) {
+      if (!document.documentElement.contains(maps[i].box)) { if (maps[i].map) maps[i].map.remove(); maps.splice(i, 1); }
+    }
+    $$('[data-branch-map]').forEach(box => {
+      box.hidden = !BRANCH_LIST.length;
+      box.setAttribute('aria-label', t('c.map'));
+      const m = maps.find(x => x.box === box);
+      if (m) { paintMap(m); return; }
+      if (box.dataset.mapWait) return;
+      box.dataset.mapWait = '1';
+      if (typeof IntersectionObserver !== 'function') { openMap(box); return; }
+      if (!mapWatch) mapWatch = new IntersectionObserver(list => list.forEach(en => {
+        if (!en.isIntersecting) return;
+        const open = maps.find(x => x.box === en.target);
+        if (open) { if (open.map) open.map.invalidateSize(); } else openMap(en.target);
+      }), { rootMargin: '300px 0px' });
+      mapWatch.observe(box);
+    });
+  }
+  // Карта Google по адресу: пока у филиалов нет меток или своя карта не загрузилась
+  function openFrame(box) {
+    box.innerHTML = '<p class="map-cap"></p><iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+    const m = { box, frame: $('iframe', box), cap: $('.map-cap', box) };
+    maps.push(m);
+    paintMap(m);
+  }
+  function openMap(box) {
+    if (maps.some(x => x.box === box) || !BRANCH_LIST.length) return;
+    if (!BRANCH_LIST.some(hasPin)) { openFrame(box); return; }
+    loadMapLib().then(Lf => {
+      if (maps.some(x => x.box === box) || !document.documentElement.contains(box)) return;
+      box.innerHTML = '';
+      box.classList.add('is-live');
+      const touch = !!(Lf.Browser && Lf.Browser.mobile);
+      const map = Lf.map(box, { scrollWheelZoom: false, dragging: !touch, zoomControl: true });
+      // колесо мыши и палец двигают карту только после нажатия на неё — иначе она мешает листать страницу
+      map.once('click', () => { map.scrollWheelZoom.enable(); map.dragging.enable(); });
+      map.attributionControl.setPrefix(false);
+      // крестик карточки называется на языке сайта
+      map.on('popupopen', e => { const x = $('.leaflet-popup-close-button', e.popup.getElement()); if (x) { x.title = t('close'); x.setAttribute('aria-label', t('close')); } });
+      Lf.tileLayer(MAP_TILES, { maxZoom: 19, referrerPolicy: 'strict-origin-when-cross-origin', attribution: MAP_CREDIT }).addTo(map);
+      const m = { box, map, marks: {}, Lf };
+      maps.push(m);
+      const pins = BRANCH_LIST.filter(hasPin);
+      pins.forEach(b => {
+        const mark = Lf.marker([b.lat, b.lng], { icon: Lf.divIcon({ className: 'mp-pin', html: PIN_SVG, iconSize: [30, 40], iconAnchor: [15, 39], popupAnchor: [0, -36], tooltipAnchor: [0, 2] }), keyboard: true });
+        mark.addTo(map);
+        mark.on('click', () => selectBranch(b.id, box));
+        m.marks[b.id] = mark;
+      });
+      // сначала видны все филиалы; если один уже выбран (нажали на него в списке или в меню) — карта открыта на нём
+      const cur = state.branchPicked && m.marks[state.branch] ? branchById[state.branch] : null;
+      if (cur) map.setView([cur.lat, cur.lng], 16);
+      else if (pins.length > 1) map.fitBounds(Lf.latLngBounds(pins.map(b => [b.lat, b.lng])), { padding: [56, 56], maxZoom: 15 });
+      else map.setView([pins[0].lat, pins[0].lng], 16);
+      paintMap(m);
+      // у единственного или уже выбранного филиала карточка с названием открыта сразу
+      if (cur) m.marks[cur.id].openPopup();
+      else if (pins.length === 1) m.marks[pins[0].id].openPopup();
+      box.dataset.mapReady = '1';
+    }).catch(() => { box.classList.remove('is-live'); openFrame(box); });
+  }
+  // Подписи и карточки меток — на нынешнем языке; у карты Google — место выбранного филиала
+  function paintMap(m) {
+    const cur = branchById[state.branch] || BRANCH_LIST[0];
+    if (m.frame) {
+      if (!cur) return;
+      const src = 'https://maps.google.com/maps?q=' + encodeURIComponent(hasPin(cur) ? cur.lat + ',' + cur.lng : cur.mapQuery || L(cur.address)) + '&z=15&hl=' + lang + '&output=embed';
+      if (m.frame.dataset.src !== src) { m.frame.src = src; m.frame.dataset.src = src; }
+      m.frame.title = t('c.map');
+      m.cap.textContent = BRANCH_LIST.length > 1 ? branchLine(cur) : '';
+      m.cap.hidden = BRANCH_LIST.length < 2;
+      return;
+    }
+    // кнопки «+» и «−» подписаны на языке сайта
+    const zc = m.map.zoomControl;
+    [[zc && zc._zoomInButton, 'loc.zoomIn'], [zc && zc._zoomOutButton, 'loc.zoomOut']].forEach(x => { if (x[0]) { x[0].title = t(x[1]); x[0].setAttribute('aria-label', t(x[1])); } });
+    Object.keys(m.marks).forEach(id => {
+      const b = branchById[id], mark = m.marks[id];
+      if (!b) return;
+      mark.unbindTooltip();
+      mark.bindTooltip(esc(L(b.name)), { permanent: true, direction: 'bottom', className: 'mp-label', interactive: false });
+      const open = mark.isPopupOpen();
+      mark.unbindPopup();
+      mark.bindPopup(branchCard(b), { className: 'mp-pop', maxWidth: 260, autoPanPadding: [24, 24] });
+      if (open) mark.openPopup();
+      const el = mark.getElement();
+      if (el) { el.setAttribute('aria-label', L(b.name)); el.classList.toggle('is-on', state.branchPicked && id === state.branch); }
+    });
+  }
+  // Выбор филиала: в списке он подсвечен, карта показывает его место и открывает карточку с названием
+  function selectBranch(id, from) {
+    const b = branchById[id];
+    if (!b) return;
+    state.branch = id;
+    state.branchPicked = true;
+    $$('[data-branches] .loc').forEach(el => el.classList.toggle('is-on', el.dataset.branch === id));
+    maps.forEach(m => {
+      if (m.frame) { paintMap(m); return; }
+      const mark = m.marks[id];
+      Object.keys(m.marks).forEach(k => { const el = m.marks[k].getElement(); if (el) el.classList.toggle('is-on', k === id); });
+      // на карте, где нажали на саму метку, карточку открывает карта; остальные переезжают к филиалу и открывают её сами
+      if (!mark || m.box === from) return;
+      m.map.setView(mark.getLatLng(), Math.max(m.map.getZoom(), 16), { animate: !reduced() });
+      mark.openPopup();
+    });
+  }
+  // Показать филиал на карте: карта подъезжает к экрану, если она ниже списка (телефон)
+  function showBranch(id, near) {
+    selectBranch(id, null);
+    const scope = (near && near.closest('.contacts-grid')) || document, box = $('[data-branch-map]', scope);
+    if (!box || box.hidden) return;
+    const r = box.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > window.innerHeight) box.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'center' });
+    if (!maps.some(x => x.box === box)) openMap(box);
   }
 
   /* ---------- языки ---------- */
@@ -2216,7 +2433,12 @@
   }
   function onDocClick(e) {
     const tg = e.target;
+    // Название филиала в списке показывает его на карте
+    const loc = tg.closest('[data-branch-show]');
+    if (loc) { state.branchPicked = true; showBranch(loc.dataset.branchShow, loc); return; }
     const a = tg.closest('a');
+    // Адрес филиала в меню ведёт на «Контакты», где карта сразу открыта на нём
+    if (a && a.dataset.branchGo && branchById[a.dataset.branchGo]) { state.branch = a.dataset.branchGo; state.branchPicked = true; }
     if (a && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
       // Ссылка на товар открывает его страницу без перезагрузки
       if (a.dataset.product && byId[a.dataset.product]) {
@@ -2340,14 +2562,15 @@
     cf.addEventListener('submit', submitOrder);
     cf.addEventListener('change', e => {
       const n = e.target.name;
-      if (n === 'delivery') { toggleField(cf, 'delivery', 'courier', '#coAddressField'); renderCheckoutSummary(); }
+      if (n === 'delivery') { toggleField(cf, 'delivery', 'courier', '#coAddressField'); toggleField(cf, 'delivery', 'pickup', '#coBranchField'); renderCheckoutSummary(); }
+      if (n === 'branch') { const fld = e.target.closest('.field'); if (fld) clearFieldError(fld); }
     });
     cf.addEventListener('input', e => { const fld = e.target.closest('.field'); if (fld && fld.classList.contains('is-invalid')) clearFieldError(fld); });
     const rf = $('#repairForm');
     if (rf) {
       rf.addEventListener('submit', submitRepair);
       rf.addEventListener('change', e => {
-        if (e.target.name === 'handover') toggleField(rf, 'handover', 'courier', '#rpAddressField');
+        if (e.target.name === 'handover') { toggleField(rf, 'handover', 'courier', '#rpAddressField'); toggleField(rf, 'handover', 'salon', '#rpBranchField'); }
         if (e.target.name === 'svc') syncServiceRows();
         const fld = e.target.closest('.field');
         if (fld && fld.classList.contains('is-invalid')) clearFieldError(fld);
@@ -2387,7 +2610,7 @@
   window.Shop = {
     CONFIG, state, byId, art, glasses, money, esc, swatches, swAttr, badges, needsOptions, priceLabel, catName, audById, audParent, inAud,
     colorOf, hexA, icon: n => ICON[n] || '', toast, reduced, waUrl, t, L, setLang, href: hrefFor, hrefView, hrefCatalog, go: navigate, brandName,
-    brands: BRAND_LIST, brandById, brandItems, pageMeta,
+    brands: BRAND_LIST, brandById, brandItems, pageMeta, branches: BRANCH_LIST, showBranch, maps,
     count: itemsCount, priceFrom,
     get lang() { return lang; },
     render: () => renderProducts(),

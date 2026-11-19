@@ -1,7 +1,7 @@
 """Версия на PHP: адреса страниц, заказ с сохранением в базе, заголовки для поисковиков."""
 import asyncio, json, re, subprocess, urllib.request
 from playwright.async_api import async_playwright
-from run import setup, ROOT, decode
+from run import setup, ROOT, decode, pick_branch
 B = 'http://127.0.0.1:8771'
 SH = f'{ROOT}/shots'
 def sql(q):
@@ -47,14 +47,14 @@ async def main():
         await pg.locator('.site-header [data-open-cart]').first.click(); await pg.wait_for_timeout(300)
         await pg.locator('#cartDrawer [data-checkout]').click(); await pg.wait_for_timeout(500)
         print('checkout:', tail())
-        await pg.fill('#coName', 'Лейла Тест'); await pg.fill('#coPhone', '0501234567'); await pg.fill('#coComment', 'Позвоните после 18:00 <b>x</b>')
+        await pg.fill('#coName', 'Лейла Тест'); await pick_branch(pg); await pg.fill('#coPhone', '0501234567'); await pg.fill('#coComment', 'Позвоните после 18:00 <b>x</b>')
         await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(900)
         print('after order:', tail(), '| orders in DB:', sql("SELECT CONCAT(number, ' | ', kind, ' | ', name, ' | ', phone, ' | ', total, ' | ', status, ' | ', lang) FROM ao_orders ORDER BY id DESC LIMIT 1"))
         await pg.keyboard.press('Escape')
         # заявка на ремонт
         await pg.goto(B + '/?lang=ru#repair'); await pg.wait_for_timeout(1300)
         await pg.locator('#servicesList [data-svc="pads"]').click()
-        await pg.fill('#rpName', 'Камран'); await pg.fill('#rpPhone', '0551112233')
+        await pg.fill('#rpName', 'Камран'); await pick_branch(pg, '#repairForm'); await pg.fill('#rpPhone', '0551112233')
         await pg.locator('#repairForm [type=submit]').click(); await pg.wait_for_timeout(800); await pg.keyboard.press('Escape')
         # сообщение
         await pg.goto(B + '/contacts?lang=ru'); await pg.wait_for_timeout(1200)

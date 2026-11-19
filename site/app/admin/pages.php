@@ -32,7 +32,7 @@ const SITE_PAGES = [
     ], 'more' => [['doc:config', 'Доставка и контакты']]],
     'about' => ['title' => 'О нас', 'path' => 'about', 'seo' => true, 'blocks' => ['Надписи страницы' => ['ab']], 'more' => [['doc:about', 'Тексты и фото страницы']]],
     'blog' => ['title' => 'Блог', 'path' => 'blog', 'seo' => true, 'blocks' => ['Надписи страницы' => ['bl']], 'more' => [['list:post', 'Статьи блога']]],
-    'contacts' => ['title' => 'Контакты', 'path' => 'contacts', 'seo' => true, 'blocks' => ['Надписи страницы и форма' => ['ct']], 'more' => [['doc:config', 'Телефон, адрес, часы работы']]],
+    'contacts' => ['title' => 'Контакты', 'path' => 'contacts', 'seo' => true, 'blocks' => ['Надписи страницы и форма' => ['ct'], 'Филиалы и карта' => ['loc']], 'more' => [['list:branch', 'Филиалы: адреса, часы работы, карта'], ['doc:config', 'Телефон и WhatsApp']]],
     'common' => ['title' => 'Общие надписи', 'path' => null, 'seo' => false, 'blocks' => [
         'Меню и подвал' => ['nav', 'lang', 'pg', 'ft', 'footer', 'wa', 'toast', 'sb'],
         'Подсказки и ошибки в формах' => ['e', 'added', 'addedSvc', 'close', 'cap'],
@@ -78,7 +78,7 @@ function page_blocks(string $id): array
 /** Заголовок и описание страницы, которые сайт ставит сам, если свои не заданы (те же правила, что на сайте: seo_auto). */
 function page_seo_default(string $id, string $lang): array
 {
-    $data = ['CONFIG' => setting('config', []), 'ABOUT' => setting('about', [])];
+    $data = ['CONFIG' => setting('config', []), 'ABOUT' => setting('about', []), 'BRANCHES' => branches_public()];
     $auto = seo_auto($id, $lang, $data);
     return [$auto[0], $auto[1] !== '' ? $auto[1] : seo_auto('home', $lang, $data)[1]];
 }
@@ -116,6 +116,9 @@ function orders_table(array $rows): string
         $d = json_decode((string) ($r['data'] ?? ''), true);
         $way = is_array($d) ? (string) ($d['details']['delivery'] ?? ($d['details']['handover'] ?? '')) : '';
         $way = $way === 'courier' && $r['kind'] === 'repair' ? __('нужен курьер') : ($how[$way] ?? '');
+        // филиал, который покупатель выбрал для самовывоза или куда принесёт очки
+        $branch = is_array($d) && is_string($d['details']['branch'] ?? null) ? $d['details']['branch'] : '';
+        if ($way !== '' && $branch !== '') $way .= ' · ' . $branch;
         $out .= '<tr><td><a class="strong" href="' . e(admin_url('order', ['id' => $r['id']])) . '">' . e($r['number']) . '</a><small>' . e(fmt_date($r['created_at'])) . '</small></td>'
             . '<td><span class="strong">' . e($r['name']) . '</span><small>' . e($r['phone']) . '</small></td>'
             . '<td>' . e($what) . ($sub !== '' ? '<small>' . e($sub) . '</small>' : '') . '</td>'

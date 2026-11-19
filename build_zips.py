@@ -38,7 +38,8 @@ def check(path, installer):
             # прав нет вовсе (так пишет git) — хостинг поставит обычные; если права записаны, их должно хватать серверу
             if mode and mode & need != need:
                 sys.exit(f'{path.name}: у {it.filename} записаны права {oct(mode)} — после распаковки веб-сервер не прочитает файл')
-    for n in HTACCESS + ['index.php', 'admin/index.php', 'assets/js/app.js', 'assets/css/app.css']:
+    # кроме страниц и скриптов сайта — библиотека карты филиалов: без неё на «Контактах» не будет меток
+    for n in HTACCESS + ['index.php', 'admin/index.php', 'assets/js/app.js', 'assets/css/app.css', 'assets/vendor/leaflet/leaflet.js', 'assets/vendor/leaflet/leaflet.css']:
         if n not in names: sys.exit(f'{path.name}: нет файла {n}')
     if ('install.php' in names) != installer:
         sys.exit(f'{path.name}: install.php ' + ('должен быть в архиве' if installer else 'не должен попадать в архив обновления'))

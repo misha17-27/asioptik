@@ -23,13 +23,29 @@ def font_css(url):
                     out.append(css.read_text().replace('url(./files/', f'url({BASE}/test/node_modules/@fontsource/{pkg}/files/'))
     return '\n'.join(out)
 
+# прозрачная картинка 1×1 вместо плитки карты
+TILE = __import__('base64').b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+
 async def setup(page):
     async def gf(route):
         await route.fulfill(status=200, content_type='text/css', body=font_css(route.request.url))
     await page.route('https://fonts.googleapis.com/**', gf)
     await page.route('https://fonts.gstatic.com/**', lambda r: r.abort())
     await page.route('https://maps.google.com/**', lambda r: r.fulfill(status=200, content_type='text/html', body='<html><body style="margin:0;background:#dfe3dc;font:14px sans-serif;display:grid;place-items:center;height:100vh;color:#667">карта</body></html>'))
+    # карта филиалов: картинки OpenStreetMap в тесте заменены пустой плиткой (в интернет стенд не ходит),
+    # а библиотеку карты версия сайта одним файлом берёт с unpkg.com — здесь её отдаём из папки сайта
+    await page.route('https://tile.openstreetmap.org/**', lambda r: r.fulfill(status=200, content_type='image/png', body=TILE))
+    async def leaflet(route):
+        f = ROOT / 'site/assets/vendor/leaflet' / route.request.url.split('/dist/')[-1].split('?')[0]
+        ok = f.is_file() and ROOT / 'site/assets/vendor/leaflet' in f.resolve().parents
+        await route.fulfill(status=200 if ok else 404, content_type={'.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png'}.get(f.suffix, 'text/plain'), body=f.read_bytes() if ok else b'')
+    await page.route('https://unpkg.com/leaflet@1.9.4/dist/**', leaflet)
     await page.add_init_script("window.__opened=[]; window.open=function(u){window.__opened.push(u); return {opener:null};};")
+
+async def pick_branch(page, form='#checkoutForm'):
+    """Филиалов больше одного — при самовывозе и «принесу в салон» форма просит выбрать салон: берём первый."""
+    r = page.locator(f'{form} input[name="branch"]')
+    if await r.count() and await r.first.is_visible(): await r.first.check()
 
 def decode(u):
     q = urllib.parse.urlparse(u)
@@ -90,7 +106,7 @@ async def run(file, tag, flow=True):
             await page.locator('#checkoutForm [type=submit]').click()
             await page.wait_for_timeout(300)
             await page.screenshot(path=f'{ROOT}/shots/{tag}-d-checkout-errors.png')
-            await page.fill('#coName', 'Анна')
+            await page.fill('#coName', 'Анна'); await pick_branch(page)
             await page.fill('#coPhone', '+994 50 123 45 67')
             await page.locator('#checkoutForm input[name=delivery][value=courier]').check()
             await page.fill('#coAddress', 'ул. Низами 10, кв. 5')

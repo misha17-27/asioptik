@@ -5,6 +5,7 @@
 Адрес этого сервера на время проверок дописывается в site/storage/config.php и в конце убирается."""
 import asyncio, http.client, http.server, json, pathlib, re, subprocess, threading, time, urllib.parse
 from playwright.async_api import async_playwright
+from run import pick_branch, TILE
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HOST, PORT, MOCK = '127.0.0.1', 8771, 8779
 B = f'http://{HOST}:{PORT}'
@@ -226,6 +227,7 @@ async def browser():
         await pg.route('https://fonts.gstatic.com/**', lambda r: r.abort())
         await pg.route('https://images.pexels.com/**', lambda r: r.abort())
         await pg.route('https://maps.google.com/**', lambda r: r.fulfill(status=200, content_type='text/html', body='<html></html>'))
+        await pg.route('https://tile.openstreetmap.org/**', lambda r: r.fulfill(status=200, content_type='image/png', body=TILE))   # картинки карты филиалов
         await pg.route('https://www.google.com/**', lambda r: r.fulfill(status=200, content_type='text/html', body='<html></html>'))
         await pg.add_init_script("window.__opened=[]; window.open=function(u){window.__opened.push(u); return {opener:null};};")
 
@@ -318,7 +320,7 @@ async def browser():
         check('browser: product page still loads nothing from Cloudflare', len(cf) == n)
         await pg.goto(B + '/checkout?lang=ru'); await pg.wait_for_timeout(1200)
         check('browser: opening the checkout starts the check', len(cf) == n + 1 and await pg.locator('.cap-dock').count() == 1, cf[n:])
-        await pg.fill('#coName', 'Лейла Проверка'); await pg.fill('#coPhone', '0501234567')
+        await pg.fill('#coName', 'Лейла Проверка'); await pick_branch(pg); await pg.fill('#coPhone', '0501234567')
         await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(800)
         check('browser: order goes out with the answer and is saved', posts[-1].get('kind') == 'order' and posts[-1].get('captcha') == TOKEN and orders() == before + 4, posts[-1].get('captcha'))
         check('browser: site pages without console errors', not real(), real()[:3])

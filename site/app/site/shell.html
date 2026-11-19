@@ -55,8 +55,8 @@
           <a class="nav-tel" data-cfg-href="tel" href="#" data-cfg="phone">+994 00 000 00 00</a>
           <a class="btn btn-primary nav-wa" data-cfg-href="wa" href="#" target="_blank" rel="noopener"><span data-icon="chat"></span><span data-i18n="c.waLink">WhatsApp-a yazın</span></a>
         </div>
-        <p class="nav-info"><span data-icon="pin"></span><a data-cfg-href="map" href="#" target="_blank" rel="noopener" data-cfg="address"></a></p>
-        <p class="nav-info"><span data-icon="clock"></span><span data-cfg="hours"></span></p>
+        <!-- адреса филиалов: нажатие открывает «Контакты» с картой на этом филиале; при одном филиале ниже — часы работы -->
+        <div class="nav-locs" data-branches-mini></div>
       </div>
     </nav>
     <div class="hdr-right">
@@ -224,15 +224,16 @@
     <div class="wrap contacts-grid">
       <div>
         <h2 data-i18n="contacts.h2">Əlaqə</h2>
+        <!-- филиалы: название, адрес, часы работы, телефон и «Маршрут»; нажатие на название показывает филиал на карте -->
+        <div class="locs" data-branches></div>
         <ul class="c-list">
-          <li><span data-icon="pin"></span><div><b data-i18n="c.address">Ünvan</b><a data-cfg-href="map" href="#" target="_blank" rel="noopener" data-cfg="address"></a></div></li>
-          <li><span data-icon="clock"></span><div><b data-i18n="c.hours">İş saatları</b><span data-cfg="hours"></span></div></li>
           <li><span data-icon="phone"></span><div><b data-i18n="c.phone">Telefon</b><a data-cfg-href="tel" href="#" data-cfg="phone"></a></div></li>
           <li><span data-icon="chat"></span><div><b>WhatsApp</b><a data-cfg-href="wa" href="#" target="_blank" rel="noopener" data-i18n="c.waLink">WhatsApp-a yazın</a></div></li>
           <li data-cfg-wrap><span data-icon="at"></span><div><b>Instagram</b><a data-cfg-href="ig" href="#" target="_blank" rel="noopener" data-cfg="instagram"></a></div></li>
         </ul>
       </div>
-      <div class="map"><iframe data-cfg-map title="Xəritə: bizi necə tapmaq olar" data-i18n-attr="title:c.map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+      <!-- карта с метками филиалов: у метки подпись — название филиала, по нажатию открывается карточка с адресом и маршрутом -->
+      <div class="map" data-branch-map role="region"></div>
     </div>
   </section>
 

@@ -336,6 +336,7 @@ function admin_list(): void
     $head = $type === 'product' ? ['', __('Название'), __('Раздел'), __('Цена')] : [__('Название')];
     if ($type === 'service') $head[] = __('Цена');
     if ($type === 'post') $head[] = __('Дата');
+    if ($type === 'branch') $head[] = __('На карте');
     if ($hasPage) $head[] = 'SEO';
     $head[] = __('Изменено');
     $out .= '<div class="table-wrap"><table class="table"><thead><tr>';
@@ -347,7 +348,7 @@ function admin_list(): void
         $name = $type === 'brand' ? (string) ($d['name'] ?? '') : tr_admin($d['name'] ?? ($d['title'] ?? ''));
         if ($name === '') $name = $r['slug'];
         $path = $hasPage ? ITEM_PAGES[$type] . rawurlencode($r['slug']) : '';
-        $sub = $path !== '' ? '/' . $path : $r['slug'];
+        $sub = $path !== '' ? '/' . $path : ($type === 'branch' ? tr_admin($d['address'] ?? '') : $r['slug']);
         if ($type === 'product' && isset($brands[$d['brand'] ?? ''])) $sub .= ' · ' . $brands[$d['brand']];
         $cells = '<td><a class="strong" href="' . e($edit) . '">' . e($name) . '</a>' . ($r['active'] ? '' : ' <span class="st st-cancel">' . __('скрыт') . '</span>') . '<small>' . e($sub) . '</small></td>';
         if ($type === 'product') {
@@ -357,6 +358,8 @@ function admin_list(): void
         }
         if ($type === 'service') $cells .= '<td class="nowrap">' . (!empty($d['from']) ? __('от') . ' ' : '') . e(fmt_money($d['price'] ?? null)) . '</td>';
         if ($type === 'post') $cells .= '<td class="nowrap">' . e((string) ($d['date'] ?? '')) . '</td>';
+        // у филиала с меткой на карте видно его название; без метки сайт ищет место по адресу
+        if ($type === 'branch') $cells .= '<td class="nowrap">' . (parse_coords((string) ($d['coords'] ?? '')) ? '<span class="pill">' . __('метка стоит') . '</span>' : '<span class="st st-cancel">' . __('нет метки') . '</span>') . '</td>';
         if ($hasPage) {
             // длина заголовка и описания страницы на основном языке: зелёная точка, когда оба укладываются в привычные для поиска рамки
             $l = LANGS[0];

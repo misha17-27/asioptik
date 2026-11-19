@@ -65,7 +65,7 @@ shell = shell.replace('Адреса: ?page=catalog, ?page=about, ?page=blog, ?pa
 node = subprocess.run(['node', '-e', '''
 const fs = require('fs');
 const src = fs.readFileSync(process.argv[1], 'utf8');
-const d = new Function(src + ';return {CONFIG,CATEGORIES,RX,AUDIENCES,PRODUCTS,BRANDS,SERVICES,ABOUT,POSTS};')();
+const d = new Function(src + ';return {CONFIG,BRANCHES,CATEGORIES,RX,AUDIENCES,PRODUCTS,BRANDS,SERVICES,ABOUT,POSTS};')();
 process.stdout.write(JSON.stringify(d));
 ''', str(ROOT / 'src' / 'data4.js')], check=True, capture_output=True, text=True)
 d = json.loads(node.stdout)
@@ -107,9 +107,22 @@ def rows(items):
 
 
 config = dict(d['CONFIG'])
+
+
+def branch_rows(items):
+    """В базе метка филиала хранится строкой «широта, долгота» — так её вводят в админ-панели."""
+    out = []
+    for r in rows(items):
+        data = r['data']
+        if 'lat' in data and 'lng' in data:
+            data['coords'] = f"{data.pop('lat'):g}, {data.pop('lng'):g}"
+        out.append(r)
+    return out
+
+
 seed = {
     'settings': {'config': config, 'rx': d['RX'], 'about': d['ABOUT'], 'audiences': d['AUDIENCES'], 'templates': templates},
-    'items': {'category': rows(d['CATEGORIES']), 'brand': rows(d['BRANDS']), 'product': products, 'service': rows(d['SERVICES']), 'post': rows(d['POSTS'])},
+    'items': {'category': rows(d['CATEGORIES']), 'brand': rows(d['BRANDS']), 'product': products, 'service': rows(d['SERVICES']), 'post': rows(d['POSTS']), 'branch': branch_rows(d['BRANCHES'])},
 }
 
 # ---------- записываем собранные файлы в папку сайта ----------

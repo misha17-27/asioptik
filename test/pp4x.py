@@ -1,6 +1,6 @@
 import asyncio, sys, json
 sys.path.insert(0, __import__('os').path.dirname(__import__('os').path.abspath(__file__)))
-from run import setup, BASE, ROOT, decode
+from run import setup, BASE, ROOT, decode, pick_branch
 from playwright.async_api import async_playwright
 F = f'{BASE}/dist/optika-4-lupa.html'
 SH = f'{ROOT}/shots'
@@ -58,7 +58,7 @@ async def main():
         await pg.screenshot(path=f'{SH}/x-en-cart.png')
         await pg.locator('#cartDrawer [data-checkout]').click(); await pg.wait_for_timeout(400)
         await pg.screenshot(path=f'{SH}/x-en-checkout.png')
-        await pg.fill('#coName', 'Anna'); await pg.fill('#coPhone', '+994 55 111 22 33')
+        await pg.fill('#coName', 'Anna'); await pick_branch(pg); await pg.fill('#coPhone', '+994 55 111 22 33')
         await pg.locator('#checkoutForm input[name=delivery][value=courier]').check(); await pg.fill('#coAddress', '28 May St 5')
         await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(500)
         print('=== EN message ==='); print(decode((await pg.evaluate('window.__opened'))[-1])[1])

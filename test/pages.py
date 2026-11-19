@@ -82,8 +82,13 @@ async def main():
         i = await info(pg); print('unknown post:', i['h1'], '| post', repr(i['post']), '| canon', i['canon'])
 
         # контакты и форма
-        await pg.locator('#siteNav a[data-view="contacts"]').click(); await pg.wait_for_timeout(600)
-        i = await info(pg); print('contacts:', {k: i[k] for k in ('url', 'title', 'h1', 'cur')}, '| address:', await pg.locator('#pageView [data-cfg="address"]').inner_text(), '| map src set:', await pg.evaluate("!!document.querySelector('#pageView iframe[data-cfg-map]').src"))
+        await pg.locator('#siteNav .nav-links a[data-view="contacts"]').click(); await pg.wait_for_timeout(600)
+        i = await info(pg); print('contacts:', {k: i[k] for k in ('url', 'title', 'h1', 'cur')}, '| branches:', await pg.locator('#pageView [data-branches] .loc-name').all_inner_texts(), await pg.locator('#pageView [data-branches] .loc-addr').all_inner_texts())
+        # карта филиалов: метки с подписями — названиями филиалов (библиотека карты в версии одним файлом берётся с unpkg.com)
+        await pg.wait_for_selector('#pageView [data-branch-map][data-map-ready]', timeout=15000); await pg.wait_for_timeout(300)
+        print('map: pins', await pg.locator('#pageView .mp-pin').count(), '| labels:', sorted(await pg.locator('#pageView .mp-label').all_inner_texts()))
+        await pg.locator('#pageView [data-branch-show]').nth(1).click(); await pg.wait_for_timeout(600)
+        print('click on the second branch → card on the map:', await pg.locator('#pageView .mp-pop .mp-name').inner_text(), '|', await pg.locator('#pageView .mp-pop .mp-route').get_attribute('href'))
         await pg.screenshot(path=f'{SH}/pg-contacts.png', full_page=True)
         await pg.locator('#contactForm [type=submit]').click(); await pg.wait_for_timeout(300)
         print('form errors:', await pg.locator('#contactForm .field-error').all_inner_texts())
@@ -126,7 +131,7 @@ async def main():
         for v in ('catalog', 'about', 'blog', 'contacts'):
             if not await pg.evaluate("document.body.classList.contains('menu-open')"):
                 await pg.locator('.hdr-right .js-menu-toggle').click(); await pg.wait_for_timeout(250)
-            await pg.locator(f'#siteNav a[data-view="{v}"]:not([data-aud])').click(); await pg.wait_for_timeout(600)
+            await pg.locator(f'#siteNav .nav-links a[data-view="{v}"]:not([data-aud])').click(); await pg.wait_for_timeout(600)
             i = await info(pg); print('m', v, '|', i['url'], '|', i['h1'], '| overflow x:', i['ox'], '| menu open:', await pg.evaluate("document.body.classList.contains('menu-open')"))
             await pg.screenshot(path=f'{SH}/pg-m-{v}.png', full_page=True)
         await pg.goto(URL + '?page=blog&post=prescription'); await pg.wait_for_timeout(1200)

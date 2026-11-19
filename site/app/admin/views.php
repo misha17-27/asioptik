@@ -61,6 +61,7 @@ function icon(string $name): string
         'box' => '<path d="M3 6.500 10 3l7 3.500v7L10 17l-7-3.500z"/><path d="M3 6.500 10 10l7-3.500M10 10v7"/>',
         'grid' => '<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/>',
         'tag' => '<path d="M3 3h7l7 7-7 7-7-7z"/><circle cx="7" cy="7" r="1.200"/>',
+        'pin' => '<path d="M10 17.500s5.500-5 5.500-9.300a5.500 5.500 0 0 0-11 0c0 4.300 5.500 9.300 5.500 9.300z"/><circle cx="10" cy="8.200" r="2"/>',
         'tool' => '<path d="M16.500 5.500 13.800 8.200l-2-2 2.700-2.700a4 4 0 0 0-5.100 5L3.500 14.400a1.500 1.500 0 0 0 2.100 2.100l5.900-5.900a4 4 0 0 0 5-5.100z"/>',
         'gear' => '<circle cx="10" cy="10" r="2.500"/><path d="M10 2.500v2.300M10 15.200v2.300M2.500 10h2.300M15.200 10h2.300M4.700 4.700l1.600 1.600M13.700 13.700l1.600 1.600M4.700 15.300l1.600-1.600M13.700 6.300l1.600-1.600"/>',
         'key' => '<circle cx="7" cy="13" r="3.500"/><path d="m9.500 10.500 7-7M13.500 6.500l2 2M11.500 8.500l1.500 1.500"/>',
@@ -167,7 +168,7 @@ function admin_page(string $title, string $body, string $current = '', string $a
         __('Контент') => [['pages', __('Страницы'), 'page', null], ['list:post', __('Блог'), 'blog', $c['post'] ?? null], ['banners', __('Баннеры и фото'), 'image', null]],
         __('Каталог') => [['list:product', __('Товары'), 'box', $c['product'] ?? null], ['list:category', __('Разделы'), 'grid', $c['category'] ?? null],
             ['list:brand', __('Бренды'), 'tag', $c['brand'] ?? null], ['list:service', __('Услуги мастерской'), 'tool', $c['service'] ?? null]],
-        __('Настройки') => [['doc:config', __('Настройки сайта'), 'gear', null], ['security', __('Безопасность'), 'shield', null], ['password', __('Пароль'), 'key', null]],
+        __('Настройки') => [['doc:config', __('Настройки сайта'), 'gear', null], ['list:branch', __('Филиалы'), 'pin', $c['branch'] ?? null], ['security', __('Безопасность'), 'shield', null], ['password', __('Пароль'), 'key', null]],
     ];
     $links = '';
     foreach ($groups as $group => $items) {
@@ -246,6 +247,15 @@ function form_fields(array $fields, array $data, array $errors = []): string
                 $type = $f['type'] === 'date' ? 'date' : 'text';
                 $extra = $f['type'] === 'number' ? ' inputmode="decimal" class="short"' : '';
                 $in = '<label class="lbl" for="' . $id . '">' . $label . '</label><input id="' . $id . '" type="' . $type . '" name="' . e($name) . '" value="' . e(is_scalar($v) ? $v : '') . '"' . $extra . '>';
+                break;
+            case 'url':
+                $in = '<label class="lbl" for="' . $id . '">' . $label . '</label><input id="' . $id . '" type="text" inputmode="url" autocomplete="off" spellcheck="false" name="' . e($name) . '" value="' . e(is_scalar($v) ? $v : '') . '" placeholder="https://">';
+                break;
+            case 'coords':
+                // место на карте: поле с координатами и карта под ним — нажатие ставит метку и записывает координаты в поле (assets/js/admin.js)
+                $in = '<label class="lbl" for="' . $id . '">' . $label . '</label><input id="' . $id . '" type="text" class="coords" name="' . e($name) . '" value="' . e(is_scalar($v) ? $v : '') . '" placeholder="40.377195, 49.853989" autocomplete="off" spellcheck="false">'
+                    . '<div class="map-pick" data-map-pick="' . $id . '" data-map-lib="' . e(base_path() . 'assets/vendor/leaflet/') . '" data-map-center="' . e(MAP_CENTER) . '"'
+                    . ' data-t-load="' . e(__('Карта не загрузилась. Координаты можно вставить в поле выше.')) . '" data-t-in="' . e(__('Приблизить')) . '" data-t-out="' . e(__('Отдалить')) . '" role="application" aria-label="' . e(__('Карта: нажмите, чтобы поставить метку')) . '"></div>';
                 break;
             case 'bool':
                 $in = '<label class="check"><input type="checkbox" name="' . e($name) . '" value="1"' . ($v ? ' checked' : '') . '> <span>' . $label . '</span></label>';
@@ -365,6 +375,17 @@ function form_parse(array $fields, array $data, array $post, array &$errors): ar
                 break;
             case 'bool':
                 dset($data, $k, !empty($raw));
+                break;
+            case 'url':
+                $v = $clean($raw, 600);
+                if ($v !== '' && !preg_match('~^https?://[^\s<>"\']+$~i', $v)) $errors[$k] = __('Ссылка должна начинаться с https://');
+                if ($v === '') dunset($data, $k); else dset($data, $k, $v);
+                break;
+            case 'coords':
+                $v = $clean($raw, 80);
+                $c = $v !== '' ? parse_coords($v) : null;
+                if ($v !== '' && !$c) $errors[$k] = __('Координаты — два числа через запятую, широта и долгота: 40.377195, 49.853989.');
+                if ($v === '') dunset($data, $k); else dset($data, $k, $c ? $c[0] . ', ' . $c[1] : $v);
                 break;
             case 'select':
                 $v = $clean($raw, 120);

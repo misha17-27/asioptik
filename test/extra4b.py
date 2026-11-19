@@ -1,6 +1,6 @@
 import asyncio, sys
 sys.path.insert(0, __import__('os').path.dirname(__import__('os').path.abspath(__file__)))
-from run import setup, BASE, ROOT
+from run import setup, BASE, ROOT, pick_branch
 from playwright.async_api import async_playwright
 F = f'{BASE}/dist/optika-4-lupa.html'
 async def main():
@@ -17,7 +17,7 @@ async def main():
         await pg.locator('#productsGrid [data-pid="f-verona"] [data-add]').click(); await pg.wait_for_timeout(300)
         await pg.locator('.site-header [data-open-cart]').focus(); await pg.keyboard.press('Enter'); await pg.wait_for_timeout(400)
         await pg.locator('#cartDrawer [data-checkout]').click(); await pg.wait_for_timeout(400)
-        await pg.fill('#coName', 'Aysel'); await pg.fill('#coPhone', '501234567')
+        await pg.fill('#coName', 'Aysel'); await pick_branch(pg); await pg.fill('#coPhone', '501234567')
         await pg.locator('#coPhone').blur(); print('phone formatted:', await pg.input_value('#coPhone'))
         await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(500)
         print('success open:', await pg.evaluate("document.getElementById('successModal').classList.contains('is-open')"), '| cart count:', await pg.inner_text('.hdr-right .js-cart-count'))

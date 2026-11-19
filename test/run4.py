@@ -1,6 +1,6 @@
 import asyncio, sys, urllib.parse
 sys.path.insert(0, __import__('os').path.dirname(__import__('os').path.abspath(__file__)))
-from run import setup, BASE, ROOT, decode
+from run import setup, BASE, ROOT, decode, pick_branch
 from playwright.async_api import async_playwright
 F = 'optika-4-lupa.html'
 SH = f'{ROOT}/shots'
@@ -66,7 +66,7 @@ async def main(mode):
             await pg.locator('.site-header [data-open-cart]').click(); await pg.wait_for_timeout(400)
             await pg.locator('#cartDrawer [data-checkout]').click(); await pg.wait_for_timeout(500)
             print('checkout title RU:', await pg.inner_text('#coTitle'), '| error text now:', await pg.evaluate("document.querySelector('#checkoutForm .field-error[data-err-key]')?.textContent"))
-            await pg.fill('#coName', 'Leyla'); await pg.fill('#coPhone', '+994 050 123 45 67')
+            await pg.fill('#coName', 'Leyla'); await pick_branch(pg); await pg.fill('#coPhone', '+994 050 123 45 67')
             await pg.locator('#coPhone').blur()
             await pg.locator('#checkoutForm input[name=delivery][value=courier]').check()
             await pg.fill('#coAddress', 'Nizami küç. 10, mənzil 5')

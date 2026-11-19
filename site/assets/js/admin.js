@@ -72,6 +72,65 @@
     });
   }
 
+  /* Место филиала на карте: под полем с координатами стоит карта. Нажатие ставит метку и записывает координаты
+     в поле, метку можно перетащить; координаты, вставленные в поле, двигают метку, пустое поле её убирает.
+     Карта (библиотека Leaflet из assets/vendor, картинки OpenStreetMap) загружается, только когда такое поле есть. */
+  var pick = document.querySelector('[data-map-pick]');
+  if (pick) {
+    var cin = document.getElementById(pick.getAttribute('data-map-pick')), lib = pick.getAttribute('data-map-lib');
+    var coords = function (v) {
+      var m = /^\s*(-?\d{1,2}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/.exec(v || '');
+      if (!m) return null;
+      return Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180 ? [+m[1], +m[2]] : null;
+    };
+    var mapOff = function () { pick.classList.add('is-off'); pick.textContent = pick.getAttribute('data-t-load'); };
+    var css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = lib + 'leaflet.css?v=1.9.4';
+    document.head.appendChild(css);
+    var js = document.createElement('script');
+    js.src = lib + 'leaflet.js?v=1.9.4';
+    js.onerror = mapOff;
+    js.onload = function () {
+      var L = window.L;
+      if (!L || !cin) { mapOff(); return; }
+      var at = coords(cin.value);
+      var map = L.map(pick, { scrollWheelZoom: false, zoomControl: false }).setView(at || coords(pick.getAttribute('data-map-center')) || [40.3777, 49.892], at ? 16 : 12);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, referrerPolicy: 'strict-origin-when-cross-origin',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+      }).addTo(map);
+      map.attributionControl.setPrefix(false);
+      L.control.zoom({ zoomInTitle: pick.getAttribute('data-t-in'), zoomOutTitle: pick.getAttribute('data-t-out') }).addTo(map);
+      var pin = L.divIcon({
+        className: 'map-pin', iconSize: [28, 38], iconAnchor: [14, 37],
+        html: '<svg viewBox="0 0 28 38" aria-hidden="true"><path d="M14 37S27 23.500 27 13.500a13 13 0 0 0-26 0C1 23.500 14 37 14 37z" fill="#C8431E" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13.500" r="4.800" fill="#fff"/></svg>'
+      });
+      var mark = null;
+      var put = function (ll, write) {
+        if (!mark) {
+          mark = L.marker(ll, { icon: pin, draggable: true, keyboard: false }).addTo(map);
+          mark.on('dragend', function () { put(mark.getLatLng(), true); });
+        } else mark.setLatLng(ll);
+        if (write) {
+          var q = mark.getLatLng();
+          cin.value = q.lat.toFixed(6) + ', ' + q.lng.toFixed(6);
+          pick.setAttribute('data-map-at', cin.value);
+        }
+      };
+      if (at) put(at, false);
+      map.on('click', function (e) { put(e.latlng, true); });
+      map.once('click', function () { map.scrollWheelZoom.enable(); });   // колесо мыши двигает карту только после нажатия на неё, иначе мешает листать форму
+      cin.addEventListener('input', function () {
+        var ll = coords(cin.value);
+        if (ll) { put(ll, false); map.setView(ll, Math.max(map.getZoom(), 16)); }
+        else if (!cin.value.trim() && mark) { map.removeLayer(mark); mark = null; }
+      });
+      pick.setAttribute('data-map-ready', '1');
+      window.__mapPick = map;   // для проверок: test/php_branches.py
+    };
+    document.head.appendChild(js);
+  }
+
   /* Фото уменьшается прямо в браузере до 2000 точек по длинной стороне:
      большой снимок с телефона проходит любой хостинг и загружается за секунды. Сервер всё равно проверяет и пересохраняет файл. */
   var MAX_SIDE = 2000, KEEP_UNDER = 1500000;

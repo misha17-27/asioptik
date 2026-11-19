@@ -139,6 +139,16 @@ html[data-lg=ru] .lang[data-lg=en],html[data-lg=en] .lang[data-lg=ru]{display:no
 @media (max-width:700px){
   html[data-lg] .langs{grid-template-columns:1fr;gap:10px}
 }
+/* место филиала на карте: поле с координатами и карта под ним (нажатие ставит метку) */
+input.coords{max-width:320px;font-variant-numeric:tabular-nums}
+.map-pick{position:relative;z-index:0;isolation:isolate;height:340px;margin-top:10px;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;background:#EEF2F9;cursor:crosshair}
+.map-pick.is-off{display:grid;place-items:center;height:auto;padding:18px;color:var(--ink-2);font-size:14px;cursor:default}
+.map-pin{background:none;border:0}
+.map-pin svg{display:block;width:28px;height:38px;filter:drop-shadow(0 2px 3px rgba(20,62,120,.35))}
+.map-pick .leaflet-control-attribution{font-size:11px}
+@media (max-width:700px){
+  .map-pick{height:280px}
+}
 .block{margin:30px 0 14px;font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--hot-d)}
 .block:first-child{margin-top:0}
 .key{margin-left:6px;font-size:11.5px;font-weight:400;letter-spacing:.02em;color:var(--ink-2)}
