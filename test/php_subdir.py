@@ -351,6 +351,16 @@ async def browser():
         check('brand page survives a reload', tail() == PRE + '/brands/asi-sun?lang=ru' and await pg.inner_text('#pgTitle') == 'Asi Sun', tail())
         await pg.locator('#pageView .br-grid .card-title a').first.click(); await pg.wait_for_timeout(400)
         check('brand → product, and the brand line links back', tail().startswith(PRE + '/product/') and await pg.locator('.pp-brand a').get_attribute('href') == PRE + '/brands/asi-sun?lang=ru', tail())
+        # филиалы: карта на «Контактах» берёт библиотеку из папки сайта, метки подписаны названиями филиалов
+        libs = []
+        ctx.on('request', lambda r: libs.append(r.url.replace(ORIGIN, '')) if 'leaflet' in r.url else None)
+        await pg.goto(B + '/contacts?lang=ru'); await pg.wait_for_selector('#pageView [data-branch-map][data-map-ready]', timeout=15000); await pg.wait_for_timeout(400)
+        check('branch map: the library is loaded from the folder of the site', sorted(libs) == [PRE + '/assets/vendor/leaflet/leaflet.css?v=1.9.4', PRE + '/assets/vendor/leaflet/leaflet.js?v=1.9.4'], libs)
+        check('branch map: pins are labelled with the branch names', sorted(await pg.locator('#pageView .mp-label').all_inner_texts()) == ['Asioptik — Гянджлик', 'Asioptik — Центр'], await pg.locator('#pageView .mp-label').all_inner_texts())
+        await pg.locator('#pageView [data-branch-show="genclik"]').click(); await pg.wait_for_timeout(700)
+        check('branch map: a click on a branch shows its name on the map', await pg.locator('#pageView .mp-pop .mp-name').inner_text() == 'Asioptik — Гянджлик')
+        blocked = [e for e in errors if ('Content Security Policy' in e or 'Refused' in e) and '/node_modules/@fontsource/' not in e]   # шрифты в тесте подменены файлами с другого порта
+        check('branch map: nothing is blocked by the page policy', not blocked, blocked[:2])
         # заказ: товар → корзина → оформление
         await pg.goto(B + '/product/f-milan?lang=ru'); await pg.wait_for_timeout(1200)
         await pg.locator('#ppAdd').click(); await pg.wait_for_timeout(300)
@@ -548,7 +558,7 @@ if UPDATE_ZIP:
     time.sleep(3.2)      # PHP перечитывает заменённые файлы не сразу
     s, h, t = req(SUB, 'GET', PRE + '/')
     check('site opens after the update', s == 200 and csp(h) == [CSP['site']] and page_const(t, 'CONFIG')['basePath'] == PRE + '/' and len(page_const(t, 'PRODUCTS')) > 20, s)
-    for a in ['/assets/js/app.js', '/assets/css/app.css', '/assets/css/admin.css', '/favicon.ico']:
+    for a in ['/assets/js/app.js', '/assets/css/app.css', '/assets/css/admin.css', '/favicon.ico', '/assets/vendor/leaflet/leaflet.js', '/assets/vendor/leaflet/leaflet.css', '/assets/vendor/leaflet/images/marker-icon.png']:
         s, h, t = req(SUB, 'GET', PRE + a); check(f'after the update {a} is served', s == 200 and len(t) > 1000, s)
     s, h, t = req(SUB, 'GET', PRE + '/admin/?p=login'); check('login page opens after the update', s == 200 and 'name="password"' in t and csp(h) == [CSP['admin']], s)
     s, h, t = req(SUB, 'GET', PRE + '/storage/config.php'); check('settings file is still closed', s == 403, s)
