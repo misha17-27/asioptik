@@ -2,12 +2,12 @@
 const THEME = (function () {
   const i18n = {
     az: {
-      'meta.title': '{shop} — eynək, linza və eynək təmiri',
-      'meta.desc': 'Çərçivələr, günəş eynəkləri, kontakt linzaları və reseptlə eynək linzaları. Eynək təmiri. Saytda sifariş, WhatsApp-da təsdiq.',
+      'meta.title': 'Eynək satışı Bakıda — eynək sifarişi, linzalar, təmir | {shop}',
+      'meta.desc': 'Bakıda eynək satışı və eynək sifarişi — {shop} optika: çərçivələr, günəş eynəkləri (açki), kontakt linzaları, reseptlə linzalar və eynək təmiri.',
       skip: 'Kataloqa keçin', 'nav.contacts': 'Linzalar', 'nav.eye': 'Görmə yoxlaması',
       'nav.repair': 'Təmir', 'nav.contact': 'Əlaqə', 'nav.menu': 'Menyu', 'cart.label': 'Səbət',
       'hero.title': 'Hər detalı görənlər üçün eynək, linza və təmir',
-      'hero.lead': 'Reseptə uyğun çərçivə və linza seçirik, kontakt linzaları satırıq və eynəkləri öz emalatxanamızda təmir edirik. Sifarişi saytda rəsmiləşdirirsiniz, o isə birbaşa WhatsApp-ımıza gəlir.',
+      'hero.lead': 'Bakıda eynək satışı və eynək sifarişi: reseptə uyğun çərçivə və linza seçirik, kontakt linzaları satırıq və eynəkləri (açki) öz emalatxanamızda təmir edirik. Sifarişi saytda rəsmiləşdirirsiniz, o isə birbaşa WhatsApp-ımıza gəlir.',
       'hero.cta1': 'Çərçivə seçin', 'hero.cta2': 'Təmirə yazılın',
       'hero.hintMouse': 'Linzanı kiçik şriftin üzərinə gətirin', 'hero.hintTouch': 'Linzanı sürüşdürün',
       'hero.fine': 'Oxumağa dəyən kiçik şrift: vintləri və burun yastıqcıqlarını sizin yanınızda 15 dəqiqəyə dəyişirik, çərçivənizə yeni linzaları ən tezi bir günə taxırıq, {freeFrom}-dan başlayan sifarişlərdə isə şəhərdaxili çatdırılma pulsuzdur.',
@@ -42,12 +42,12 @@ const THEME = (function () {
       'brs.empty': 'Bu brendin məhsulları hazırda kataloqda yoxdur.',
       'brs.none': 'Brendlər tezliklə əlavə olunacaq. Hələlik bütün məhsullara kataloqda baxa bilərsiniz.',
       'brs.all': 'Bütün brendlər',
-      'brs.seo': '{name}. {text} Bakıda {shop} optika salonu: saytda sifariş, WhatsApp-da təsdiq.',
+      'brs.seo': '{name}. {text} Bakıda eynək satışı — {shop} optika: saytda sifariş, WhatsApp-da təsdiq.', 'brs.tSeo': '{name} — eynəklər, Bakı | {shop}',
       'ct.seo': '{lead} Ünvan: {address}', 'ct.seoMany': '{lead} Ünvanlar: {address}',
       // описания для поисковиков: раздел каталога, страница «для кого» и раздел внутри неё
-      'cseo.cat': '{name} — Bakıda {shop} optika salonunda. Qiymətlər və şəkillər kataloqda, saytda sifariş, WhatsApp-da təsdiq.',
-      'cseo.aud': '{text} Bakıda {shop} optika salonu: saytda sifariş, WhatsApp-da təsdiq.',
-      'cseo.both': '{name}, «{aud}» bölməsi. {text} Bakıda {shop} optika salonu.',
+      'cseo.cat': '{name} — Bakıda satış və sifariş. {shop} optika: eynək satışı, qiymətlər və şəkillər kataloqda. Saytda sifariş, WhatsApp-da təsdiq.',
+      'cseo.aud': '{text} Bakıda eynək satışı və sifarişi — {shop} optika: saytda sifariş, WhatsApp-da təsdiq.',
+      'cseo.both': '{name}, «{aud}» bölməsi. {text} Eynək satışı Bakıda — {shop} optika.', 'cseo.all': 'Eynək kataloqu: çərçivələr, günəş eynəkləri, kontakt linzaları və reseptlə linzalar. Bakıda eynək satışı və eynək sifarişi — {shop} optika.', 'cseo.tAll': '{title} — eynək satışı və sifarişi, Bakı | {shop}', 'cseo.tCat': '{name} — Bakıda satış və sifariş | {shop}', 'cseo.tAud': '{name} — eynək satışı, Bakı | {shop}', 'cseo.tBoth': '{name} — {aud} | {shop}, Bakı',
       'cats.all': 'Bütün kataloq', 'cat.products': 'Məhsullar',
       'ab.canTitle': 'Nə ilə kömək edə bilərik', 'ab.ctaTitle': 'Salona gəlin və ya bizə yazın', 'ab.ctaText': 'Suallara WhatsApp-da cavab veririk.', 'ab.contacts': 'Ünvan və iş saatları',
       'bl.title': 'Bloq', 'bl.lead': 'Qısa və konkret: resepti necə oxumaq, eynəyi necə seçmək və ona necə qulluq etmək.',
@@ -65,12 +65,12 @@ const THEME = (function () {
       footer: 'Optika salonu və eynək təmiri emalatxanası.',
     },
     ru: {
-      'meta.title': '{shop} — очки, линзы и ремонт очков',
-      'meta.desc': 'Оправы, солнцезащитные очки, контактные линзы и линзы для очков по рецепту. Ремонт очков. Заказ на сайте, подтверждение в WhatsApp.',
+      'meta.title': 'Продажа очков в Баку — заказ очков, линзы, ремонт | {shop}',
+      'meta.desc': 'Продажа и заказ очков в Баку — оптика {shop}: оправы, солнцезащитные очки, контактные линзы, линзы по рецепту и ремонт очков. Заказ на сайте и в WhatsApp.',
       skip: 'Перейти к каталогу', 'nav.contacts': 'Линзы', 'nav.eye': 'Проверка зрения',
       'nav.repair': 'Ремонт', 'nav.contact': 'Контакты', 'nav.menu': 'Меню', 'cart.label': 'Корзина',
       'hero.title': 'Очки, линзы и ремонт для тех, кто замечает детали',
-      'hero.lead': 'Подбираем оправы и линзы по рецепту, продаём контактные линзы и чиним очки в своей мастерской. Заказ оформляется на сайте и приходит нам в WhatsApp.',
+      'hero.lead': 'Продажа и заказ очков в Баку: подбираем оправы и линзы по рецепту, продаём контактные линзы и чиним очки в своей мастерской. Заказ оформляется на сайте и приходит нам в WhatsApp.',
       'hero.cta1': 'Выбрать оправу', 'hero.cta2': 'Записаться в мастерскую',
       'hero.hintMouse': 'Наведите линзу на мелкий шрифт', 'hero.hintTouch': 'Перетащите линзу',
       'hero.fine': 'Мелкий шрифт, который стоит прочитать: винты и носоупоры меняем при вас за 15 минут, новые линзы в вашу оправу ставим от одного дня, а доставка по городу бесплатна при заказе от {freeFrom}.',
@@ -104,11 +104,11 @@ const THEME = (function () {
       'brs.empty': 'Товаров этого бренда сейчас нет в каталоге.',
       'brs.none': 'Бренды скоро появятся. Пока все товары можно посмотреть в каталоге.',
       'brs.all': 'Все бренды',
-      'brs.seo': '{name}. {text} Салон оптики {shop} в Баку: заказ на сайте, подтверждение в WhatsApp.',
+      'brs.seo': '{name}. {text} Продажа очков в Баку — оптика {shop}: заказ на сайте, подтверждение в WhatsApp.', 'brs.tSeo': '{name} — очки в Баку | {shop}',
       'ct.seo': '{lead} Адрес: {address}', 'ct.seoMany': '{lead} Адреса: {address}',
-      'cseo.cat': '{name} в салоне оптики {shop} в Баку. Цены и фото в каталоге, заказ на сайте, подтверждение в WhatsApp.',
-      'cseo.aud': '{text} Салон оптики {shop} в Баку: заказ на сайте, подтверждение в WhatsApp.',
-      'cseo.both': '{name}, раздел «{aud}». {text} Салон оптики {shop} в Баку.',
+      'cseo.cat': '{name} — купить в Баку. Оптика {shop}: продажа очков, цены и фото в каталоге. Заказ на сайте, подтверждение в WhatsApp.',
+      'cseo.aud': '{text} Продажа и заказ очков в Баку — оптика {shop}: заказ на сайте, подтверждение в WhatsApp.',
+      'cseo.both': '{name}, раздел «{aud}». {text} Продажа очков в Баку — оптика {shop}.', 'cseo.all': 'Каталог очков: оправы, солнцезащитные очки, контактные линзы и линзы по рецепту. Продажа и заказ очков в Баку — оптика {shop}.', 'cseo.tAll': '{title} — продажа и заказ очков в Баку | {shop}', 'cseo.tCat': '{name} — купить в Баку | {shop}', 'cseo.tAud': '{name} — очки в Баку | {shop}', 'cseo.tBoth': '{name} — {aud} | {shop}, Баку',
       'cats.all': 'Весь каталог', 'cat.products': 'Товары',
       'ab.canTitle': 'Чем можем помочь', 'ab.ctaTitle': 'Приходите в салон или напишите нам', 'ab.ctaText': 'На вопросы отвечаем в WhatsApp.', 'ab.contacts': 'Адрес и часы работы',
       'bl.title': 'Блог', 'bl.lead': 'Коротко и по делу: как читать рецепт, как выбрать очки и как за ними ухаживать.',
@@ -126,12 +126,12 @@ const THEME = (function () {
       footer: 'Салон оптики и мастерская по ремонту очков.',
     },
     en: {
-      'meta.title': '{shop} — glasses, lenses and repairs',
-      'meta.desc': 'Frames, sunglasses, contact lenses and prescription lenses. Glasses repairs. Order online, confirm on WhatsApp.',
+      'meta.title': 'Glasses for sale in Baku — order glasses, lenses, repairs | {shop}',
+      'meta.desc': 'Glasses for sale and to order in Baku — {shop} optician: frames, sunglasses, contact lenses, prescription lenses and repairs. Order online or on WhatsApp.',
       skip: 'Skip to catalog', 'nav.contacts': 'Lenses', 'nav.eye': 'Eye test',
       'nav.repair': 'Repairs', 'nav.contact': 'Contacts', 'nav.menu': 'Menu', 'cart.label': 'Cart',
       'hero.title': 'Glasses, lenses and repairs for people who notice details',
-      'hero.lead': 'We fit frames and prescription lenses, sell contact lenses and repair glasses in our own workshop. Place your order on the site and it comes straight to our WhatsApp.',
+      'hero.lead': 'Glasses for sale and to order in Baku: we fit frames and prescription lenses, sell contact lenses and repair glasses in our own workshop. Place your order on the site and it comes straight to our WhatsApp.',
       'hero.cta1': 'Choose frames', 'hero.cta2': 'Book a repair',
       'hero.hintMouse': 'Move the lens over the small print', 'hero.hintTouch': 'Drag the lens',
       'hero.fine': 'Small print worth reading: we replace screws and nose pads while you wait in 15 minutes, fit new lenses into your frame in as little as a day, and city delivery is free on orders from {freeFrom}.',
@@ -165,11 +165,11 @@ const THEME = (function () {
       'brs.empty': 'No products of this brand in the catalog right now.',
       'brs.none': 'Brands are coming soon. Meanwhile, every product is in the catalog.',
       'brs.all': 'All brands',
-      'brs.seo': '{name}. {text} {shop} optician in Baku: order online, confirm on WhatsApp.',
+      'brs.seo': '{name}. {text} Glasses for sale in Baku — {shop} optician: order online, confirm on WhatsApp.', 'brs.tSeo': '{name} — glasses in Baku | {shop}',
       'ct.seo': '{lead} Address: {address}', 'ct.seoMany': '{lead} Addresses: {address}',
-      'cseo.cat': '{name} at the {shop} optician in Baku. Prices and photos in the catalog; order online, confirm on WhatsApp.',
-      'cseo.aud': '{text} {shop} optician in Baku: order online, confirm on WhatsApp.',
-      'cseo.both': '{name}, “{aud}” section. {text} {shop} optician in Baku.',
+      'cseo.cat': '{name} — buy in Baku. {shop} optician: prices and photos in the catalog. Order online, confirm on WhatsApp.',
+      'cseo.aud': '{text} Glasses for sale and to order in Baku — {shop} optician: order online, confirm on WhatsApp.',
+      'cseo.both': '{name}, “{aud}” section. {text} Glasses for sale in Baku — {shop} optician.', 'cseo.all': 'Glasses catalog: frames, sunglasses, contact lenses and prescription lenses. Glasses for sale and to order in Baku — {shop} optician.', 'cseo.tAll': '{title} — glasses for sale in Baku | {shop}', 'cseo.tCat': '{name} — buy in Baku | {shop}', 'cseo.tAud': '{name} — glasses in Baku | {shop}', 'cseo.tBoth': '{name} — {aud} | {shop}, Baku',
       'cats.all': 'Full catalog', 'cat.products': 'Products',
       'ab.canTitle': 'How we can help', 'ab.ctaTitle': 'Visit the shop or write to us', 'ab.ctaText': 'We answer questions on WhatsApp.', 'ab.contacts': 'Address and opening hours',
       'bl.title': 'Blog', 'bl.lead': 'Short and practical: how to read a prescription, choose glasses and look after them.',
@@ -799,7 +799,7 @@ const THEME = (function () {
       'co.summary': 'Sifarişiniz', 'co.items': 'Məhsullar', 'co.deliveryRow': 'Çatdırılma', 'co.total': 'Cəmi',
       'co.submit': 'Sifarişi WhatsApp-a göndərin', 'co.note': 'Sifarişin hazır mətni ilə WhatsApp açılacaq. Orada «Göndər» düyməsini basın, sifariş bizə çatacaq.',
       'dn.free': 'Şəhər daxilində pulsuz', 'dn.price': 'Şəhər daxilində {price}', 'dn.priceFree': 'Şəhər daxilində {price}. {lim}-dan pulsuz',
-      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'seo.product': '{name}. {sub}. {cat} — Bakıda {shop} optika salonunda. Saytda sifariş, WhatsApp-da təsdiq.', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
+      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'seo.product': '{name} — {cat}. {sub}. Bakıda eynək satışı və sifarişi: {shop} optika. Saytda sifariş, WhatsApp-da təsdiq.', 'seo.tProduct': '{name} — {cat} | {shop}, Bakı', 'seo.tPage': '{title} | {shop} optika, Bakı', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
       'e.svc': 'Ən azı bir xidmət seçin', 'e.pickupAddr': 'Eynəyin götürüləcəyi ünvanı yazın',
       // филиалы: список салонов, карта, выбор салона в заказе и в заявке на ремонт
       'loc.list': 'Salonlarımız', 'loc.route': 'Marşrut', 'loc.show': 'Xəritədə göstər', 'co.branch': 'Sifarişi hansı salondan götürəcəksiniz',
@@ -864,7 +864,7 @@ const THEME = (function () {
       'co.summary': 'Ваш заказ', 'co.items': 'Товары', 'co.deliveryRow': 'Доставка', 'co.total': 'Итого',
       'co.submit': 'Отправить заказ в WhatsApp', 'co.note': 'Откроется WhatsApp с готовым текстом заказа. Нажмите в нём «Отправить», и заказ придёт к нам.',
       'dn.free': 'По городу, бесплатно', 'dn.price': 'По городу, {price}', 'dn.priceFree': 'По городу, {price}. Бесплатно от {lim}',
-      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'seo.product': '{name}. {sub}. {cat} в салоне оптики {shop} в Баку. Заказ на сайте, подтверждение в WhatsApp.', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
+      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'seo.product': '{name} — {cat}. {sub}. Продажа и заказ очков в Баку: оптика {shop}. Заказ на сайте, подтверждение в WhatsApp.', 'seo.tProduct': '{name} — {cat} | {shop}, Баку', 'seo.tPage': '{title} | Оптика {shop}, Баку', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
       'e.svc': 'Выберите хотя бы одну услугу', 'e.pickupAddr': 'Укажите адрес, откуда забрать очки',
       'loc.list': 'Наши салоны', 'loc.route': 'Маршрут', 'loc.show': 'Показать на карте', 'co.branch': 'В каком салоне заберёте заказ',
       'rp.branch': 'В какой салон принесёте очки', 'e.branch': 'Выберите салон', 'm.branch': 'Салон: {v}', 'loc.zoomIn': 'Приблизить', 'loc.zoomOut': 'Отдалить',
@@ -928,7 +928,7 @@ const THEME = (function () {
       'co.summary': 'Your order', 'co.items': 'Items', 'co.deliveryRow': 'Delivery', 'co.total': 'Total',
       'co.submit': 'Send order via WhatsApp', 'co.note': 'WhatsApp will open with your order already written. Press Send there and the order reaches us.',
       'dn.free': 'Within the city, free', 'dn.price': 'Within the city, {price}', 'dn.priceFree': 'Within the city, {price}. Free from {lim}',
-      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'seo.product': '{name}. {sub}. {cat} at the {shop} optician in Baku. Order online, confirm on WhatsApp.', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
+      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'seo.product': '{name} — {cat}. {sub}. Glasses for sale and to order in Baku: {shop} optician. Order online, confirm on WhatsApp.', 'seo.tProduct': '{name} — {cat} | {shop}, Baku', 'seo.tPage': '{title} | {shop} optician, Baku', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
       'e.svc': 'Choose at least one service', 'e.pickupAddr': 'Enter the address to collect your glasses from',
       'loc.list': 'Our shops', 'loc.route': 'Directions', 'loc.show': 'Show on the map', 'co.branch': 'Which shop will you collect from',
       'rp.branch': 'Which shop will you bring them to', 'e.branch': 'Choose a shop', 'm.branch': 'Shop: {v}', 'loc.zoomIn': 'Zoom in', 'loc.zoomOut': 'Zoom out',
@@ -2085,6 +2085,13 @@ const THEME = (function () {
     if (sp > 100) part.length = sp;
     return part.join('').replace(/[ ,;:.!?—–-]+$/, '') + '…';
   }
+  /* Заголовок страницы по шаблону из надписей сайта (их можно менять в админ-панели). Если с подставленными словами он
+     выходит длиннее SEO_TITLE_MAX, берётся короткий вид «название — салон». Так же считает сервер (seo_title в site.php). */
+  const SEO_TITLE_MAX = 70;
+  function seoTitle(key, vars, main) {
+    const s = seoClean(t(key, vars));
+    return s && s !== key && Array.from(s).length <= SEO_TITLE_MAX ? s : main + ' — ' + CONFIG.shopName;
+  }
   function pageMeta() {
     const p = state.page ? byId[state.page] : null, v = !p && state.view && state.viewInfo && state.viewInfo.title ? state.viewInfo : null;
     const own = o => (o && typeof o === 'object' && typeof o[lang] === 'string' ? o[lang].trim() : '');
@@ -2094,27 +2101,29 @@ const THEME = (function () {
     let title = t('meta.title'), desc = t('meta.desc'), page = 'home', item = null;
     if (p) {
       item = p;
-      title = L(p.name) + ' — ' + shop;
+      title = catName(p.cat) ? seoTitle('seo.tProduct', { name: L(p.name), cat: catName(p.cat) }, L(p.name)) : L(p.name) + ' — ' + shop;
       desc = t('seo.product', { name: L(p.name), sub: L(p.sub), cat: catName(p.cat) });
     } else if (v) {
       page = state.view;
-      title = v.title + ' — ' + shop;
+      title = seoTitle('seo.tPage', { title: v.title }, v.title);
       desc = v.desc || '';
       if (state.view === 'catalog') {
         const a = state.aud && audById[state.aud] ? audById[state.aud] : null, c = state.cat !== 'all' && catById[state.cat] ? catById[state.cat] : null;
         const an = a ? L(a.title) || L(a.name) : '';
         if (a || c) page = '';
         if (c && !a) item = c;
-        title = (c ? L(c.name) + ' — ' : '') + (a ? an : t('cat.title')) + ' — ' + shop;
+        title = a && c ? seoTitle('cseo.tBoth', { name: L(c.name), aud: an }, L(c.name) + ' — ' + an)
+          : c ? seoTitle('cseo.tCat', { name: L(c.name) }, L(c.name) + ' — ' + t('cat.title'))
+          : a ? seoTitle('cseo.tAud', { name: an }, an) : seoTitle('cseo.tAll', { title: t('cat.title') }, t('cat.title'));
         desc = a && c ? t('cseo.both', { name: L(c.name), aud: an, text: seoSentence(L(a.text)) })
           : a ? t('cseo.aud', { name: an, text: seoSentence(L(a.text)) })
-          : c ? t('cseo.cat', { name: L(c.name) }) : t('cat.lead');
+          : c ? t('cseo.cat', { name: L(c.name) }) : t('cseo.all');
       } else if (state.post && state.view === 'blog') {
         const x = typeof POSTS !== 'undefined' ? POSTS.find(y => y.id === state.post) : null;
-        if (x) { page = ''; item = x; title = L(x.title) + ' — ' + shop; desc = L(x.lead) || t('bl.lead'); }
+        if (x) { page = ''; item = x; title = seoTitle('seo.tPage', { title: L(x.title) }, L(x.title)); desc = L(x.lead) || t('bl.lead'); }
       } else if (state.post && state.view === 'brands') {
         const b = brandById[state.post];
-        if (b) { page = ''; item = b; title = b.name + ' — ' + shop; desc = t('brs.seo', { name: b.name, text: seoSentence(L(b.text)) }); }
+        if (b) { page = ''; item = b; title = seoTitle('brs.tSeo', { name: b.name }, b.name); desc = t('brs.seo', { name: b.name, text: seoSentence(L(b.text)) }); }
       } else if (state.view === 'contacts') {
         // в описании страницы контактов, кроме её текста, стоят адреса филиалов: один — «Адрес: …», несколько — «Адреса: …; …»
         const addrs = BRANCH_LIST.map(b => String(L(b.address) || '').replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, '')).filter(Boolean), addr = seoSentence(addrs.join('; '));
@@ -2152,7 +2161,14 @@ const THEME = (function () {
       put('link[rel="canonical"]', 'href', url);
       put('meta[property="og:url"]', 'content', url);
       // адреса этой же страницы на других языках
-      $$('link[rel="alternate"][hreflang]').forEach(el => { if (LANGS.indexOf(el.hreflang) !== -1) el.setAttribute('href', urlIn(el.hreflang)); });
+      $$('link[rel="alternate"][hreflang]').forEach(el => {
+        if (LANGS.indexOf(el.hreflang) !== -1) el.setAttribute('href', urlIn(el.hreflang));
+        else if (el.hreflang === 'x-default') el.setAttribute('href', urlIn(LANGS[0]));
+      });
+      // Разметка для поисковиков (JSON-LD) описывает страницу, которую отдал сервер; после перехода по сайту она уже о другой
+      // странице, поэтому убирается. Поисковик каждую страницу запрашивает у сервера отдельно и получает свою разметку.
+      if (setMeta.url && setMeta.url !== url) $$('script[data-ld]').forEach(el => el.remove());
+      setMeta.url = url;
     }
     put('meta[property="og:title"]', 'content', known ? title : '');
     put('meta[property="og:description"]', 'content', known ? desc : '');

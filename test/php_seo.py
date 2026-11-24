@@ -260,7 +260,7 @@ async def browser_checks(addrs, rows, P, BRANDS):
         s, h, t = get('/ru/brands'); check('… other languages keep the site text', meta(t)['title'] == rows[('/brands', 'ru')]['title'], meta(t)['title'])
         s, h, t = get('/ru/catalog'); m1 = meta(t)
         s, h, t = get('/ru/catalog?cat=frames'); m2 = meta(t)
-        check('changed catalog name is in the server title', m1['title'] == 'Наш каталог — Asioptik' and m2['title'] == 'Оправы — Наш каталог — Asioptik', (m1['title'], m2['title']))
+        check('changed catalog name is in the server title', m1['title'] == 'Наш каталог — продажа и заказ очков в Баку | Asioptik' and m2['title'] == 'Оправы — купить в Баку | Asioptik', (m1['title'], m2['title']))
         for path, m in (('/brands', None), ('/ru/catalog', m1), ('/ru/catalog?cat=frames', m2)):
             s, h, t = get(path); m = m or meta(t)
             await forget(); await pg.goto(B + path); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
@@ -281,7 +281,7 @@ async def browser_checks(addrs, rows, P, BRANDS):
         await pg.locator('.actions .btn').first.click(); await pg.wait_for_load_state()
         s, h, t = get('/brands/' + first['id']); m = meta(t)
         check('brand: own title', m['title'] == 'Asi Classic çərçivələri — Bakıda Asioptik', m['title'])
-        check('brand: description follows the new text (a full stop is added)', m['desc'] == 'Asi Classic. Yeni təsvir: hər gün üçün rahat çərçivələr. Bakıda Asioptik optika salonu: saytda sifariş, WhatsApp-da təsdiq.', m['desc'])
+        check('brand: description follows the new text (a full stop is added)', m['desc'] == 'Asi Classic. Yeni təsvir: hər gün üçün rahat çərçivələr. Bakıda eynək satışı — Asioptik optika: saytda sifariş, WhatsApp-da təsdiq.', m['desc'])
         await forget(); await pg.goto(B + '/brands/' + first['id']); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
         got = await pg.evaluate(READ)
         check('brand: page agrees with the server', (got['title'], got['desc']) == (m['title'], m['desc']), got)
@@ -311,8 +311,8 @@ async def browser_checks(addrs, rows, P, BRANDS):
         # бренд без товаров: страницы в списке и в карте сайта нет, поисковикам она закрыта
         await pg.goto(B + '/admin/?p=edit&type=brand'); await pg.fill('#f-name', 'Empty Brand'); await pg.locator('.actions .btn').first.click(); await pg.wait_for_load_state()
         s, h, t = get('/ru/brands/empty-brand'); m = meta(t)
-        check('brand without products: page opens, closed to search engines', s == 200 and m['robots'] == 'noindex' and m['title'] == 'Empty Brand — Asioptik', (s, m['robots'], m['title']))
-        check('brand without products: description', m['desc'] == 'Empty Brand. Салон оптики Asioptik в Баку: заказ на сайте, подтверждение в WhatsApp.', m['desc'])
+        check('brand without products: page opens, closed to search engines', s == 200 and m['robots'] == 'noindex' and m['title'] == 'Empty Brand — очки в Баку | Asioptik', (s, m['robots'], m['title']))
+        check('brand without products: description', m['desc'] == 'Empty Brand. Продажа очков в Баку — оптика Asioptik: заказ на сайте, подтверждение в WhatsApp.', m['desc'])
         s, h, t = get('/sitemap.xml')
         check('brand without products: not in the sitemap', 'empty-brand' not in t and '/brands/' + first['id'] in t)
         await pg.goto(B + '/ru/brands/empty-brand'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)

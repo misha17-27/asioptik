@@ -26,6 +26,7 @@ function site_text(string $key, string $lang, array $vars = []): string
    и страница после перехода по сайту должны называться одинаково. Это проверяет test/php_seo.py.
    Свой текст из админ-панели ставится как есть; текст, который сайт собирает сам, укладывается в SEO_MAX знаков. */
 const SEO_MAX = 160;
+const SEO_TITLE_MAX = 70;
 
 /** Две точки подряд и лишние пробелы (остаются, когда в шаблон подставлено пустое значение). */
 function seo_clean(string $s): string
@@ -72,6 +73,12 @@ function seo_auto(string $kind, string $lang, array $data, ?array $item = null, 
     $T = function (string $key, array $vars = []) use ($lang, $shop): string {
         return site_text($key, $lang, $vars + ['shop' => $shop]);
     };
+    // Заголовок — по шаблону из надписей сайта (в нём стоят поисковые слова: «купить в Баку», «eynək satışı»);
+    // если с подставленным названием он выходит длиннее SEO_TITLE_MAX, берётся короткий вид «название — салон»
+    $H = function (string $key, array $vars, string $main) use ($T, $shop): string {
+        $s = seo_clean($T($key, $vars));
+        return $s !== '' && $s !== $key && mb_strlen($s) <= SEO_TITLE_MAX ? $s : $main . ' — ' . $shop;
+    };
     $item = $item ?? [];
     $an = $aud ? (tr($aud['title'] ?? '', $lang) ?: tr($aud['name'] ?? '', $lang)) : '';
     $at = $aud ? seo_sentence(tr($aud['text'] ?? '', $lang)) : '';
@@ -82,26 +89,29 @@ function seo_auto(string $kind, string $lang, array $data, ?array $item = null, 
                 if (($c['id'] ?? '') === ($item['cat'] ?? null)) $cat = tr($c['name'] ?? '', $lang);
             }
             $name = tr($item['name'] ?? '', $lang);
-            return [$name . ' — ' . $shop, seo_clip($T('seo.product', ['name' => $name, 'sub' => tr($item['sub'] ?? '', $lang), 'cat' => $cat]))];
+            $title = $cat !== '' ? $H('seo.tProduct', ['name' => $name, 'cat' => $cat], $name) : $name . ' — ' . $shop;
+            return [$title, seo_clip($T('seo.product', ['name' => $name, 'sub' => tr($item['sub'] ?? '', $lang), 'cat' => $cat]))];
         case 'post':
-            return [tr($item['title'] ?? '', $lang) . ' — ' . $shop, seo_clip(tr($item['lead'] ?? '', $lang)) ?: seo_clip($T('bl.lead'))];
+            $name = tr($item['title'] ?? '', $lang);
+            return [$H('seo.tPage', ['title' => $name], $name), seo_clip(tr($item['lead'] ?? '', $lang)) ?: seo_clip($T('bl.lead'))];
         case 'brand':
             $name = (string) ($item['name'] ?? '');
-            return [$name . ' — ' . $shop, seo_clip($T('brs.seo', ['name' => $name, 'text' => seo_sentence(tr($item['text'] ?? '', $lang))]))];
+            return [$H('brs.tSeo', ['name' => $name], $name), seo_clip($T('brs.seo', ['name' => $name, 'text' => seo_sentence(tr($item['text'] ?? '', $lang))]))];
         case 'category':
             $name = tr($item['name'] ?? '', $lang);
-            if ($aud) return [$name . ' — ' . $an . ' — ' . $shop, seo_clip($T('cseo.both', ['name' => $name, 'aud' => $an, 'text' => $at]))];
-            return [$name . ' — ' . $T('cat.title') . ' — ' . $shop, seo_clip($T('cseo.cat', ['name' => $name]))];
+            if ($aud) return [$H('cseo.tBoth', ['name' => $name, 'aud' => $an], $name . ' — ' . $an), seo_clip($T('cseo.both', ['name' => $name, 'aud' => $an, 'text' => $at]))];
+            return [$H('cseo.tCat', ['name' => $name], $name . ' — ' . $T('cat.title')), seo_clip($T('cseo.cat', ['name' => $name]))];
         case 'catalog':
-            if ($aud) return [$an . ' — ' . $shop, seo_clip($T('cseo.aud', ['name' => $an, 'text' => $at]))];
-            return [$T('cat.title') . ' — ' . $shop, seo_clip($T('cat.lead'))];
+            if ($aud) return [$H('cseo.tAud', ['name' => $an], $an), seo_clip($T('cseo.aud', ['name' => $an, 'text' => $at]))];
+            return [$H('cseo.tAll', ['title' => $T('cat.title')], $T('cat.title')), seo_clip($T('cseo.all'))];
         case 'brands':
-            return [$T('brs.title') . ' — ' . $shop, seo_clip($T('brs.lead'))];
+            return [$H('seo.tPage', ['title' => $T('brs.title')], $T('brs.title')), seo_clip($T('brs.lead'))];
         case 'blog':
-            return [$T('bl.title') . ' — ' . $shop, seo_clip($T('bl.lead'))];
+            return [$H('seo.tPage', ['title' => $T('bl.title')], $T('bl.title')), seo_clip($T('bl.lead'))];
         case 'about':
             $about = is_array($data['ABOUT'] ?? null) ? $data['ABOUT'] : [];
-            return [tr($about['title'] ?? 'About', $lang) . ' — ' . $shop, seo_clip(tr($about['lead'] ?? '', $lang))];
+            $name = tr($about['title'] ?? 'About', $lang);
+            return [$H('seo.tPage', ['title' => $name], $name), seo_clip(tr($about['lead'] ?? '', $lang))];
         case 'contacts':   // в описании, кроме текста страницы, стоят адреса филиалов: один — «Адрес: …», несколько — «Адреса: …; …»
             $addrs = [];
             foreach (is_array($data['BRANCHES'] ?? null) ? $data['BRANCHES'] : [] as $b) {
@@ -109,9 +119,9 @@ function seo_auto(string $kind, string $lang, array $data, ?array $item = null, 
                 if ($a !== '') $addrs[] = $a;
             }
             $addr = seo_sentence(implode('; ', $addrs));
-            return [$T('ct.title') . ' — ' . $shop, seo_clip($addr !== '' ? $T(count($addrs) > 1 ? 'ct.seoMany' : 'ct.seo', ['lead' => seo_sentence($T('ct.lead')), 'address' => $addr]) : $T('ct.lead'))];
+            return [$H('seo.tPage', ['title' => $T('ct.title')], $T('ct.title')), seo_clip($addr !== '' ? $T(count($addrs) > 1 ? 'ct.seoMany' : 'ct.seo', ['lead' => seo_sentence($T('ct.lead')), 'address' => $addr]) : $T('ct.lead'))];
         case 'checkout':
-            return [$T('co.title') . ' — ' . $shop, ''];
+            return [$H('seo.tPage', ['title' => $T('co.title')], $T('co.title')), ''];
     }
     return [$T('meta.title'), seo_clip($T('meta.desc'))];
 }
@@ -121,6 +131,78 @@ function seo_meta(array $auto, $ownTitle, $ownDesc, string $lang, array $data): 
 {
     $desc = own_text($ownDesc, $lang) ?: $auto[1];
     return [own_text($ownTitle, $lang) ?: $auto[0], $desc !== '' ? $desc : seo_auto('home', $lang, $data)[1]];
+}
+
+/** Настоящий ли телефон: не пустой и не заготовка из одних нулей (+994 00 000 00 00). */
+function real_phone(string $p): bool
+{
+    $d = (string) preg_replace('~\D~', '', $p);
+    return strlen($d) >= 9 && !preg_match('~^(994)?0+$~', $d);
+}
+
+/**
+ * Разметка страницы для поисковиков (schema.org, JSON-LD): салоны оптики с адресами и точками на карте, товар с ценой,
+ * статья, «хлебные крошки». Она стоит в самой странице, отданной сервером, — так советует Google. В разметку попадает
+ * только то, что есть на странице: телефон-заготовка, пустой Instagram и товар без цены в неё не пишутся.
+ * $u — адрес страницы на её языке; $crumbs — путь к странице: [[название, адрес], …].
+ */
+function site_ld(string $kind, string $lang, array $data, ?array $item, string $site, callable $u, string $title, string $desc, array $crumbs): string
+{
+    $cfg = is_array($data['CONFIG'] ?? null) ? $data['CONFIG'] : [];
+    $shop = (string) ($cfg['shopName'] ?? 'Asioptik');
+    $abs = function (string $path) use ($site): string {
+        return preg_match('~^https?://~', $path) ? $path : $site . '/' . ltrim($path, '/');
+    };
+    $logo = $abs('assets/img/logo.png');
+    $org = ['@type' => 'Organization', '@id' => $site . '/#org', 'name' => $shop, 'url' => $site . '/', 'logo' => $logo];
+    if (real_phone((string) ($cfg['phone'] ?? ''))) $org['telephone'] = (string) $cfg['phone'];
+    $ig = (string) ($cfg['instagram'] ?? '');
+    if ($ig !== '' && $ig !== 'your_instagram' && preg_match('~^[A-Za-z0-9._]{1,30}$~', $ig)) $org['sameAs'] = ['https://www.instagram.com/' . $ig];
+    $graph = [];
+    if ($kind === 'home' || $kind === 'contacts') {
+        if ($kind === 'home') $graph[] = ['@type' => 'WebSite', '@id' => $site . '/#site', 'url' => $site . '/', 'name' => $shop, 'inLanguage' => $lang, 'publisher' => ['@id' => $org['@id']]];
+        $graph[] = $org;
+        foreach (is_array($data['BRANCHES'] ?? null) ? $data['BRANCHES'] : [] as $b) {
+            $addr = trim(tr($b['address'] ?? '', $lang));
+            $name = trim(tr($b['name'] ?? '', $lang));
+            if ($addr === '' || $name === '') continue;
+            $x = ['@type' => 'Optician', '@id' => $site . '/contacts#' . rawurlencode((string) ($b['id'] ?? '')), 'name' => $name, 'url' => $u('contacts'), 'image' => $logo,
+                'address' => ['@type' => 'PostalAddress', 'streetAddress' => $addr, 'addressCountry' => 'AZ'], 'parentOrganization' => ['@id' => $org['@id']]];
+            $tel = (string) ($b['phone'] ?? '') !== '' ? (string) $b['phone'] : (string) ($cfg['phone'] ?? '');
+            if (real_phone($tel)) $x['telephone'] = $tel;
+            if (is_numeric($b['lat'] ?? null) && is_numeric($b['lng'] ?? null)) $x['geo'] = ['@type' => 'GeoCoordinates', 'latitude' => (float) $b['lat'], 'longitude' => (float) $b['lng']];
+            if (is_string($b['mapLink'] ?? null) && preg_match('~^https://~', $b['mapLink'])) $x['hasMap'] = $b['mapLink'];
+            $graph[] = $x;
+        }
+    } elseif ($kind === 'product' && $item) {
+        $x = ['@type' => 'Product', 'name' => tr($item['name'] ?? '', $lang), 'description' => $desc, 'sku' => (string) ($item['id'] ?? ''), 'url' => $u('product/' . rawurlencode((string) ($item['id'] ?? '')))];
+        if (is_string($item['img'] ?? null) && $item['img'] !== '') $x['image'] = [$abs($item['img'])];
+        foreach (is_array($data['BRANDS'] ?? null) ? $data['BRANDS'] : [] as $b) {
+            if (($b['id'] ?? '') === ($item['brand'] ?? null) && ($b['name'] ?? '') !== '') $x['brand'] = ['@type' => 'Brand', 'name' => (string) $b['name']];
+        }
+        foreach (is_array($data['CATEGORIES'] ?? null) ? $data['CATEGORIES'] : [] as $c) {
+            if (($c['id'] ?? '') === ($item['cat'] ?? null)) $x['category'] = tr($c['name'] ?? '', $lang);
+        }
+        if (is_numeric($item['price'] ?? null) && (float) $item['price'] > 0) {
+            $x['offers'] = ['@type' => 'Offer', 'url' => $x['url'], 'price' => rtrim(rtrim(number_format((float) $item['price'], 2, '.', ''), '0'), '.'), 'priceCurrency' => 'AZN',
+                'itemCondition' => 'https://schema.org/NewCondition', 'seller' => ['@type' => 'Organization', 'name' => $shop, 'url' => $site . '/']];
+        }
+        $graph[] = $x;
+    } elseif ($kind === 'post' && $item) {
+        $x = ['@type' => 'Article', 'headline' => mb_substr(tr($item['title'] ?? '', $lang), 0, 110), 'description' => $desc, 'inLanguage' => $lang,
+            'mainEntityOfPage' => $u('blog/' . rawurlencode((string) ($item['id'] ?? ''))), 'author' => ['@type' => 'Organization', 'name' => $shop, 'url' => $site . '/'],
+            'publisher' => ['@type' => 'Organization', 'name' => $shop, 'logo' => ['@type' => 'ImageObject', 'url' => $logo]]];
+        if (is_string($item['date'] ?? null) && preg_match('~^\d{4}-\d{2}-\d{2}~', $item['date'])) $x['datePublished'] = substr($item['date'], 0, 10);
+        if (is_string($item['img'] ?? null) && $item['img'] !== '') $x['image'] = [$abs($item['img'])];
+        $graph[] = $x;
+    }
+    if (count($crumbs) > 1) {
+        $list = [];
+        foreach ($crumbs as $i => [$name, $href]) $list[] = ['@type' => 'ListItem', 'position' => $i + 1, 'name' => $name, 'item' => $href];
+        $graph[] = ['@type' => 'BreadcrumbList', 'itemListElement' => $list];
+    }
+    if (!$graph) return '';
+    return '<script type="application/ld+json" data-ld>' . json_encode(['@context' => 'https://schema.org', '@graph' => $graph], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n";
 }
 
 function site_run(): void
@@ -265,6 +347,38 @@ function site_run(): void
     };
     $hreflang = '';
     foreach (LANGS as $l) $hreflang .= '<link rel="alternate" hreflang="' . $l . '" href="' . e($url($l)) . '">' . "\n";
+    // посетителю с другим языком поисковик покажет страницу на основном языке сайта
+    $hreflang .= '<link rel="alternate" hreflang="x-default" href="' . e($url(LANGS[0])) . '">' . "\n";
+    // Картинка для ссылок в мессенджерах и соцсетях: фото товара или статьи, иначе карточка с логотипом салона
+    $shot = $item && in_array($kind, ['product', 'post'], true) && is_string($item['img'] ?? null) && $item['img'] !== '' ? $item['img'] : 'assets/img/og.png';
+    $hreflang .= '<meta property="og:image" content="' . e(preg_match('~^https?://~', $shot) ? $shot : $site . '/' . ltrim($shot, '/')) . '">' . "\n"
+        . '<meta property="og:locale" content="' . ['az' => 'az_AZ', 'ru' => 'ru_RU', 'en' => 'en_US'][$lang] . '">' . "\n"
+        . '<meta name="twitter:card" content="summary_large_image">' . "\n";
+    // Разметка для поисковиков: путь к странице («хлебные крошки») и то, о чём она — салоны, товар или статья
+    $in = function (string $r = '') use ($site, $lang): string {
+        return $site . '/' . implode('/', array_filter([$lang === LANGS[0] ? '' : $lang, $r], 'strlen'));
+    };
+    $ST = function (string $key) use ($lang): string {
+        return site_text($key, $lang);
+    };
+    $crumbs = [[$shop, $in()]];
+    if ($kind === 'product' || $kind === 'category' || $kind === 'catalog') {
+        $crumbs[] = [$ST('cat.title'), $in('catalog')];
+        $c = $kind === 'product' ? $find($data['CATEGORIES'], (string) ($item['cat'] ?? '')) : ($kind === 'category' ? $item : null);
+        if ($c) $crumbs[] = [tr($c['name'] ?? '', $lang), $in('catalog') . '?cat=' . rawurlencode((string) $c['id'])];
+        if ($kind === 'product') $crumbs[] = [tr($item['name'] ?? '', $lang), $in($route)];
+    } elseif ($kind === 'brands' || $kind === 'brand') {
+        $crumbs[] = [$ST('brs.title'), $in('brands')];
+        if ($kind === 'brand') $crumbs[] = [(string) ($item['name'] ?? ''), $in($route)];
+    } elseif ($kind === 'blog' || $kind === 'post') {
+        $crumbs[] = [$ST('bl.title'), $in('blog')];
+        if ($kind === 'post') $crumbs[] = [tr($item['title'] ?? '', $lang), $in($route)];
+    } elseif ($kind === 'contacts') {
+        $crumbs[] = [$ST('ct.title'), $in('contacts')];
+    } elseif ($kind === 'about') {
+        $crumbs[] = [tr((is_array($data['ABOUT'] ?? null) ? $data['ABOUT'] : [])['title'] ?? 'About', $lang), $in('about')];
+    }
+    if (!$noindex) $hreflang .= site_ld($kind, $lang, $data, $item, $site, $in, $title, $desc, $crumbs);
 
     // Данные для страницы: всё из базы плюс то, что зависит от сервера
     $data = site_data_urls($data);
@@ -493,6 +607,7 @@ function site_sitemap(): void
     foreach ($urls as $u) {
         $alt = '';
         foreach (LANGS as $l) $alt .= '<xhtml:link rel="alternate" hreflang="' . $l . '" href="' . e($in($u, $l)) . '"/>';
+        $alt .= '<xhtml:link rel="alternate" hreflang="x-default" href="' . e($in($u, LANGS[0])) . '"/>';
         foreach (LANGS as $l) echo '  <url><loc>' . e($in($u, $l)) . '</loc>' . $alt . '</url>' . "\n";
     }
     echo "</urlset>\n";

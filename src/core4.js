@@ -38,7 +38,7 @@
       'co.summary': 'Sifarişiniz', 'co.items': 'Məhsullar', 'co.deliveryRow': 'Çatdırılma', 'co.total': 'Cəmi',
       'co.submit': 'Sifarişi WhatsApp-a göndərin', 'co.note': 'Sifarişin hazır mətni ilə WhatsApp açılacaq. Orada «Göndər» düyməsini basın, sifariş bizə çatacaq.',
       'dn.free': 'Şəhər daxilində pulsuz', 'dn.price': 'Şəhər daxilində {price}', 'dn.priceFree': 'Şəhər daxilində {price}. {lim}-dan pulsuz',
-      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'seo.product': '{name}. {sub}. {cat} — Bakıda {shop} optika salonunda. Saytda sifariş, WhatsApp-da təsdiq.', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
+      'e.name': 'Adınızı yazın', 'e.phone': 'Telefon nömrəsini tam yazın', 'e.phoneLong': 'Nömrədə artıq rəqəmlər var, yoxlayın', 'seo.product': '{name} — {cat}. {sub}. Bakıda eynək satışı və sifarişi: {shop} optika. Saytda sifariş, WhatsApp-da təsdiq.', 'seo.tProduct': '{name} — {cat} | {shop}, Bakı', 'seo.tPage': '{title} | {shop} optika, Bakı', 'sb.photos': 'Banner şəkilləri', 'sb.photo': 'Şəkil {n}', 'e.address': 'Çatdırılma ünvanını yazın',
       'e.svc': 'Ən azı bir xidmət seçin', 'e.pickupAddr': 'Eynəyin götürüləcəyi ünvanı yazın',
       // филиалы: список салонов, карта, выбор салона в заказе и в заявке на ремонт
       'loc.list': 'Salonlarımız', 'loc.route': 'Marşrut', 'loc.show': 'Xəritədə göstər', 'co.branch': 'Sifarişi hansı salondan götürəcəksiniz',
@@ -103,7 +103,7 @@
       'co.summary': 'Ваш заказ', 'co.items': 'Товары', 'co.deliveryRow': 'Доставка', 'co.total': 'Итого',
       'co.submit': 'Отправить заказ в WhatsApp', 'co.note': 'Откроется WhatsApp с готовым текстом заказа. Нажмите в нём «Отправить», и заказ придёт к нам.',
       'dn.free': 'По городу, бесплатно', 'dn.price': 'По городу, {price}', 'dn.priceFree': 'По городу, {price}. Бесплатно от {lim}',
-      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'seo.product': '{name}. {sub}. {cat} в салоне оптики {shop} в Баку. Заказ на сайте, подтверждение в WhatsApp.', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
+      'e.name': 'Укажите имя', 'e.phone': 'Укажите номер телефона полностью', 'e.phoneLong': 'В номере лишние цифры, проверьте его', 'seo.product': '{name} — {cat}. {sub}. Продажа и заказ очков в Баку: оптика {shop}. Заказ на сайте, подтверждение в WhatsApp.', 'seo.tProduct': '{name} — {cat} | {shop}, Баку', 'seo.tPage': '{title} | Оптика {shop}, Баку', 'sb.photos': 'Фото баннера', 'sb.photo': 'Фото {n}', 'e.address': 'Укажите адрес доставки',
       'e.svc': 'Выберите хотя бы одну услугу', 'e.pickupAddr': 'Укажите адрес, откуда забрать очки',
       'loc.list': 'Наши салоны', 'loc.route': 'Маршрут', 'loc.show': 'Показать на карте', 'co.branch': 'В каком салоне заберёте заказ',
       'rp.branch': 'В какой салон принесёте очки', 'e.branch': 'Выберите салон', 'm.branch': 'Салон: {v}', 'loc.zoomIn': 'Приблизить', 'loc.zoomOut': 'Отдалить',
@@ -167,7 +167,7 @@
       'co.summary': 'Your order', 'co.items': 'Items', 'co.deliveryRow': 'Delivery', 'co.total': 'Total',
       'co.submit': 'Send order via WhatsApp', 'co.note': 'WhatsApp will open with your order already written. Press Send there and the order reaches us.',
       'dn.free': 'Within the city, free', 'dn.price': 'Within the city, {price}', 'dn.priceFree': 'Within the city, {price}. Free from {lim}',
-      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'seo.product': '{name}. {sub}. {cat} at the {shop} optician in Baku. Order online, confirm on WhatsApp.', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
+      'e.name': 'Enter your name', 'e.phone': 'Enter your full phone number', 'e.phoneLong': 'The number has too many digits, please check it', 'seo.product': '{name} — {cat}. {sub}. Glasses for sale and to order in Baku: {shop} optician. Order online, confirm on WhatsApp.', 'seo.tProduct': '{name} — {cat} | {shop}, Baku', 'seo.tPage': '{title} | {shop} optician, Baku', 'sb.photos': 'Banner photos', 'sb.photo': 'Photo {n}', 'e.address': 'Enter the delivery address',
       'e.svc': 'Choose at least one service', 'e.pickupAddr': 'Enter the address to collect your glasses from',
       'loc.list': 'Our shops', 'loc.route': 'Directions', 'loc.show': 'Show on the map', 'co.branch': 'Which shop will you collect from',
       'rp.branch': 'Which shop will you bring them to', 'e.branch': 'Choose a shop', 'm.branch': 'Shop: {v}', 'loc.zoomIn': 'Zoom in', 'loc.zoomOut': 'Zoom out',
@@ -1324,6 +1324,13 @@
     if (sp > 100) part.length = sp;
     return part.join('').replace(/[ ,;:.!?—–-]+$/, '') + '…';
   }
+  /* Заголовок страницы по шаблону из надписей сайта (их можно менять в админ-панели). Если с подставленными словами он
+     выходит длиннее SEO_TITLE_MAX, берётся короткий вид «название — салон». Так же считает сервер (seo_title в site.php). */
+  const SEO_TITLE_MAX = 70;
+  function seoTitle(key, vars, main) {
+    const s = seoClean(t(key, vars));
+    return s && s !== key && Array.from(s).length <= SEO_TITLE_MAX ? s : main + ' — ' + CONFIG.shopName;
+  }
   function pageMeta() {
     const p = state.page ? byId[state.page] : null, v = !p && state.view && state.viewInfo && state.viewInfo.title ? state.viewInfo : null;
     const own = o => (o && typeof o === 'object' && typeof o[lang] === 'string' ? o[lang].trim() : '');
@@ -1333,27 +1340,29 @@
     let title = t('meta.title'), desc = t('meta.desc'), page = 'home', item = null;
     if (p) {
       item = p;
-      title = L(p.name) + ' — ' + shop;
+      title = catName(p.cat) ? seoTitle('seo.tProduct', { name: L(p.name), cat: catName(p.cat) }, L(p.name)) : L(p.name) + ' — ' + shop;
       desc = t('seo.product', { name: L(p.name), sub: L(p.sub), cat: catName(p.cat) });
     } else if (v) {
       page = state.view;
-      title = v.title + ' — ' + shop;
+      title = seoTitle('seo.tPage', { title: v.title }, v.title);
       desc = v.desc || '';
       if (state.view === 'catalog') {
         const a = state.aud && audById[state.aud] ? audById[state.aud] : null, c = state.cat !== 'all' && catById[state.cat] ? catById[state.cat] : null;
         const an = a ? L(a.title) || L(a.name) : '';
         if (a || c) page = '';
         if (c && !a) item = c;
-        title = (c ? L(c.name) + ' — ' : '') + (a ? an : t('cat.title')) + ' — ' + shop;
+        title = a && c ? seoTitle('cseo.tBoth', { name: L(c.name), aud: an }, L(c.name) + ' — ' + an)
+          : c ? seoTitle('cseo.tCat', { name: L(c.name) }, L(c.name) + ' — ' + t('cat.title'))
+          : a ? seoTitle('cseo.tAud', { name: an }, an) : seoTitle('cseo.tAll', { title: t('cat.title') }, t('cat.title'));
         desc = a && c ? t('cseo.both', { name: L(c.name), aud: an, text: seoSentence(L(a.text)) })
           : a ? t('cseo.aud', { name: an, text: seoSentence(L(a.text)) })
-          : c ? t('cseo.cat', { name: L(c.name) }) : t('cat.lead');
+          : c ? t('cseo.cat', { name: L(c.name) }) : t('cseo.all');
       } else if (state.post && state.view === 'blog') {
         const x = typeof POSTS !== 'undefined' ? POSTS.find(y => y.id === state.post) : null;
-        if (x) { page = ''; item = x; title = L(x.title) + ' — ' + shop; desc = L(x.lead) || t('bl.lead'); }
+        if (x) { page = ''; item = x; title = seoTitle('seo.tPage', { title: L(x.title) }, L(x.title)); desc = L(x.lead) || t('bl.lead'); }
       } else if (state.post && state.view === 'brands') {
         const b = brandById[state.post];
-        if (b) { page = ''; item = b; title = b.name + ' — ' + shop; desc = t('brs.seo', { name: b.name, text: seoSentence(L(b.text)) }); }
+        if (b) { page = ''; item = b; title = seoTitle('brs.tSeo', { name: b.name }, b.name); desc = t('brs.seo', { name: b.name, text: seoSentence(L(b.text)) }); }
       } else if (state.view === 'contacts') {
         // в описании страницы контактов, кроме её текста, стоят адреса филиалов: один — «Адрес: …», несколько — «Адреса: …; …»
         const addrs = BRANCH_LIST.map(b => String(L(b.address) || '').replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, '')).filter(Boolean), addr = seoSentence(addrs.join('; '));
@@ -1391,7 +1400,14 @@
       put('link[rel="canonical"]', 'href', url);
       put('meta[property="og:url"]', 'content', url);
       // адреса этой же страницы на других языках
-      $$('link[rel="alternate"][hreflang]').forEach(el => { if (LANGS.indexOf(el.hreflang) !== -1) el.setAttribute('href', urlIn(el.hreflang)); });
+      $$('link[rel="alternate"][hreflang]').forEach(el => {
+        if (LANGS.indexOf(el.hreflang) !== -1) el.setAttribute('href', urlIn(el.hreflang));
+        else if (el.hreflang === 'x-default') el.setAttribute('href', urlIn(LANGS[0]));
+      });
+      // Разметка для поисковиков (JSON-LD) описывает страницу, которую отдал сервер; после перехода по сайту она уже о другой
+      // странице, поэтому убирается. Поисковик каждую страницу запрашивает у сервера отдельно и получает свою разметку.
+      if (setMeta.url && setMeta.url !== url) $$('script[data-ld]').forEach(el => el.remove());
+      setMeta.url = url;
     }
     put('meta[property="og:title"]', 'content', known ? title : '');
     put('meta[property="og:description"]', 'content', known ? desc : '');

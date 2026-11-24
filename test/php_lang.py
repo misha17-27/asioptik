@@ -35,7 +35,7 @@ def get(path, method='GET', body=None, headers=None):
 def meta(t):
     g = lambda pat: html.unescape((re.search(pat, t, re.S) or [None, ''])[1])
     return {'lang': g(r'<html lang="([a-z]+)"'), 'title': g(r'<title>(.*?)</title>'), 'canon': g(r'<link rel="canonical" href="([^"]*)"'), 'og': g(r'<meta property="og:url" content="([^"]*)"'),
-            'alt': {l: html.unescape(u) for l, u in re.findall(r'<link rel="alternate" hreflang="([a-z]+)" href="([^"]*)"', t)}}
+            'alt': {l: html.unescape(u) for l, u in re.findall(r'<link rel="alternate" hreflang="([a-z-]+)" href="([^"]*)"', t)}}
 def const(t, name):
     return json.loads(re.search(r'const ' + name + r' = (\{.*?\}|\[.*?\]);\n', t, re.S).group(1))
 def site_url(path, lang):
@@ -55,7 +55,8 @@ def server():
             u = lp(path, l); s, h, t = get(u); m = meta(t); titles[(path, l)] = m['title']
             check(f'{u}: opens in its language', s == 200 and m['lang'] == l, (s, m['lang']))
             check(f'{u}: address for search engines', m['canon'] == site_url(path, l) and m['og'] == m['canon'], m['canon'])
-            check(f'{u}: the three languages point at each other', m['alt'] == {x: site_url(path, x) for x in LANGS}, m['alt'])
+            # три языка и страница по умолчанию (x-default) — азербайджанская
+            check(f'{u}: the three languages point at each other', m['alt'] == dict({x: site_url(path, x) for x in LANGS}, **{'x-default': site_url(path, 'az')}), m['alt'])
             links = re.findall(r'<a [^>]*href="([^"]*)"[^>]*data-view=', t)
             pre = '/' if l == 'az' else f'/{l}/'
             check(f'{u}: menu links keep the language', len(links) >= 8 and all(x.startswith(pre) for x in links) and (l != 'az' or not any(re.match(r'/(ru|en)/', x) for x in links)), links[:3])
