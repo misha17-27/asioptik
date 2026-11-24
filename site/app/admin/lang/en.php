@@ -524,6 +524,7 @@ return [
     'Цена' => 'Price',
     'Цена, ₼' => 'Price, ₼',
     'Часы работы' => 'Opening hours',
+    'Чат-заявка (кнопка в углу сайта)' => 'Request chat (the button in the corner of the site)',
     'Чем меньше число, тем выше в списке.' => 'The smaller the number, the higher in the list.',
     'Что заказали' => 'What was ordered',
     'Что уже защищено' => 'What is already protected',

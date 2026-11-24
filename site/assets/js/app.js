@@ -809,6 +809,7 @@ const THEME = (function () {
       'ok.repairTitle': 'Müraciəti göndərmək qalıb',
       'ok.repairText': '{id} müraciətinin mətni ilə WhatsApp-ı açdıq. Çatda «Göndər» düyməsini basın, usta təmirin müddəti və qiyməti ilə cavab verəcək.',
       'ok.again': 'WhatsApp-ı yenidən açın', 'ok.back': 'Sayta qayıdın', 'toast.cart': 'Səbəti açın', 'cap.note': 'Robot olmadığınızı təsdiqləyin: müraciətiniz bizdə qeydə alınacaq', 'wa.fab': 'Bizə WhatsApp-da yazın',
+      'chat.open': 'Çatı açın və müraciət buraxın', 'chat.close': 'Çatı bağlayın', 'chat.reset': 'Yenidən başlayın', 'chat.sub': 'Müraciətinizi bir dəqiqəyə qəbul edirik', 'chat.hello': 'Salam! Müraciətinizi bir dəqiqəyə qəbul edirik: bir neçə suala cavab verin, davamını WhatsApp-da edək.', 'chat.qTopic': 'Sizi nə maraqlandırır?', 'chat.qBranch': 'Hansı salon sizə daha uyğundur?', 'chat.anyBranch': 'Fərqi yoxdur', 'chat.qName': 'Sizə necə müraciət edək? Adınızı yazın.', 'chat.qPhone': 'Telefon nömrənizi yazın — sizinlə əlaqə saxlayaq.', 'chat.qNote': 'Əlavə etmək istədiyiniz bir şey var? Yazın — və ya bu addımı ötürün.', 'chat.skip': 'Ötür', 'chat.ready': 'Hazırdır! Müraciəti yoxlayın və WhatsApp-da bizə göndərin.', 'chat.send': 'WhatsApp-da göndər', 'chat.sent': 'Təşəkkür edirik! Müraciətinizi aldıq və WhatsApp-da cavab verəcəyik. WhatsApp açılmadısa, düyməni bir də basın.', 'chat.again': 'Yeni müraciət', 'chat.ph': 'Mesaj yazın…', 'chat.phName': 'Adınız', 'chat.phPhone': 'Telefon nömrəniz', 'chat.sendBtn': 'Göndər', 'chat.direct': 'Və ya bizə birbaşa WhatsApp-da yazın', 'chat.sTopic': 'Mövzu', 'chat.sBranch': 'Salon', 'chat.sName': 'Ad', 'chat.sPhone': 'Telefon', 'chat.sNote': 'Qeyd',
       'rp.title': 'Təmir üçün müraciət', 'rp.what': 'Nə etmək lazımdır', 'rp.desc': 'Nasazlığı təsvir edin', 'rp.descPh': 'Məsələn: metal çərçivənin qolu qırılıb',
       'rp.how': 'Eynəyi necə təhvil verəcəksiniz', 'rp.salon': 'Salona gətirəcəyəm', 'rp.courier': 'Kuryer götürsün',
       'rp.address': 'Eynəyi haradan götürək', 'rp.addressPh': 'Küçə, ev, mənzil', 'rp.date': 'Uyğun tarix',
@@ -872,6 +873,7 @@ const THEME = (function () {
       'ok.repairTitle': 'Осталось отправить заявку',
       'ok.repairText': 'Мы открыли WhatsApp с текстом заявки {id}. Нажмите в чате «Отправить», и мастер ответит со сроком и стоимостью ремонта.',
       'ok.again': 'Открыть WhatsApp ещё раз', 'ok.back': 'Вернуться на сайт', 'toast.cart': 'Открыть корзину', 'cap.note': 'Подтвердите, что вы не робот: так ваше обращение сохранится у нас', 'wa.fab': 'Написать нам в WhatsApp',
+      'chat.open': 'Открыть чат и оставить заявку', 'chat.close': 'Закрыть чат', 'chat.reset': 'Начать заново', 'chat.sub': 'Примем заявку за минуту', 'chat.hello': 'Здравствуйте! Примем заявку за минуту: ответьте на пару вопросов, а продолжим в WhatsApp.', 'chat.qTopic': 'Что вас интересует?', 'chat.qBranch': 'Какой салон вам удобнее?', 'chat.anyBranch': 'Любой', 'chat.qName': 'Как к вам обращаться? Напишите имя.', 'chat.qPhone': 'Напишите номер телефона — мы с вами свяжемся.', 'chat.qNote': 'Хотите что-то добавить? Напишите — или пропустите этот шаг.', 'chat.skip': 'Пропустить', 'chat.ready': 'Готово! Проверьте заявку и отправьте её нам в WhatsApp.', 'chat.send': 'Отправить в WhatsApp', 'chat.sent': 'Спасибо! Заявку получили, ответим в WhatsApp. Если WhatsApp не открылся, нажмите кнопку ещё раз.', 'chat.again': 'Новая заявка', 'chat.ph': 'Напишите сообщение…', 'chat.phName': 'Ваше имя', 'chat.phPhone': 'Ваш номер телефона', 'chat.sendBtn': 'Отправить', 'chat.direct': 'Или сразу напишите нам в WhatsApp', 'chat.sTopic': 'Тема', 'chat.sBranch': 'Салон', 'chat.sName': 'Имя', 'chat.sPhone': 'Телефон', 'chat.sNote': 'Дополнение',
       'rp.title': 'Заявка на ремонт', 'rp.what': 'Что нужно сделать', 'rp.desc': 'Опишите поломку', 'rp.descPh': 'Например: отломился заушник у металлической оправы',
       'rp.how': 'Как передадите очки', 'rp.salon': 'Принесу в салон', 'rp.courier': 'Заберите курьером',
       'rp.address': 'Откуда забрать очки', 'rp.addressPh': 'Улица, дом, квартира', 'rp.date': 'Удобная дата',
@@ -935,6 +937,7 @@ const THEME = (function () {
       'ok.repairTitle': 'Now send the request',
       'ok.repairText': 'We’ve opened WhatsApp with request {id}. Press Send in the chat and the technician will reply with the timing and price.',
       'ok.again': 'Open WhatsApp again', 'ok.back': 'Back to the site', 'toast.cart': 'Open cart', 'cap.note': 'Please confirm you’re not a robot so we can save your request', 'wa.fab': 'Message us on WhatsApp',
+      'chat.open': 'Open the chat and leave a request', 'chat.close': 'Close the chat', 'chat.reset': 'Start over', 'chat.sub': 'We take your request in a minute', 'chat.hello': 'Hello! We will take your request in a minute: answer a couple of questions and we will continue on WhatsApp.', 'chat.qTopic': 'What are you interested in?', 'chat.qBranch': 'Which shop suits you better?', 'chat.anyBranch': 'Any', 'chat.qName': 'How should we address you? Type your name.', 'chat.qPhone': 'Type your phone number — we will get in touch.', 'chat.qNote': 'Anything to add? Type it — or skip this step.', 'chat.skip': 'Skip', 'chat.ready': 'Done! Check the request and send it to us on WhatsApp.', 'chat.send': 'Send on WhatsApp', 'chat.sent': 'Thank you! We have your request and will answer on WhatsApp. If WhatsApp did not open, press the button again.', 'chat.again': 'New request', 'chat.ph': 'Type a message…', 'chat.phName': 'Your name', 'chat.phPhone': 'Your phone number', 'chat.sendBtn': 'Send', 'chat.direct': 'Or message us on WhatsApp right away', 'chat.sTopic': 'Topic', 'chat.sBranch': 'Shop', 'chat.sName': 'Name', 'chat.sPhone': 'Phone', 'chat.sNote': 'Note',
       'rp.title': 'Repair request', 'rp.what': 'What needs doing', 'rp.desc': 'Describe the problem', 'rp.descPh': 'For example: the arm broke off a metal frame',
       'rp.how': 'How will you hand over your glasses', 'rp.salon': 'I’ll bring them in', 'rp.courier': 'Collect by courier',
       'rp.address': 'Where to collect the glasses', 'rp.addressPh': 'Street, building, flat', 'rp.date': 'Preferred date',
@@ -1177,6 +1180,8 @@ const THEME = (function () {
   const ICON = {
     bag: ic('<path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>'),
     x: ic('<path d="M6 6l12 12M18 6 6 18"/>'),
+    send: ic('<path d="M20.5 3.5 3.8 10.3l6.5 2.9 2.9 6.5 7.3-16.2Z"/><path d="m10.300 13.200 4.200-4.200"/>'),
+    redo: ic('<path d="M4.500 12a7.500 7.500 0 1 0 2.300-5.400"/><path d="M4 4.500v4h4"/>'),
     menu: ic('<path d="M4 7h16M4 12h16M4 17h16"/>'),
     chat: ic('<path d="M5 4.5h14a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2h-7.5L7 20.5V17H5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2Z"/><path d="M8.3 10.8h.01M12 10.8h.01M15.7 10.8h.01" stroke-width="2.6"/>'),
     phone: ic('<path d="M6.5 3.5h2.8l1.6 4.4-2 1.4a11.5 11.5 0 0 0 5.8 5.8l1.4-2 4.4 1.6v2.8a2 2 0 0 1-2.1 2A16.5 16.5 0 0 1 4.5 5.6a2 2 0 0 1 2-2.1Z"/>'),
@@ -2537,7 +2542,20 @@ const THEME = (function () {
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastText"></span><button type="button" data-open-cart data-i18n="toast.cart">${esc(t('toast.cart'))}</button></div>
-<a class="wa-float" data-cfg-href="wa" href="#" target="_blank" rel="noopener" ${A('aria-label', 'wa.fab')}>${I.chat}</a>`;
+<button type="button" class="chat-fab" id="chatFab" aria-expanded="false" aria-controls="chatBox" ${A('aria-label', 'chat.open')}><span class="c">${I.chat}</span><span class="x">${I.x}</span></button>
+<section class="chat" id="chatBox" role="dialog" ${A('aria-label', 'chat.open')} hidden>
+  <header class="chat-head">
+    <p><b>${esc(CONFIG.shopName || '')}</b><span data-i18n="chat.sub">${esc(t('chat.sub'))}</span></p>
+    <button type="button" class="chat-ic" data-chat-reset ${A('aria-label', 'chat.reset')}>${I.redo}</button>
+    <button type="button" class="chat-ic" data-chat-close ${A('aria-label', 'chat.close')}>${I.x}</button>
+  </header>
+  <div class="chat-log" id="chatLog" aria-live="polite"></div>
+  <form class="chat-form" id="chatForm" novalidate>
+    <input type="text" id="chatInput" maxlength="300" autocomplete="off" enterkeyhint="send" ${A('aria-label', 'chat.ph')}>
+    <button type="submit" ${A('aria-label', 'chat.sendBtn')}>${I.send}</button>
+  </form>
+  <a class="chat-direct" data-cfg-href="wa" href="#" target="_blank" rel="noopener" data-i18n="chat.direct">${esc(t('chat.direct'))}</a>
+</section>`;
   }
   function repairFormHTML(titleKey) {
     const k = titleKey || 'rp.title';
@@ -2639,6 +2657,140 @@ const THEME = (function () {
   }
   // Если сайт работает на сервере (PHP), заказ, заявка и сообщение сохраняются ещё и там: список виден в админ-панели.
   // Отправка идёт в фоне и не мешает открыть WhatsApp.
+  /* ---------- чат-заявка: кнопка в углу сайта ----------
+     Короткий разговор по шагам: что интересует → салон (если их несколько) → имя → телефон → дополнение.
+     Отвечать можно подсказкой или своим текстом. В конце заявка уходит так же, как из формы «Напишите нам»:
+     запись на сервер (раздел «Заказы» админ-панели и письмо) и готовое сообщение в WhatsApp. */
+  const CHAT_TOPICS = ['glasses', 'rx', 'contacts', 'repair', 'exam', 'other'];
+  const chat = { open: false, step: 'topic', log: [], data: {}, sent: false };
+  const chatSteps = () => ['topic'].concat(BRANCH_LIST.length > 1 ? ['branch'] : [], ['name', 'phone', 'note', 'send']);
+  const chatSay = (k, v) => { chat.log.push({ k, v: v || null }); };
+  function chatStart() {
+    chat.step = 'topic'; chat.data = {}; chat.sent = false; chat.log = [];
+    chatSay('chat.hello'); chatSay('chat.qTopic');
+    renderChat(true);
+  }
+  function chatNext() {
+    const steps = chatSteps();
+    chat.step = steps[steps.indexOf(chat.step) + 1] || 'send';
+    chatSay({ branch: 'chat.qBranch', name: 'chat.qName', phone: 'chat.qPhone', note: 'chat.qNote', send: 'chat.ready' }[chat.step]);
+    renderChat(true);
+  }
+  // Ответ посетителя: нажатая подсказка (value — её значение) или набранный текст (value === null)
+  function chatAnswer(text, value) {
+    text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+    const s = chat.step, d = chat.data;
+    if (s === 'send' || !text) return;
+    const again = key => { chat.log.push({ me: text }); chatSay(key); renderChat(true); };
+    if (s === 'topic') {
+      if (value !== null && CHAT_TOPICS.indexOf(value) !== -1) d.topic = value;
+      else { d.topic = 'other'; d.note = text; }   // свой вопрос вместо подсказки
+    } else if (s === 'branch') {
+      const b = value !== null ? BRANCH_LIST.filter(x => x.id === value)[0] : BRANCH_LIST.filter(x => L(x.name).toLowerCase() === text.toLowerCase())[0];
+      d.branch = b ? b.id : '';
+    } else if (s === 'name') {
+      if (text.length < 2) return again('e.name');
+      d.name = text.slice(0, 60);
+    } else if (s === 'phone') {
+      const n = digitsCount(text);
+      if (n < 9 || n > 15) return again(n < 9 ? 'e.phone' : 'e.phoneLong');
+      d.phone = text.slice(0, 30);
+    } else if (s === 'note' && value !== 'skip') {
+      d.note = d.note ? d.note + '\n' + text : text;
+    }
+    chat.log.push({ me: text });
+    chatNext();
+  }
+  // Сообщение для WhatsApp — оно же сохраняется на сервере
+  function chatText(ml) {
+    const d = chat.data, M = (k, v) => t(k, v, ml), b = BRANCH_LIST.filter(x => x.id === d.branch)[0];
+    const out = [M('m.helloSite'), '', M('m.topic', { v: M('ct.t.' + d.topic) })];
+    if (b) out.push(M('m.branch', { v: L(b.name, ml) }));
+    if (d.note) out.push(d.note);
+    out.push('', M('m.client'), M('m.name', { v: d.name }), M('m.phone', { v: d.phone }));
+    return out.join('\n');
+  }
+  function chatSend() {
+    const d = chat.data;
+    if (chat.step !== 'send' || !d.name || !d.phone) return;
+    const ml = msgLang(), text = chatText(ml), b = BRANCH_LIST.filter(x => x.id === d.branch)[0];
+    if (!chat.sent) {   // на сервер заявка уходит один раз, WhatsApp можно открыть повторно
+      chat.sent = true;
+      sendToServer('message', { name: d.name, phone: d.phone, text, details: { topic: t('ct.t.' + d.topic, null, ml), comment: d.note || '', branch: b ? L(b.name, ml) : '' } });
+      const c = store.get(CUSTOMER_KEY, {}) || {};
+      c.name = d.name; c.phone = d.phone;
+      store.set(CUSTOMER_KEY, c);
+      chatSay('chat.sent');
+    }
+    openWA(waUrl(text));
+    renderChat(true);
+  }
+  function renderChat(scroll) {
+    const log = $('#chatLog'), input = $('#chatInput');
+    if (!log || !input) return;
+    const s = chat.step, d = chat.data;
+    let h = chat.log.map(m => m.me != null ? `<p class="chat-msg me">${esc(m.me)}</p>` : `<p class="chat-msg">${esc(t(m.k, m.v))}</p>`).join('');
+    let chips = [];   // подсказки к текущему вопросу: [надпись, значение]; значение null — «как будто набрано»
+    if (s === 'topic') chips = CHAT_TOPICS.map(k => [t('ct.t.' + k), k]);
+    else if (s === 'branch') chips = BRANCH_LIST.map(b => [L(b.name), b.id]).concat([[t('chat.anyBranch'), '']]);
+    else if (s === 'name' || s === 'phone') { const c = store.get(CUSTOMER_KEY, {}) || {}; if (c[s]) chips = [[String(c[s]), null]]; }   // то, что посетитель уже вводил в формах сайта
+    else if (s === 'note') chips = [[t('chat.skip'), 'skip']];
+    if (chips.length) {
+      h += `<div class="chat-chips">${chips.map(c => `<button type="button" class="chat-chip"${c[1] === null ? ' data-chat-typed' : ` data-chat-chip="${esc(c[1])}"`}>${esc(c[0])}</button>`).join('')}</div>`;
+    }
+    if (s === 'send') {
+      const b = BRANCH_LIST.filter(x => x.id === d.branch)[0];
+      const rows = [['chat.sTopic', t('ct.t.' + d.topic)], ['chat.sBranch', b ? L(b.name) : ''], ['chat.sName', d.name], ['chat.sPhone', d.phone], ['chat.sNote', d.note || '']].filter(r => r[1]);
+      h += `<dl class="chat-sum">${rows.map(r => `<div><dt>${esc(t(r[0]))}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>` +
+        `<button type="button" class="btn btn-primary btn-block" data-chat-send>${ICON.chat}${esc(t(chat.sent ? 'ok.again' : 'chat.send'))}</button>` +
+        (chat.sent ? `<div class="chat-chips"><button type="button" class="chat-chip" data-chat-reset>${esc(t('chat.again'))}</button></div>` : '');
+    }
+    log.innerHTML = h;
+    input.disabled = s === 'send';
+    input.placeholder = t(s === 'name' ? 'chat.phName' : s === 'phone' ? 'chat.phPhone' : 'chat.ph');
+    input.setAttribute('inputmode', s === 'phone' ? 'tel' : 'text');
+    input.setAttribute('autocomplete', s === 'name' ? 'name' : s === 'phone' ? 'tel' : 'off');
+    const go = $('#chatForm button');
+    if (go) go.disabled = s === 'send';
+    if (scroll) log.scrollTop = log.scrollHeight;
+  }
+  function setChat(on, back) {
+    const box = $('#chatBox'), fab = $('#chatFab');
+    if (!box || !fab) return;
+    chat.open = !!on;
+    box.hidden = !on;
+    fab.setAttribute('aria-expanded', on ? 'true' : 'false');
+    fab.setAttribute('aria-label', t(on ? 'chat.close' : 'chat.open'));
+    if (on) {
+      if (!chat.log.length) chatStart(); else renderChat(true);
+      if (cap.key) capStart();   // проверка «не робот» готовится заранее, как в формах
+      // на телефоне клавиатура закрыла бы подсказки, поэтому поле само не выбирается
+      const input = $('#chatInput');
+      if (input && !input.disabled && window.matchMedia && window.matchMedia('(min-width: 700px)').matches) input.focus();
+    } else if (back) fab.focus();
+  }
+  function bindChat() {
+    const box = $('#chatBox'), fab = $('#chatFab');
+    if (!box || !fab) return;
+    fab.addEventListener('click', () => setChat(!chat.open));
+    box.addEventListener('click', e => {
+      const el = e.target.closest ? e.target.closest('button') : null;
+      if (!el) return;
+      if (el.hasAttribute('data-chat-close')) setChat(false, true);
+      else if (el.hasAttribute('data-chat-reset')) { chatStart(); const i = $('#chatInput'); if (i) i.focus(); }
+      else if (el.hasAttribute('data-chat-send')) chatSend();
+      else if (el.hasAttribute('data-chat-typed')) chatAnswer(el.textContent, null);
+      else if (el.hasAttribute('data-chat-chip')) chatAnswer(el.textContent, el.getAttribute('data-chat-chip'));
+    });
+    $('#chatForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const input = $('#chatInput');
+      chatAnswer(input.value, null);
+      input.value = '';
+      if (!input.disabled) input.focus();
+    });
+  }
+
   function sendToServer(kind, data) {
     if (!CONFIG.api || typeof fetch !== 'function') return;
     const base = Object.assign({ kind, lang, token: CONFIG.apiToken || '' }, data);
@@ -3178,6 +3330,8 @@ const THEME = (function () {
       const i = pair.indexOf(':');
       if (i > 0) el.setAttribute(pair.slice(0, i).trim(), t(pair.slice(i + 1).trim()));
     }));
+    if (chat.log.length) renderChat();   // вопросы и подсказки чата — на новом языке
+    { const fab = $('#chatFab'); if (fab) fab.setAttribute('aria-label', t(chat.open ? 'chat.close' : 'chat.open')); }
     setMeta();
     $$('.field-error[data-err-key]').forEach(p => { p.textContent = t(p.dataset.errKey); });
     fillConfig();
@@ -3337,6 +3491,7 @@ const THEME = (function () {
   function onKey(e) {
     if (!layers.length) {
       if (e.key === 'Escape' && document.body.classList.contains('menu-open')) setMenu(false, true);
+      else if (e.key === 'Escape' && chat.open) setChat(false, true);
       return;
     }
     const top = layers[layers.length - 1].el;
@@ -3351,6 +3506,7 @@ const THEME = (function () {
     }
   }
   function bindAll() {
+    bindChat();
     const tabs = $('#catTabs');
     if (tabs) tabs.addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { state.cat = b.dataset.cat; renderBrands(); renderProducts(); } });
     const si = $('#searchInput');

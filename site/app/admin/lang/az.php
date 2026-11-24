@@ -524,6 +524,7 @@ return [
     'Цена' => 'Qiymət',
     'Цена, ₼' => 'Qiymət, ₼',
     'Часы работы' => 'İş saatları',
+    'Чат-заявка (кнопка в углу сайта)' => 'Çat-müraciət (saytın küncündəki düymə)',
     'Чем меньше число, тем выше в списке.' => 'Rəqəm nə qədər kiçikdirsə, siyahıda o qədər yuxarıdadır.',
     'Что заказали' => 'Nə sifariş edilib',
     'Что уже защищено' => 'Artıq nə qorunur',

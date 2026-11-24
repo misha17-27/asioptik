@@ -105,7 +105,7 @@ async def main(mode):
             await pg.locator('#repairForm [type=submit]').click(); await pg.wait_for_timeout(500)
             opened = await pg.evaluate('window.__opened')
             print('=== AZ repair message ==='); print(decode(opened[-1])[1])
-            print('FAB link:', urllib.parse.unquote(await pg.get_attribute('.wa-float', 'href')))
+            print('FAB link:', urllib.parse.unquote(await pg.get_attribute('.chat-direct', 'href')))
             await ctx.close()
             # mobile flow in AZ
             ctx = await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True)

@@ -14,6 +14,7 @@ const SITE_PAGES = [
         'Секции главной' => ['cats', 'rx', 'eye'],
         'Как сделать заказ' => ['how', 's1t', 's1p', 's2t', 's2p', 's3t', 's3p', 's4t', 's4p'],
         'Мастерская' => ['repair', 'rp'],
+        'Чат-заявка (кнопка в углу сайта)' => ['chat'],
         'Контакты' => ['contacts', 'c'],
     ], 'more' => [['banners', 'Баннеры и фото'], ['list:category', 'Слайды первого экрана'], ['list:service', 'Услуги мастерской']]],
     'catalog' => ['title' => 'Каталог', 'path' => 'catalog', 'seo' => true, 'blocks' => [
