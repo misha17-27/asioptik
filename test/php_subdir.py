@@ -215,7 +215,7 @@ check('page address for search engines is the main one, not the temporary', cano
 s, h, t = req(SUB, 'GET', PRE + '/ru/product/f-milan')
 check('product page on the temporary address is closed too', 'noindex' in one(h, 'x-robots-tag') and t.count('name="robots"') == 1 and f'href="https://{MAIN}/ru/product/f-milan"' in t)
 s, h, t = req(SUB, 'GET', PRE + '/ru/brands/asi-sun')
-check('brand page on the temporary address: closed, with its own title and the main address', 'noindex' in one(h, 'x-robots-tag') and t.count('name="robots"') == 1 and f'href="https://{MAIN}/ru/brands/asi-sun"' in t and '<title>Asi Sun — Asioptik</title>' in t)
+check('brand page on the temporary address: closed, with its own title and the main address', 'noindex' in one(h, 'x-robots-tag') and t.count('name="robots"') == 1 and f'href="https://{MAIN}/ru/brands/asi-sun"' in t and '<title>Asi Sun — очки в Баку | Asioptik</title>' in t)
 s, h, t = req(SUB, 'GET', PRE + '/about', headers={'X-Forwarded-Proto': 'https'})
 check('this site adds no domain-wide https rule of its own from a folder of another site', h.get('strict-transport-security') == ['max-age=31536000; includeSubDomains'], h.get('strict-transport-security'))
 s, h, t = req(SUB, 'GET', PRE + '/about', host='evil.example')
@@ -356,7 +356,7 @@ async def browser():
         await nav.click(); await pg.wait_for_timeout(400)
         check('brands page', tail() == PRE + '/ru/brands' and await pg.locator('.btile').count() == 4, tail())
         await pg.locator('.btile').nth(2).click(); await pg.wait_for_timeout(400)
-        check('brand page with its products', tail() == PRE + '/ru/brands/asi-sun' and await pg.locator('#pageView .br-grid .card').count() == 5 and await pg.title() == 'Asi Sun — Asioptik', tail())
+        check('brand page with its products', tail() == PRE + '/ru/brands/asi-sun' and await pg.locator('#pageView .br-grid .card').count() == 5 and await pg.title() == 'Asi Sun — очки в Баку | Asioptik', tail())
         await pg.reload(); await pg.wait_for_timeout(1200)
         check('brand page survives a reload', tail() == PRE + '/ru/brands/asi-sun' and await pg.inner_text('#pgTitle') == 'Asi Sun', tail())
         await pg.locator('#pageView .br-grid .card-title a').first.click(); await pg.wait_for_timeout(400)
@@ -485,6 +485,36 @@ s, h, t = req(OWN, 'GET', '/admin/?p=pages', host=MAIN, headers=LIVE, jar=jar2)
 check('pages list at the main address', '<code>/catalog</code>' in t and not stuck(t), stuck(t))
 s, h, t = req(SUB, 'GET', PRE + '/', host=TEMP)
 check('the temporary address keeps working and stays closed for search engines', s == 200 and 'noindex' in one(h, 'x-robots-tag') and f'"basePath":"{PRE}/"' in t)
+
+# ====================== после переезда: временный адрес ведёт на основной ======================
+print('--- галочка «Сайт переехал на основной адрес»')
+def moved(on):
+    sql("UPDATE ao_settings SET value = JSON_SET(value, '$.moved', " + ('true' if on else 'false') + ") WHERE name = 'config'")
+    for f in (SITE / 'storage/cache').glob('*.json'): f.unlink()
+s, h, t = req(OWN, 'GET', '/admin/?p=doc&name=config', host=MAIN, headers=LIVE, jar=jar2)
+check('the switch «Сайт переехал» is in the site settings', s == 200 and 'name="f[moved]"' in t and 'Сайт переехал на основной адрес' in t, s)
+moved(True)
+try:
+    for p, to in [('/', '/'), ('/catalog?cat=frames', '/catalog?cat=frames'), ('/ru/catalog?cat=sun&utm_source=insta', '/ru/catalog?cat=sun&utm_source=insta'), ('/en', '/en'),
+                  ('/product/f-milan', '/product/f-milan'), ('/ru/blog/care', '/ru/blog/care'), ('/en/contacts', '/en/contacts'), ('/ru/nope', '/ru/nope')]:
+        s, h, t = req(SUB, 'GET', PRE + p, host=TEMP)
+        check(f'moved: temporary {p} leads to the same page of the main address', s == 301 and one(h, 'location') == f'https://{MAIN}{to}', (s, one(h, 'location')))
+    s, h, t = req(SUB, 'GET', PRE + '//evil.example/x', host=TEMP)
+    check('moved: the target is always the main address', s == 301 and one(h, 'location').startswith(f'https://{MAIN}/') and 'evil.example/x' in one(h, 'location'), one(h, 'location'))
+    s, h, t = req(OWN, 'GET', '/', host=MAIN, headers=LIVE)
+    check('moved: the main address itself opens, no circle', s == 200 and 'x-robots-tag' not in h and '"basePath":"/"' in t, s)
+    s, h, t = req(OWN, 'GET', '/ru/catalog?cat=frames', host=MAIN, headers=LIVE)
+    check('moved: inner pages of the main address open', s == 200 and '<html lang="ru">' in t, s)
+    s, h, t = req(SUB, 'GET', PRE + '/admin/?p=login', host=TEMP)
+    check('moved: the admin panel still opens at the temporary address', s == 200 and 'name="password"' in t, s)
+    s, h, t = req(SUB, 'GET', PRE + '/robots.txt', host=TEMP)
+    check('moved: robots.txt of the temporary address still answers', s == 200 and 'Disallow' in t, s)
+    s, h, t = req(SUB, 'POST', PRE + '/api/order', body='{}', headers={'Content-Type': 'application/json'}, host=TEMP)
+    check('moved: an order sent from a page opened earlier is not lost in a redirect', s not in (301, 302) and t.lstrip().startswith('{'), (s, t[:80]))
+finally:
+    moved(False)
+s, h, t = req(SUB, 'GET', PRE + '/ru/catalog', host=TEMP)
+check('switch off: the temporary address shows the site again', s == 200 and '<html lang="ru">' in t, s)
 
 # ====================== ручной переключатель в storage/config.php ======================
 print('--- строка preview в config.php')

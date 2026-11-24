@@ -259,6 +259,15 @@ function site_run(): void
     // Сайт во временной папке другого домена поисковикам не показываем (см. site_is_preview)
     $preview = site_is_preview($cfg);
     if ($preview) header('X-Robots-Tag: noindex, nofollow');
+    // Сайт переехал на основной адрес (галочка «Сайт переехал» в «Настройках сайта»): страницы временного адреса ведут
+    // на те же страницы основного, чтобы старые ссылки не терялись. Админ-панель, приём заказов, robots.txt и карта сайта
+    // по временному адресу продолжают отвечать сами. С основного адреса перехода нет — иначе получился бы круг.
+    $main = site_main_url($cfg);
+    if (!empty($cfg['moved']) && $main !== '' && base_path() !== '/'
+        && host_key((string) parse_url($main, PHP_URL_HOST)) !== host_key((string) ($_SERVER['HTTP_HOST'] ?? ''))) {
+        $rest = array_filter($_GET, 'is_string');
+        redirect($main . '/' . implode('/', array_filter([$lang === LANGS[0] ? '' : $lang, implode('/', array_map('rawurlencode', $seg))], 'strlen')) . $query($rest), 301);
+    }
     $shop = (string) ($cfg['shopName'] ?? 'Asioptik');
     $route = '';
     $noindex = false;
