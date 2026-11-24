@@ -13,7 +13,7 @@ INFO = """() => { const q = s => document.querySelector(s); const vis = el => !!
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
-        for name, base, home in (('php', PHP, PHP + '/?lang=ru'), ('one file', ONE, ONE + '?lang=ru')):
+        for name, base, home in (('php', PHP, PHP + '/ru'), ('one file', ONE, ONE + '?lang=ru')):
             ctx = await b.new_context(viewport={'width': 1440, 'height': 900}); pg = await ctx.new_page(); await setup(pg)
             errs = []; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'ERR_' not in m.text and 'font' not in m.text.lower() and '404' not in m.text else None)
             await pg.route('https://images.pexels.com/**', lambda r: r.abort())
@@ -30,10 +30,11 @@ async def main():
             await pg.locator('[data-aud-switch] [data-key=""]').click(); await pg.wait_for_timeout(500); print('switch to all:', await pg.evaluate(INFO))
             await pg.go_back(); await pg.wait_for_timeout(700); print('back:', (await pg.evaluate(INFO))['url'], '|', (await pg.evaluate(INFO))['h1'])
             # прямой заход по адресу и смена языка
-            await pg.goto((base + '/catalog?aud=kids&lang=az') if name == 'php' else (base + '?page=catalog&aud=kids&lang=az')); await pg.wait_for_timeout(1200); i = await pg.evaluate(INFO); print('direct az:', i['title'], '|', i['h1'], '|', i['tiles'], '|', i['current'])
+            await pg.evaluate("try { localStorage.removeItem('optika-lang') } catch (e) {}")   # иначе адрес без языка откроется на русском, выбранном выше
+            await pg.goto((base + '/catalog?aud=kids') if name == 'php' else (base + '?page=catalog&aud=kids&lang=az')); await pg.wait_for_timeout(1200); i = await pg.evaluate(INFO); print('direct az:', i['title'], '|', i['h1'], '|', i['tiles'], '|', i['current'])
             await pg.locator('.hdr-right [data-set-lang=en]').click(); await pg.wait_for_timeout(600); i = await pg.evaluate(INFO); print('→ en:', i['title'], '|', i['h1'], '|', i['crumbs'], '|', i['current'])
             # со страницы товара ссылка меню тоже открывает страницу раздела
-            await pg.goto((base + '/product/f-milan?lang=ru') if name == 'php' else (base + '?product=f-milan&lang=ru')); await pg.wait_for_timeout(1000)
+            await pg.goto((base + '/ru/product/f-milan') if name == 'php' else (base + '?product=f-milan&lang=ru')); await pg.wait_for_timeout(1000)
             await pg.locator('#siteNav a[data-aud=adults]').click(); await pg.wait_for_timeout(700); i = await pg.evaluate(INFO); print('from product:', i['url'], '|', i['h1'], '| cards', i['cards'])
             print('errors:', errs or 'none'); await ctx.close()
             # телефон

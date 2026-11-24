@@ -8,7 +8,7 @@
 """
 import asyncio, collections, html, http.client, json, re, sys, urllib.parse
 from playwright.async_api import async_playwright
-from run import setup
+from run import setup, lp, FORGET
 from php_reset import reset, PW
 
 B = 'http://127.0.0.1:8771'
@@ -36,12 +36,13 @@ def meta(t):
 def const(t, name):
     return json.loads(re.search(r'const ' + name + r' = (\{.*?\}|\[.*?\]);\n', t, re.S).group(1))
 def with_lang(path, lang):
-    return path if lang == 'az' else path + ('&' if '?' in path else '?') + 'lang=' + lang
+    """Адрес страницы на языке: язык — первая часть адреса (/ru/catalog, /en), у азербайджанского её нет."""
+    return lp(path, lang)
 def canon_of(path, lang):
-    """Адрес страницы, как его ждут поисковики: сначала язык, потом раздел и «для кого»."""
+    """Адрес страницы, как его ждут поисковики: язык в начале адреса, затем страница, раздел и «для кого»."""
     u = urllib.parse.urlparse(path); q = urllib.parse.parse_qsl(u.query)
-    q = ([('lang', lang)] if lang != 'az' else []) + [(k, v) for k in ('cat', 'aud') for kk, v in q if kk == k]
-    return SITE + u.path + ('?' + urllib.parse.urlencode(q) if q else '')
+    q = [(k, v) for k in ('cat', 'aud') for kk, v in q if kk == k]
+    return SITE + ('' if lang == 'az' else '/' + lang) + ('' if u.path == '/' and lang != 'az' else u.path) + ('?' + urllib.parse.urlencode(q) if q else '')
 CYR = re.compile('[А-Яа-яЁё]'); AZL = re.compile('[əƏğĞıİöÖüÜşŞçÇ]')
 
 
@@ -107,8 +108,9 @@ def server_checks(addrs, rows):
 def sitemap_checks(addrs):
     s, h, t = get('/sitemap.xml')
     locs = re.findall(r'<loc>([^<]*)</loc>', t)
-    want = [SITE + html.escape(p, quote=False) for k, p, inmap in addrs if inmap]
-    check('sitemap: every page that search engines should see', sorted(locs) == sorted(want), (sorted(set(want) - set(locs))[:5], sorted(set(locs) - set(want))[:5]))
+    # каждая страница названа на трёх языках: /catalog, /ru/catalog, /en/catalog
+    want = [html.escape(canon_of(p, l), quote=False) for k, p, inmap in addrs if inmap for l in LANGS]
+    check('sitemap: every page that search engines should see, in every language', sorted(locs) == sorted(want), (sorted(set(want) - set(locs))[:5], sorted(set(locs) - set(want))[:5]))
     check('sitemap: no repeats', len(locs) == len(set(locs)), len(locs))
     print('sitemap:', len(locs), 'addresses')
 
@@ -168,12 +170,12 @@ async def browser_checks(addrs, rows, P, BRANDS):
 
         # 3. страница «Бренды» и страница бренда
         filled = [x for x in BRANDS if any(q.get('brand') == x['id'] for q in P)]
-        await pg.goto(B + '/?lang=ru'); await pg.wait_for_function('window.Shop')
+        await pg.goto(B + '/ru'); await pg.wait_for_function('window.Shop')
         nav = pg.locator('#siteNav a[data-view="brands"]')
-        check('menu: link to brands', await nav.is_visible() and (await nav.inner_text()).strip() == 'Бренды' and await nav.get_attribute('href') == '/brands?lang=ru', await nav.get_attribute('href'))
+        check('menu: link to brands', await nav.is_visible() and (await nav.inner_text()).strip() == 'Бренды' and await nav.get_attribute('href') == '/ru/brands', await nav.get_attribute('href'))
         check('footer: link to brands', await pg.locator('.ft-nav a[data-view="brands"]').is_visible())
         await nav.click(); await pg.wait_for_timeout(300)
-        check('brands page: address and heading', pg.url == B + '/brands?lang=ru' and await pg.inner_text('#pgTitle') == 'Бренды', pg.url)
+        check('brands page: address and heading', pg.url == B + '/ru/brands' and await pg.inner_text('#pgTitle') == 'Бренды', pg.url)
         check('brands page: menu link is marked', await nav.get_attribute('aria-current') == 'page')
         tiles = pg.locator('.btiles .btile')
         check('brands page: a tile for every brand with products', await tiles.count() == len(filled) and await tiles.locator('b').all_inner_texts() == [x['name'] for x in filled], await tiles.locator('b').all_inner_texts())
@@ -182,7 +184,7 @@ async def browser_checks(addrs, rows, P, BRANDS):
         check('brand tile: text, count and price', first['text']['ru'] in await tile.inner_text() and str(len(items)) in await tile.inner_text() and str(min(q['price'] for q in items)) in await tile.inner_text(), await tile.inner_text())
         check('brand tile: pictures of its products', await tile.locator('.ctile-arts > span').count() == min(3, len(items)))
         await tile.click(); await pg.wait_for_timeout(300)
-        check('brand page: address', pg.url == B + f"/brands/{first['id']}?lang=ru", pg.url)
+        check('brand page: address', pg.url == B + f"/ru/brands/{first['id']}", pg.url)
         check('brand page: heading and text', await pg.inner_text('#pgTitle') == first['name'] and await pg.inner_text('.pg-lead') == first['text']['ru'], await pg.inner_text('.pg-lead'))
         cards = pg.locator('#pageView .br-grid .card')
         check('brand page: only its products', await cards.evaluate_all('els => els.map(e => e.dataset.pid)') == [q['id'] for q in items], await cards.evaluate_all('els => els.map(e => e.dataset.pid)'))
@@ -193,15 +195,15 @@ async def browser_checks(addrs, rows, P, BRANDS):
             await sw.nth(1).click()
             check('brand page: colour switch on a card', await sw.nth(1).get_attribute('aria-pressed') == 'true')
         await cards.first.locator('.card-title a').click(); await pg.wait_for_timeout(300)
-        check('brand page → product', pg.url == B + f"/product/{items[0]['id']}?lang=ru", pg.url)
+        check('brand page → product', pg.url == B + f"/ru/product/{items[0]['id']}", pg.url)
         link = pg.locator('.pp-brand a')
-        check('product page: brand is a link to the brand page', (await link.inner_text()).strip() == first['name'] and await link.get_attribute('href') == f"/brands/{first['id']}?lang=ru", await link.get_attribute('href'))
+        check('product page: brand is a link to the brand page', (await link.inner_text()).strip() == first['name'] and await link.get_attribute('href') == f"/ru/brands/{first['id']}", await link.get_attribute('href'))
         await link.click(); await pg.wait_for_timeout(300)
-        check('product → brand page', pg.url == B + f"/brands/{first['id']}?lang=ru" and await pg.inner_text('#pgTitle') == first['name'], pg.url)
+        check('product → brand page', pg.url == B + f"/ru/brands/{first['id']}" and await pg.inner_text('#pgTitle') == first['name'], pg.url)
         await pg.go_back(); await pg.wait_for_timeout(300)
-        check('back button: product again', pg.url == B + f"/product/{items[0]['id']}?lang=ru" and await pg.locator('#ppName').is_visible(), pg.url)
+        check('back button: product again', pg.url == B + f"/ru/product/{items[0]['id']}" and await pg.locator('#ppName').is_visible(), pg.url)
         await pg.go_back(); await pg.wait_for_timeout(300); await pg.go_back(); await pg.wait_for_timeout(300)
-        check('back button: brands list again', pg.url == B + '/brands?lang=ru' and await tiles.count() == len(filled), pg.url)
+        check('back button: brands list again', pg.url == B + '/ru/brands' and await tiles.count() == len(filled), pg.url)
         # язык меняется на месте: страница бренда остаётся открытой, тексты — на новом языке
         await forget(); await pg.goto(B + f"/brands/{first['id']}"); await pg.wait_for_function('window.Shop')
         check('brand page: opened in the main language', await pg.inner_text('.pg-lead') == first['text']['az'], await pg.inner_text('.pg-lead'))
@@ -210,27 +212,27 @@ async def browser_checks(addrs, rows, P, BRANDS):
         # телефон: плитки в два столбца, ничего не вылезает за экран
         for w in (390, 320):
             await pg.set_viewport_size({'width': w, 'height': 780})
-            await pg.goto(B + '/brands?lang=ru'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
+            await pg.goto(B + '/ru/brands'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
             box = await pg.evaluate("[...document.querySelectorAll('.btile')].map(e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)]; })")
             check(f'phone {w}: brand tiles in two columns', len({x[0] for x in box}) == 2 and all(0 <= l and r <= w for l, r in box), box)
             check(f'phone {w}: no sideways scroll on brands', await pg.evaluate('document.documentElement.scrollWidth <= window.innerWidth'))
-            await pg.goto(B + f"/brands/{first['id']}?lang=ru"); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
+            await pg.goto(B + f"/ru/brands/{first['id']}"); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
             check(f'phone {w}: no sideways scroll on a brand page', await pg.evaluate('document.documentElement.scrollWidth <= window.innerWidth'))
         await pg.set_viewport_size({'width': 1440, 'height': 900})
 
         # 4. прежние и неверные адреса
         s, h, t = get('/?page=brands&post=' + first['id'] + '&lang=ru')
-        check('old address ?page=brands&post= → /brands/код', s == 301 and h.get('location') == f"/brands/{first['id']}?lang=ru", (s, h.get('location')))
-        s, h, t = get('/brands/no-such-brand?lang=en')
-        check('unknown brand → list of brands', s in (301, 302) and h.get('location') == '/brands?lang=en', (s, h.get('location')))
+        check('old address ?page=brands&post= → /brands/код', s == 301 and h.get('location') == f"/ru/brands/{first['id']}", (s, h.get('location')))
+        s, h, t = get('/en/brands/no-such-brand')
+        check('unknown brand → list of brands', s in (301, 302) and h.get('location') == '/en/brands', (s, h.get('location')))
         s, h, t = get('/brands/' + first['id'] + '/more')
         check('extra path after a brand → home', s in (301, 302) and h.get('location') == '/', (s, h.get('location')))
         s, h, t = get('/catalog?brand=' + first['id'])
         check('catalog filtered by brand keeps the catalog address for search engines', s == 200 and meta(t)['canon'] == SITE + '/catalog', meta(t)['canon'])
-        s, h, t = get('/catalog?cat=lenses&aud=kids&lang=ru')   # детских линз для очков в наборе нет: раздел не открывается, как и на самой странице
+        s, h, t = get('/ru/catalog?cat=lenses&aud=kids')   # детских линз для очков в наборе нет: раздел не открывается, как и на самой странице
         m = meta(t)
-        check('section without products for this audience is not opened', m['title'] == rows[('/catalog?aud=kids', 'ru')]['title'] and m['canon'] == SITE + '/catalog?lang=ru&aud=kids', (m['title'], m['canon']))
-        await pg.goto(B + '/catalog?cat=lenses&aud=kids&lang=ru'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(300)
+        check('section without products for this audience is not opened', m['title'] == rows[('/catalog?aud=kids', 'ru')]['title'] and m['canon'] == SITE + '/ru/catalog?aud=kids', (m['title'], m['canon']))
+        await pg.goto(B + '/ru/catalog?cat=lenses&aud=kids'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(300)
         check('… and the page agrees with the server', await pg.title() == m['title'] and await pg.evaluate("document.querySelector('link[rel=canonical]').href") == m['canon'], await pg.title())
 
         # 5. админ-панель: свои заголовки и описания, новые поля
@@ -255,11 +257,11 @@ async def browser_checks(addrs, rows, P, BRANDS):
         await field.fill('Наш каталог'); await pg.locator('.actions .btn').first.click(); await pg.wait_for_load_state()
         s, h, t = get('/brands'); m = meta(t)
         check('own title and description of «Бренды» reach the page', (m['title'], m['desc']) == ('Brendlər — test başlığı', 'Brendlər səhifəsi üçün öz təsvirimiz: salonumuzdakı bütün markalar bir yerdə.'), m)
-        s, h, t = get('/brands?lang=ru'); check('… other languages keep the site text', meta(t)['title'] == rows[('/brands', 'ru')]['title'], meta(t)['title'])
-        s, h, t = get('/catalog?lang=ru'); m1 = meta(t)
-        s, h, t = get('/catalog?cat=frames&lang=ru'); m2 = meta(t)
+        s, h, t = get('/ru/brands'); check('… other languages keep the site text', meta(t)['title'] == rows[('/brands', 'ru')]['title'], meta(t)['title'])
+        s, h, t = get('/ru/catalog'); m1 = meta(t)
+        s, h, t = get('/ru/catalog?cat=frames'); m2 = meta(t)
         check('changed catalog name is in the server title', m1['title'] == 'Наш каталог — Asioptik' and m2['title'] == 'Оправы — Наш каталог — Asioptik', (m1['title'], m2['title']))
-        for path, m in (('/brands', None), ('/catalog?lang=ru', m1), ('/catalog?cat=frames&lang=ru', m2)):
+        for path, m in (('/brands', None), ('/ru/catalog', m1), ('/ru/catalog?cat=frames', m2)):
             s, h, t = get(path); m = m or meta(t)
             await forget(); await pg.goto(B + path); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
             got = await pg.evaluate(READ)
@@ -293,30 +295,30 @@ async def browser_checks(addrs, rows, P, BRANDS):
         await pg.goto(B + '/admin/?p=list&type=category')
         check('admin, sections: address in the list', '/catalog?cat=frames' in await pg.inner_text('tbody'), (await pg.inner_text('tbody'))[:200])
         await pg.locator('tbody tr', has_text='/catalog?cat=sun').locator('a.strong').click(); await pg.wait_for_load_state()
-        s, h, t = get('/catalog?cat=sun&lang=en'); auto = meta(t)
+        s, h, t = get('/en/catalog?cat=sun'); auto = meta(t)
         await pg.locator('[data-lg-set=en]').first.click()
         check('admin, section: grey text = what the site shows', (await pg.get_attribute('#f-seoTitle-en', 'placeholder'), await pg.get_attribute('#f-seoDesc-en', 'placeholder')) == (auto['title'], auto['desc']), await pg.get_attribute('#f-seoDesc-en', 'placeholder'))
         await pg.fill('#f-seoTitle-en', 'Sunglasses in Baku — Asioptik'); await pg.fill('#f-seoDesc-en', 'Sunglasses with UV400 lenses at the Asioptik optician in Baku: aviators, cat-eye and round frames.')
         await pg.locator('.actions .btn').first.click(); await pg.wait_for_load_state()
-        s, h, t = get('/catalog?cat=sun&lang=en'); m = meta(t)
+        s, h, t = get('/en/catalog?cat=sun'); m = meta(t)
         check('section: own title and description', (m['title'], m['desc']) == ('Sunglasses in Baku — Asioptik', 'Sunglasses with UV400 lenses at the Asioptik optician in Baku: aviators, cat-eye and round frames.'), m)
-        s, h, t = get('/catalog?cat=sun&aud=women&lang=en')
+        s, h, t = get('/en/catalog?cat=sun&aud=women')
         check('section inside «for whom» keeps its own text', meta(t)['title'] == rows[('/catalog?cat=sun&aud=women', 'en')]['title'], meta(t)['title'])
-        await pg.goto(B + '/catalog?cat=sun&lang=en'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(300)
+        await pg.goto(B + '/en/catalog?cat=sun'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(300)
         got = await pg.evaluate(READ)
         check('section: page agrees with the server', (got['title'], got['desc']) == (m['title'], m['desc']), got)
 
         # бренд без товаров: страницы в списке и в карте сайта нет, поисковикам она закрыта
         await pg.goto(B + '/admin/?p=edit&type=brand'); await pg.fill('#f-name', 'Empty Brand'); await pg.locator('.actions .btn').first.click(); await pg.wait_for_load_state()
-        s, h, t = get('/brands/empty-brand?lang=ru'); m = meta(t)
+        s, h, t = get('/ru/brands/empty-brand'); m = meta(t)
         check('brand without products: page opens, closed to search engines', s == 200 and m['robots'] == 'noindex' and m['title'] == 'Empty Brand — Asioptik', (s, m['robots'], m['title']))
         check('brand without products: description', m['desc'] == 'Empty Brand. Салон оптики Asioptik в Баку: заказ на сайте, подтверждение в WhatsApp.', m['desc'])
         s, h, t = get('/sitemap.xml')
         check('brand without products: not in the sitemap', 'empty-brand' not in t and '/brands/' + first['id'] in t)
-        await pg.goto(B + '/brands/empty-brand?lang=ru'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
+        await pg.goto(B + '/ru/brands/empty-brand'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
         check('brand without products: says so, offers the catalog', 'сейчас нет' in await pg.inner_text('#pageView .catalog-empty') and await pg.locator('#pageView .br-grid').count() == 0)
         check('brand without products: lead is written by the site', await pg.inner_text('.pg-lead') == 'Товары бренда Empty Brand в салоне оптики Asioptik.', await pg.inner_text('.pg-lead'))
-        await pg.goto(B + '/brands?lang=ru'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
+        await pg.goto(B + '/ru/brands'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
         check('brand without products: no tile', await pg.locator('.btile').count() == len(filled))
 
         # ни у одного бренда нет товаров: ссылки «Бренды» в меню нет, страница закрыта поисковикам
@@ -325,13 +327,13 @@ async def browser_checks(addrs, rows, P, BRANDS):
             await pg.goto(B + f'/admin/?p=edit&type=brand&id={i}')
             if await pg.input_value('#f-name') != 'Empty Brand':
                 await pg.uncheck('input[name=active]'); await pg.locator('.actions .btn').first.click(); await pg.wait_for_load_state()
-        s, h, t = get('/brands?lang=ru'); m = meta(t)
+        s, h, t = get('/ru/brands'); m = meta(t)
         s2, h2, t2 = get('/sitemap.xml')
         check('no brands with products: «Бренды» is closed to search engines and left out of the sitemap', s == 200 and m['robots'] == 'noindex' and '/brands' not in t2, (m['robots'], '/brands' in t2))
-        await pg.goto(B + '/brands?lang=ru'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
+        await pg.goto(B + '/ru/brands'); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
         check('no brands with products: the page says so', 'скоро появятся' in await pg.inner_text('#pageView .catalog-empty'))
         check('no brands with products: no link in the menu and the footer', not await pg.locator('#siteNav a[data-view="brands"]').is_visible() and not await pg.locator('.ft-nav a[data-view="brands"]').is_visible())
-        await pg.goto(B + f"/product/{items[0]['id']}?lang=ru"); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
+        await pg.goto(B + f"/ru/product/{items[0]['id']}"); await pg.wait_for_function('window.Shop'); await pg.wait_for_timeout(200)
         check('no brands: product page has no brand line', await pg.locator('.pp-brand').count() == 0)
 
         check('no script errors', not errors, errors[:5])

@@ -79,7 +79,7 @@ check('HSTS over https', 'max-age' in req('GET', '/', headers={'X-Forwarded-Prot
 print('--- политика Content-Security-Policy')
 CSP = json.loads(subprocess.run(['php', '-r', f'require "{ROOT}/site/app/core/bootstrap.php"; echo json_encode(["site" => CSP_SITE, "admin" => CSP_ADMIN, "install" => CSP_INSTALL]);'], capture_output=True, text=True).stdout)
 csp_of = lambda raw: [v for k, v in raw if k.lower() == 'content-security-policy']
-for path, kind in [('/', 'site'), ('/catalog?lang=ru', 'site'), ('/product/f-milan', 'site'), ('/checkout', 'site'), ('/admin/?p=login', 'admin'), ('/install.php', 'install')]:
+for path, kind in [('/', 'site'), ('/ru/catalog', 'site'), ('/product/f-milan', 'site'), ('/checkout', 'site'), ('/admin/?p=login', 'admin'), ('/install.php', 'install')]:
     got = csp_of(req('GET', path)[3])
     check(f'{path}: one policy, the {kind} one', got == [CSP[kind]], [g[:70] for g in got])
 ht_root = (ROOT / 'site/.htaccess').read_text(encoding='utf-8'); ht_admin = (ROOT / 'site/admin/.htaccess').read_text(encoding='utf-8')
@@ -181,7 +181,7 @@ for p in ["/product/x'%20OR%201=1--", '/product/..%2f..%2fstorage%2fconfig.php',
     s, h, t, raw = req('GET', p); check('odd address ' + p[:34], s in (302, 400, 403, 404) and h.get('location', '/').startswith('/'), f"{s} {h.get('location', '')}")
 for p in ['/?page=//evil.example', '/?page=https://evil.example', '/?product=//evil.example', '/?page=about&post=%0d%0aSet-Cookie:x=1']:
     s, h, t, raw = req('GET', p); loc = h.get('location', ''); check('no open redirect ' + p[:30], s == 301 and loc.startswith('/') and not loc.startswith('//') and 'set-cookie' not in h, loc)
-s, h, t, raw = req('GET', '/catalog?lang=ru&cat=%22%3E%3Cscript%3Ealert(1)%3C/script%3E'); check('query text is escaped in the page', '<script>alert(1)' not in t, s)
+s, h, t, raw = req('GET', '/ru/catalog?cat=%22%3E%3Cscript%3Ealert(1)%3C/script%3E'); check('query text is escaped in the page', '<script>alert(1)' not in t, s)
 s, h, t, raw = req('GET', '/about', headers={'Host': 'evil.example'}); check('foreign Host header does not reach canonical', 'evil.example' not in t, re.search(r'rel="canonical" href="([^"]*)"', t).group(1))
 s, h, t, raw = req('GET', '/no-such-page', headers={'Host': 'evil.example'}); check('redirects are relative', h.get('location', '').startswith('/'), h.get('location'))
 
@@ -212,9 +212,9 @@ check('only the keys of this page and the three languages are stored', set(tx) <
 check('long text is cut', len(tx.get('en', {}).get('hero.lead', '')) == 600, len(tx.get('en', {}).get('hero.lead', '')))
 check('seo: only title and description in the three languages', set(seo.get('home', {})) <= {'title', 'desc'} and set(seo['home']['title']) == {'ru'}, seo.get('home'))
 for lang in ('ru', 'az'):
-    s, h, t, raw = req('GET', '/?lang=' + lang)
+    s, h, t, raw = req('GET', '/' + ('' if lang == 'az' else lang))
     check(f'site ({lang}): text with markup cannot become markup', s == 200 and '<img src=x' not in t and '<script>alert' not in t and '</title><script>' not in t and t.count('</title>') == 1, s)
-s, h, t, raw = req('GET', '/?lang=ru')
+s, h, t, raw = req('GET', '/ru')
 check('site: title and description are escaped', '&lt;/title&gt;&lt;script&gt;alert(9)&lt;/script&gt;' in t and '&quot;&gt;&lt;script&gt;alert(10)' in t)
 s, h, t, raw = req('GET', '/admin/?p=page&id=home', cookie=ADMIN); check('admin page editor escapes stored texts', s == 200 and '<img src=x' not in t and '<script>alert' not in t and '&lt;img src=x onerror=alert(7)&gt;' in t, s)
 s, h, t, raw = req('GET', '/admin/?p=pages', cookie=ADMIN); check('admin pages list is intact', s == 200 and '<script>alert' not in t and 'изменено' in t, s)
@@ -224,7 +224,8 @@ try:
         br = pw.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox']); page = br.new_page(); fired = []
         page.on('dialog', lambda d: (fired.append(d.message), d.dismiss()))
         for lang in ('ru', 'az'):
-            page.goto(f'http://{HOST}:{PORT}/?lang={lang}'); page.wait_for_timeout(1500)
+            page.evaluate("try { localStorage.removeItem('optika-lang') } catch (e) {}")   # адрес без языка — азербайджанский, а не запомненный русский
+            page.goto(f'http://{HOST}:{PORT}/' + ('' if lang == 'az' else lang)); page.wait_for_timeout(1500)
             seen = page.evaluate("({ h1: document.querySelector('h1').textContent.trim(), planted: document.querySelectorAll('img[src=\"x\"], h1 script, h1 img').length, title: document.title })")
             check(f'browser ({lang}): the text is shown as written, nothing runs', not fired and seen['planted'] == 0 and ('alert(7)' in seen['h1'] or 'alert(8)' in seen['h1']), seen)
         br.close()
@@ -240,7 +241,7 @@ for part in ('title', 'desc'):
         body[f'seo[{part}][{lang}]'] = was_s.get('home', {}).get(part, {}).get(lang, '')
 s, h, t, raw = req('POST', '/admin/?p=page&id=home', body, cookie=ADMIN)
 check('texts put back through the page editor', s == 302 and setting('texts') == was_t and setting('seo') == was_s, s)
-s, h, t, raw = req('GET', '/?lang=ru'); check('texts restored after the check', 'alert(7)' not in t and 'alert(9)' not in t)
+s, h, t, raw = req('GET', '/ru'); check('texts restored after the check', 'alert(7)' not in t and 'alert(9)' not in t)
 
 print('--- обновление данных уже установленного сайта')
 # сайт прежней версии: у слайдов разделов нет временных фото, у одного раздела стоит своё фото, версии данных в базе нет
@@ -248,7 +249,7 @@ def refresh():
     # любое сохранение в админ-панели сбрасывает готовые данные сайта; здесь — страница «Общие надписи» без правок
     return req('POST', '/admin/?p=page&id=common', {'csrf': csrf_of(ADMIN, '/admin/?p=page&id=common')}, cookie=ADMIN)[0]
 def slides():
-    t = req('GET', '/?lang=ru')[2]
+    t = req('GET', '/ru')[2]
     return {c['id']: c.get('banner', {}) for c in json.loads(re.search(r'const CATEGORIES = (\[.*?\]);\n', t).group(1))}
 sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.banner.demo', '$.banner.pos', '$.banner.flip', '$.banner.img') WHERE type='category'")
 sql("UPDATE ao_items SET data = JSON_SET(data, '$.banner.img', 'uploads/b/own-photo.jpg') WHERE type='category' AND slug='frames'")
@@ -265,7 +266,7 @@ sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.banner.img') WHERE type='ca
 check('slides restored', all('demo' in v for v in slides().values()))
 # сайт версии до страниц брендов: у брендов нет описаний, один бренд переименован владельцем, у другого описание своё
 def brands():
-    t = req('GET', '/?lang=ru')[2]
+    t = req('GET', '/ru')[2]
     return {b['id']: b for b in json.loads(re.search(r'const BRANDS = (\[.*?\]);\n', t).group(1))}
 seed_text = brands()['asi-sun'].get('text', {})
 sql("UPDATE ao_items SET data = JSON_REMOVE(data, '$.text') WHERE type='brand'")

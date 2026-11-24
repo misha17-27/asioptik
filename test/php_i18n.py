@@ -183,7 +183,7 @@ s, h, t, raw = req('GET', '/admin/?p=orders&kind=repair&q=' + urllib.parse.quote
 check('other parameters of the address survive the switch, safely encoded', s == 302 and h.get('location') == '/admin/?p=orders&kind=repair&q=a%22%3E%3Cb%3E', h.get('location'))
 s, h, t, raw = req('GET', '/admin/?p=login&x=' + urllib.parse.quote('"><script>alert(1)</script>') + '&y[]=' + urllib.parse.quote("'onmouseover='1"))
 check('switcher links carry odd address parameters only in encoded form', s == 200 and '<script>alert(1)' not in t and "'onmouseover='" not in t and 'x=%22%3E%3Cscript%3Ealert%281%29%3C%2Fscript%3E' in t, re.findall(r'<a href="([^"]*)" lang="az"', t)[:1])
-s, h, t, raw = req('GET', '/?lang=ru', cookie='ao_ui=en')
+s, h, t, raw = req('GET', '/ru', cookie='ao_ui=en')
 check('the public site does not depend on the admin language', '<html lang="ru"' in t and 'ao_ui' not in set_cookies(raw))
 
 print('--- все страницы на двух языках')

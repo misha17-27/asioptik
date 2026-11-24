@@ -20,7 +20,7 @@ async def main():
             ctx = await b.new_context(viewport={'width': w, 'height': h}, device_scale_factor=2, is_mobile=True, has_touch=True); pg = await ctx.new_page(); await setup(pg)
             errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
             await pg.route('https://images.pexels.com/**', lambda r: r.abort())
-            await pg.goto(PHP + '/?lang=az'); await pg.wait_for_timeout(1200)
+            await pg.goto(PHP + '/'); await pg.wait_for_timeout(1200)
             await pg.evaluate('window.scrollTo(0, 900)'); await pg.wait_for_timeout(300)   # шапка с размытием: меню всё равно должно занять весь экран
             await pg.locator('.hdr-right .js-menu-toggle').click(); await pg.wait_for_timeout(500)
             i = await pg.evaluate(INFO); print(f'--- {tag} {w}x{h}'); print('open:', i)
@@ -34,7 +34,7 @@ async def main():
             print('errors:', errs or 'none'); await ctx.close()
         # на широком экране меню обычное, логотип и низ меню скрыты
         ctx = await b.new_context(viewport={'width': 1440, 'height': 900}); pg = await ctx.new_page(); await setup(pg); await pg.route('https://images.pexels.com/**', lambda r: r.abort())
-        await pg.goto(PHP + '/?lang=ru'); await pg.wait_for_timeout(1000)
+        await pg.goto(PHP + '/ru'); await pg.wait_for_timeout(1000)
         print('--- desktop:', await pg.evaluate("""() => { const vis = el => !!el && el.getClientRects().length > 0, n = document.querySelector('#siteNav'); return { head: vis(n.querySelector('.nav-head')), foot: vis(n.querySelector('.nav-foot')), links: [...n.querySelectorAll('.nav-links a')].filter(vis).length, navH: Math.round(n.getBoundingClientRect().height), headerH: Math.round(document.querySelector('.site-header').getBoundingClientRect().height) }; }"""))
         await ctx.close(); await b.close()
 asyncio.run(main())

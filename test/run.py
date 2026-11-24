@@ -42,6 +42,13 @@ async def setup(page):
     await page.route('https://unpkg.com/leaflet@1.9.4/dist/**', leaflet)
     await page.add_init_script("window.__opened=[]; window.open=function(u){window.__opened.push(u); return {opener:null};};")
 
+def lp(path, lang):
+    """Адрес страницы PHP-сайта на языке: lp('/catalog?cat=sun', 'ru') → '/ru/catalog?cat=sun', lp('/', 'en') → '/en'.
+    У азербайджанского (основного) языка приставки нет."""
+    if lang == 'az': return path
+    return '/' + lang + ('' if path == '/' else path[1:] if path[:2] in ('/?', '/#') else path)
+# Сайт забывает выбранный язык: адрес без языка снова открывается на азербайджанском, а не на запомненном
+FORGET = "try { localStorage.removeItem('optika-lang') } catch (e) {}"
 async def pick_branch(page, form='#checkoutForm'):
     """Филиалов больше одного — при самовывозе и «принесу в салон» форма просит выбрать салон: берём первый."""
     r = page.locator(f'{form} input[name="branch"]')

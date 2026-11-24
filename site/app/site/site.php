@@ -131,27 +131,45 @@ function site_run(): void
     $rel = strpos($path, $base) === 0 ? substr($path, strlen($base)) : ltrim($path, '/');
     $rel = trim(rawurldecode($rel), '/');
     if ($rel === 'index.php') $rel = '';
-    $seg = $rel === '' ? [] : explode('/', $rel);
+    // пустые части («//») отбрасываются: из них нельзя собрать переадресацию на чужой сайт вида //example.com
+    $seg = array_values(array_filter(explode('/', $rel), 'strlen'));
+    $doubled = $rel !== '' && count($seg) !== substr_count($rel, '/') + 1;
 
     if ($seg === ['api', 'order']) api_order();
     if ($rel === 'robots.txt') site_robots();
     if ($rel === 'sitemap.xml') site_sitemap();
 
-    $lang = in_array($_GET['lang'] ?? '', LANGS, true) ? (string) $_GET['lang'] : 'az';
+    // Язык — первая часть адреса: /ru/catalog, /en/contacts. Основной язык сайта (первый в LANGS, азербайджанский) — без неё.
+    $lang = LANGS[0];
+    $prefixed = (bool) $seg && in_array($seg[0], LANGS, true);
+    if ($prefixed) $lang = (string) array_shift($seg);
     $keep = [];
-    foreach (['lang', 'cat', 'aud', 'brand'] as $k) {
+    foreach (['cat', 'aud', 'brand'] as $k) {
         if (isset($_GET[$k]) && is_string($_GET[$k]) && $_GET[$k] !== '') $keep[$k] = $_GET[$k];
     }
     $query = function (array $q): string {
         return $q ? '?' . http_build_query($q) : '';
     };
+    // Адрес страницы сайта на языке $l (по умолчанию — на языке открытой страницы): папка сайта, язык, страница
+    $link = function (string $route = '', array $q = [], ?string $l = null) use ($base, &$lang, $query): string {
+        $l = $l ?? $lang;
+        return $base . implode('/', array_filter([$l === LANGS[0] ? '' : $l, $route], 'strlen')) . $query($q);
+    };
 
-    // Прежние адреса вида ?page=about и ?product=код ведут на обычные
+    // Прежние адреса ведут на нынешние: язык в параметре (?lang=ru → /ru/…), основной язык в адресе (/az/… → без него),
+    // страницы вида ?page=about и ?product=код; адрес с лишними «/» — на такой же без них
+    $old = $_GET['lang'] ?? null;
+    if (is_string($old) && in_array($old, LANGS, true)) $lang = $old;
     if (isset($_GET['product']) || isset($_GET['page'])) {
         $to = '';
         if (isset($_GET['product']) && is_string($_GET['product'])) $to = 'product/' . rawurlencode($_GET['product']);
         elseif (is_string($_GET['page'])) $to = rawurlencode($_GET['page']) . (isset($_GET['post']) && is_string($_GET['post']) ? '/' . rawurlencode($_GET['post']) : '');
-        redirect($base . $to . $query($keep), 301);
+        redirect($link($to, $keep), 301);
+    }
+    if ($old !== null || ($prefixed && $lang === LANGS[0]) || $doubled) {
+        $rest = array_filter($_GET, 'is_string');   // остальные параметры адреса остаются как были
+        unset($rest['lang']);
+        redirect($link(implode('/', array_map('rawurlencode', $seg)), $rest), 301);
     }
 
     $data = site_data();
@@ -173,14 +191,13 @@ function site_run(): void
         }
         return null;
     };
-    $onlyLang = array_intersect_key($keep, ['lang' => 1]);
 
     $first = $seg[0] ?? '';
     if ($first === '') {
         $route = '';
     } elseif ($first === 'product' && isset($seg[1]) && count($seg) === 2) {
         $item = $find($data['PRODUCTS'], $seg[1]);
-        if (!$item) redirect($base . 'catalog' . $query($keep));
+        if (!$item) redirect($link('catalog', $keep));
         $route = 'product/' . rawurlencode($item['id']);
         $kind = 'product';
         $page = '';
@@ -188,7 +205,7 @@ function site_run(): void
         $route = $kind = $page = 'blog';
         if (isset($seg[1])) {
             $item = $find($data['POSTS'], $seg[1]);
-            if (!$item) redirect($base . 'blog' . $query($keep));
+            if (!$item) redirect($link('blog'));
             $route = 'blog/' . rawurlencode($item['id']);
             $kind = 'post';
             $page = '';
@@ -200,7 +217,7 @@ function site_run(): void
         $noindex = !$filled;
         if (isset($seg[1])) {
             $item = $find($data['BRANDS'], $seg[1]);
-            if (!$item) redirect($base . 'brands' . $query($onlyLang));
+            if (!$item) redirect($link('brands'));
             $route = 'brands/' . rawurlencode($item['id']);
             $kind = 'brand';
             $page = '';
@@ -232,7 +249,7 @@ function site_run(): void
             if ($cat || $aud) $page = '';
         }
     } else {
-        redirect($base . $query($onlyLang));   // неизвестный адрес — на главную
+        redirect($link());   // неизвестный адрес — на главную
     }
     // Свои заголовок и описание: у товара, статьи, бренда и раздела каталога — из их карточки (на странице «для кого» у раздела своих нет),
     // у страниц сайта — из раздела «Страницы» админ-панели
@@ -242,8 +259,9 @@ function site_run(): void
 
     $site = site_origin_url($cfg);
     $canonQ = array_intersect_key($keep, $route === 'catalog' ? ['cat' => 1, 'aud' => 1] : []);
+    // Адрес страницы на каждом языке — для поисковиков: https://asioptik.az/catalog, …/ru/catalog, …/en/catalog
     $url = function (string $l) use ($site, $route, $canonQ, $query): string {
-        return $site . '/' . $route . $query(($l === 'az' ? [] : ['lang' => $l]) + $canonQ);
+        return $site . '/' . implode('/', array_filter([$l === LANGS[0] ? '' : $l, $route], 'strlen')) . $query($canonQ);
     };
     $hreflang = '';
     foreach (LANGS as $l) $hreflang .= '<link rel="alternate" hreflang="' . $l . '" href="' . e($url($l)) . '">' . "\n";
@@ -277,6 +295,7 @@ function site_run(): void
         '%%SHOP%%' => e($shop),
         '%%ROBOTS%%' => $preview ? '<meta name="robots" content="noindex, nofollow">' . "\n" : ($noindex ? '<meta name="robots" content="noindex">' . "\n" : ''),
         '%%BASE%%' => e($base),
+        '%%LBASE%%' => e($base . ($lang === LANGS[0] ? '' : $lang . '/')),   // ссылки меню ведут на страницы того же языка
         '%%VER%%' => $ver,
         '%%DATA%%' => $js,
     ]);
@@ -427,7 +446,9 @@ function site_robots(): void
     if ($preview) header('X-Robots-Tag: noindex, nofollow');
     // Запрет на обход здесь не ставится и для временного адреса: чтобы страница не попала в поиск,
     // поисковик должен её открыть и увидеть «noindex»
-    echo "User-agent: *\nDisallow: {$b}admin/\nDisallow: {$b}api/\nDisallow: {$b}checkout\n" . ($preview ? '' : "\nSitemap: " . site_origin_url() . "/sitemap.xml\n");
+    $checkout = '';
+    foreach (LANGS as $i => $l) $checkout .= "Disallow: {$b}" . ($i ? $l . '/' : '') . "checkout\n";   // оформление заказа — на каждом языке
+    echo "User-agent: *\nDisallow: {$b}admin/\nDisallow: {$b}api/\n" . $checkout . ($preview ? '' : "\nSitemap: " . site_origin_url() . "/sitemap.xml\n");
     exit;
 }
 
@@ -459,9 +480,17 @@ function site_sitemap(): void
     array_push($urls, 'about', 'blog', 'contacts');
     foreach ($data['PRODUCTS'] as $p) $urls[] = 'product/' . rawurlencode($p['id']);
     foreach ($data['POSTS'] as $p) $urls[] = 'blog/' . rawurlencode($p['id']);
+    // Каждая страница есть на трёх языках: /catalog, /ru/catalog, /en/catalog. Поисковику называются все три и связь между ними.
+    $in = function (string $u, string $l) use ($site): string {
+        return $site . '/' . implode('/', array_filter([$l === LANGS[0] ? '' : $l, $u], 'strlen'));
+    };
     header('Content-Type: application/xml; charset=utf-8');
-    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-    foreach ($urls as $u) echo '  <url><loc>' . e($site . '/' . $u) . '</loc></url>' . "\n";
+    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n";
+    foreach ($urls as $u) {
+        $alt = '';
+        foreach (LANGS as $l) $alt .= '<xhtml:link rel="alternate" hreflang="' . $l . '" href="' . e($in($u, $l)) . '"/>';
+        foreach (LANGS as $l) echo '  <url><loc>' . e($in($u, $l)) . '</loc>' . $alt . '</url>' . "\n";
+    }
     echo "</urlset>\n";
     exit;
 }

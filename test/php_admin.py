@@ -89,11 +89,11 @@ async def main():
         print('page saved:', await flash(), '| db texts:', sql("SELECT value FROM ao_settings WHERE name='texts'")[:170])
         print('db seo:', sql("SELECT value FROM ao_settings WHERE name='seo'")[:170])
         await pg.goto(B + '/admin/?p=pages'); print('pages status:', ' '.join((await pg.locator('.table tbody tr').first.inner_text()).split()))
-        html = raw('/?lang=ru'); print('server head ru:', head(html)[:150]); print('server head az:', head(raw('/?lang=az'))[:110])
+        html = raw('/ru'); print('server head ru:', head(html)[:150]); print('server head az:', head(raw('/'))[:110])
         # на другой странице справа остаётся тот же язык, что выбран
         await pg.goto(B + '/admin/?p=page&id=catalog'); print('right column kept on next page:', await pg.evaluate("document.documentElement.getAttribute('data-lg')"), '| catalog blocks:', await pg.locator('h3.block').all_inner_texts())
         await fill(pg, '#f-seo-title--ru', 'Каталог очков и линз — Asioptik'); await pg.locator('.actions .btn').click(); await pg.wait_for_load_state()
-        print('catalog seo:', await flash(), '|', head(raw('/catalog?lang=ru'))[:80], '| section page keeps its own:', head(raw('/catalog?cat=frames&lang=ru'))[:40])
+        print('catalog seo:', await flash(), '|', head(raw('/ru/catalog'))[:80], '| section page keeps its own:', head(raw('/ru/catalog?cat=frames'))[:40])
         # товары: список, разделы-кнопки, поиск, правка цены, фото
         await pg.locator('#adm-nav a', has_text='Товары').click(); print('products:', await pg.locator('.table tbody tr').count(), '| add button:', (await pg.inner_text('.top-acts a.btn:not(.btn-line)')).strip(), '| chips:', await pg.locator('.tabs a').all_inner_texts())
         print('product row:', ' | '.join(' '.join(x.split()) for x in await pg.locator('.table tbody tr >> nth=0').locator('td').all_inner_texts()), '| seo dots:', await pg.locator('.table td .dot-ok').count(), '/', await pg.locator('.table td .dot').count())
@@ -126,7 +126,7 @@ async def main():
             stored = sql(f"SELECT JSON_UNQUOTE(JSON_EXTRACT(data, '$.img')) FROM ao_items WHERE id={mid}"); im = Image.open(f'{ROOT}/site/{stored}')
             print(f'shrink {fn}: {noted} | sent {sent} | preview {thumb} | stored {stored[-5:]} {im.size} {im.mode}' + (f' corner alpha {im.convert("RGBA").getpixel((5, 5))[3]}' if fn.endswith('png') else ''), '| original', pathlib.Path(f'{ROOT}/test/fake/{fn}').stat().st_size // 1024, 'KB')
             pathlib.Path(f'{ROOT}/test/fake/{fn}').unlink()
-        print('product seo on site:', head(raw('/product/f-milan?lang=ru'))[:110]); print('product seo, az stays automatic:', head(raw('/product/f-milan?lang=az'))[:60])
+        print('product seo on site:', head(raw('/ru/product/f-milan'))[:110]); print('product seo, az stays automatic:', head(raw('/product/f-milan'))[:60])
         # загрузка не-картинки
         await pg.goto(B + f'/admin/?p=edit&type=product&id={mid}')
         await pg.set_input_files('input[name="file[img]"]', f'{ROOT}/test/fake/fake.jpg'); await pg.locator('.actions .btn').click()
@@ -201,15 +201,15 @@ async def main():
         await pg.goto(B + f'/admin/?p=order&id={mid}'); await pg.locator('.danger button').click(); await pg.wait_for_timeout(400); print('delete message:', await flash(), '| left:', sql("SELECT COUNT(*) FROM ao_orders"))
         print('http errors:', bad or 'none'); print('console:', errors or 'none')
         # то же самое глазами посетителя
-        from run import setup
+        from run import setup, FORGET
         site = await (await b.new_context(viewport={'width': 1440, 'height': 900})).new_page(); await setup(site); await site.route('https://images.pexels.com/**', lambda r: r.abort())
-        await site.goto(B + '/?lang=ru'); await site.wait_for_timeout(1200)
+        await site.goto(B + '/ru'); await site.wait_for_timeout(1200)
         print('site, changed texts ru:', await site.inner_text('h1'), '|', await site.title(), '| fact:', await site.evaluate("[...document.querySelectorAll('body *:not(script):not(style)')].filter(x => !x.children.length && /Бесплатная доставка от/.test(x.textContent)).map(x => x.textContent.trim())[0] || 'нет'"))
-        await site.goto(B + '/?lang=az'); await site.wait_for_timeout(900); print('site, changed texts az:', await site.inner_text('h1'), '| en untouched:', end=' ')
-        await site.goto(B + '/?lang=en'); await site.wait_for_timeout(900); print(await site.inner_text('h1'))
-        await site.goto(B + '/catalog?lang=ru'); await site.wait_for_timeout(900); print('site, catalog title:', await site.title())
-        await site.goto(B + '/product/f-milan?lang=ru'); await site.wait_for_timeout(900); print('site, product title:', await site.title())
-        await site.goto(B + '/?lang=ru'); await site.wait_for_timeout(1200)
+        await site.evaluate(FORGET); await site.goto(B + '/'); await site.wait_for_timeout(900); print('site, changed texts az:', await site.inner_text('h1'), '| en untouched:', end=' ')
+        await site.goto(B + '/en'); await site.wait_for_timeout(900); print(await site.inner_text('h1'))
+        await site.goto(B + '/ru/catalog'); await site.wait_for_timeout(900); print('site, catalog title:', await site.title())
+        await site.goto(B + '/ru/product/f-milan'); await site.wait_for_timeout(900); print('site, product title:', await site.title())
+        await site.goto(B + '/ru'); await site.wait_for_timeout(1200)
         print('site, slides:', await site.evaluate("""[...document.querySelectorAll('.hero-inner:not(.is-clone) .hs-slide.bn')].map(s => { const im = s.querySelector('.ph'), u = im ? (im.getAttribute('src') || im.getAttribute('data-src')) : ''; return s.className.split(' ')[2].slice(3) + ': ' + (!im ? 'рисунок' : u.indexOf('/uploads/') === 0 ? 'своё фото' : 'временное фото' + (im.classList.contains('is-flip') ? ' (зеркально)' : '')); })"""))
         await site.locator('#adults .sb').scroll_into_view_if_needed(); await site.wait_for_timeout(1200)
         print('site, adults banner:', await site.evaluate("""() => { const sb = document.querySelector('#adults .sb'); return { h2: sb.querySelector('h2').textContent.replace(/\\s+/g, ' ').trim(), feats: [...sb.querySelectorAll('.sb-feats li')].map(x => x.textContent), buttons: [...sb.querySelectorAll('.sb-cta a')].map(x => x.textContent), photos: [...sb.querySelectorAll(':scope > .ph')].map(x => x.getAttribute('src')), dots: sb.querySelectorAll('.sb-dot').length, shown: sb.classList.contains('has-photo') }; }"""))

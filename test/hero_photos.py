@@ -15,7 +15,7 @@ async def main():
             ctx = await b.new_context(viewport={'width': w, 'height': h}, device_scale_factor=2 if tag == 'm' else 1); pg = await ctx.new_page(); await setup(pg)
             errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
             await pg.route('https://images.pexels.com/**', stock)
-            await pg.goto(PHP + '/?lang=ru'); await pg.wait_for_timeout(1500)
+            await pg.goto(PHP + '/ru'); await pg.wait_for_timeout(1500)
             await pg.evaluate("document.querySelector('.hero-inner:not(.is-clone) [data-hs=toggle]').click()")   # остановить смену слайдов
             n = await pg.locator('.hero-inner:not(.is-clone) .hs-dot').count()
             for k in range(0, n - 1):

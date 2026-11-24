@@ -278,7 +278,7 @@ async def browser():
 
         print('--- браузер: формы сайта')
         n = len(cf)
-        await pg.goto(B + '/contacts?lang=ru'); await pg.wait_for_timeout(1200)
+        await pg.goto(B + '/ru/contacts'); await pg.wait_for_timeout(1200)
         check('browser: site page loads nothing from Cloudflare until a form is touched', len(cf) == n and await pg.locator('.cap-dock').count() == 0, cf[n:])
         await pg.locator('#ctName').click(); await pg.wait_for_timeout(300)
         check('browser: touching a form field loads the widget once', len(cf) == n + 1 and await pg.locator('.cap-dock').count() == 1, cf[n:])
@@ -315,10 +315,10 @@ async def browser():
 
         # оформление заказа: проверка стартует сразу при открытии страницы
         n = len(cf)
-        await pg.goto(B + '/product/f-milan?lang=ru'); await pg.wait_for_timeout(1000)
+        await pg.goto(B + '/ru/product/f-milan'); await pg.wait_for_timeout(1000)
         await pg.locator('#ppAdd').click(); await pg.wait_for_timeout(300)
         check('browser: product page still loads nothing from Cloudflare', len(cf) == n)
-        await pg.goto(B + '/checkout?lang=ru'); await pg.wait_for_timeout(1200)
+        await pg.goto(B + '/ru/checkout'); await pg.wait_for_timeout(1200)
         check('browser: opening the checkout starts the check', len(cf) == n + 1 and await pg.locator('.cap-dock').count() == 1, cf[n:])
         await pg.fill('#coName', 'Лейла Проверка'); await pick_branch(pg); await pg.fill('#coPhone', '0501234567')
         await pg.locator('#checkoutForm [type=submit]').click(); await pg.wait_for_timeout(800)
@@ -327,7 +327,7 @@ async def browser():
 
         # скрипт Cloudflare недоступен (блокировщик, сеть): заказ в WhatsApp уходит, запись не сохраняется, страница не ломается
         state['script'] = 'blocked'; errors.clear()
-        await pg.goto(B + '/contacts?lang=ru'); await pg.wait_for_timeout(1000)
+        await pg.goto(B + '/ru/contacts'); await pg.wait_for_timeout(1000)
         await pg.fill('#ctName', 'Без Проверки'); await pg.fill('#ctPhone', '0557778899'); await pg.select_option('#ctTopic', 'exam')
         k = len(posts)
         await pg.locator('#contactForm [type=submit]').click(); await pg.wait_for_timeout(900)
@@ -337,7 +337,7 @@ async def browser():
         # неверный ключ или чужой домен (ошибка 110200): ждать бессмысленно
         state['script'] = 'stub'
         await pg.add_init_script("window.__cap = { log: [], error: '110200' };")
-        await pg.goto(B + '/contacts?lang=ru'); await pg.wait_for_timeout(1000)
+        await pg.goto(B + '/ru/contacts'); await pg.wait_for_timeout(1000)
         await pg.fill('#ctName', 'Чужой Домен'); await pg.fill('#ctPhone', '0557778899'); await pg.select_option('#ctTopic', 'exam')
         k = len(posts)
         await pg.locator('#contactForm [type=submit]').click(); await pg.wait_for_timeout(900)

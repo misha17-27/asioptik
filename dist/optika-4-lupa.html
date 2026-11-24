@@ -2969,13 +2969,47 @@ const THEME = (function () {
     .filter(l => UI[l]);
   if (!LANGS.length) LANGS.push('ru');
   let lang = LANGS[0];
+  /* На сайте с обычными адресами язык стоит в самом адресе: /ru/catalog, /en/contacts; основной язык (первый в списке) —
+     без него. В версии сайта одним файлом язык остаётся в параметре: ?lang=ru.
+     LANG_BASE — папка сайта, после которой в адресе идёт язык (у версии одним файлом её нет). */
+  const LANG_BASE = CONFIG.pathRoutes ? String(CONFIG.basePath || '/').replace(/\/*$/, '/') : '';
+  // Адрес без папки сайта, как он записан в строке браузера: «ru/catalog», «product/f-milan», «»
+  function pathTail() {
+    const p = window.location.pathname;
+    let cut = 0;
+    try { if (decodeURIComponent(p).indexOf(LANG_BASE) === 0) cut = encodeURI(LANG_BASE).length; } catch (e) { /* ничего */ }
+    return p.slice(cut).replace(/^\/+|\/+$/g, '');
+  }
+  // Язык, названный в адресе: первая часть пути или (по-старому и в версии одним файлом) параметр ?lang=
+  function urlLang() {
+    try {
+      const seg = LANG_BASE ? pathTail().split('/')[0] : '';
+      if (LANGS.indexOf(seg) !== -1) return seg;
+      const q = new URLSearchParams(window.location.search).get('lang') || '';
+      return LANGS.indexOf(q) !== -1 ? q : '';
+    } catch (e) { return ''; }
+  }
   (function pickLang() {
-    let q = '';
-    try { q = new URLSearchParams(window.location.search).get('lang') || ''; } catch (e) { /* ничего */ }
-    const saved = store.get(LANG_KEY, '');
-    if (LANGS.indexOf(q) !== -1) { lang = q; if (q !== saved) store.set(LANG_KEY, q); }
+    const q = urlLang(), saved = store.get(LANG_KEY, '');
+    if (q) { lang = q; if (q !== saved) store.set(LANG_KEY, q); }
     else if (LANGS.indexOf(saved) !== -1) lang = saved;
   })();
+  // Путь страницы на языке l: папка сайта, язык (кроме основного), страница. Главная: «/», «/ru», «/en»
+  const langPath = (route, l) => LANG_BASE + [(l || lang) !== LANGS[0] ? (l || lang) : '', route || ''].filter(Boolean).join('/');
+  // Страница из адреса без языка: «catalog», «brands/asi-sun», «»
+  const routeTail = () => { const seg = pathTail().split('/'); if (LANGS.indexOf(seg[0]) !== -1) seg.shift(); return seg.join('/'); };
+  /* Адрес показывает тот же язык, что и страница. Посетитель, выбравший язык раньше, открывает адрес без языка —
+     страница показана на его языке, и адрес меняется на /ru/… или /en/…; то же после кнопки «Назад». */
+  function syncLangURL() {
+    if (!LANG_BASE) return;
+    try {
+      const u = new URL(window.location.href), want = langPath(routeTail());
+      if (u.pathname === want && !u.searchParams.has('lang')) return;
+      u.pathname = want;
+      u.searchParams.delete('lang');
+      window.history.replaceState(window.history.state, '', u.toString());
+    } catch (e) { /* ничего */ }
+  }
   const msgLang = () => (LANGS.indexOf(CONFIG.messageLang) !== -1 ? CONFIG.messageLang : lang);
 
   function L(v, lng) {
@@ -3909,6 +3943,7 @@ const THEME = (function () {
         let path = decodeURIComponent(window.location.pathname);
         if (path.indexOf(BASE) === 0) path = path.slice(BASE.length);
         const seg = path.replace(/^\/+|\/+$/g, '').split('/');
+        if (LANGS.indexOf(seg[0]) !== -1) seg.shift();   // язык: /ru/catalog
         if (seg[0] === 'product' && byId[seg[1]]) out.product = seg[1];
         else if (VIEWS.indexOf(seg[0]) !== -1) { out.view = seg[0]; out.post = SUBPAGES[seg[0]] ? (seg[1] || '') : ''; }
       } else {
@@ -3921,17 +3956,18 @@ const THEME = (function () {
   }
   function pageFromURL() { return locRoute().product; }
   function viewFromURL() { const r = locRoute(); return { view: r.view, post: r.post }; }
-  // Адрес с нужными параметрами; язык и прочие параметры сохраняются
+  // Адрес страницы на нынешнем языке; прочие параметры адреса сохраняются
   function urlWith(set) {
     const sp = new URLSearchParams(window.location.search);
     ROUTE_KEYS.forEach(k => sp.delete(k));
     if (PATHS) {
-      let path = BASE;
-      if (set.product) path += 'product/' + encodeURIComponent(set.product);
-      else if (set.page) path += encodeURIComponent(set.page) + (set.post ? '/' + encodeURIComponent(set.post) : '');
+      let route = '';
+      if (set.product) route = 'product/' + encodeURIComponent(set.product);
+      else if (set.page) route = encodeURIComponent(set.page) + (set.post ? '/' + encodeURIComponent(set.post) : '');
+      sp.delete('lang');   // язык стоит в пути: /ru/catalog
       ['cat', 'aud', 'brand'].forEach(k => { if (set[k]) sp.set(k, set[k]); });
       const q = sp.toString();
-      return path + (q ? '?' + q : '');
+      return langPath(route) + (q ? '?' + q : '');
     }
     Object.keys(set).forEach(k => { if (set[k]) sp.set(k, set[k]); });
     return '?' + sp.toString();
@@ -4074,19 +4110,25 @@ const THEME = (function () {
     // Адрес страницы для поисковиков и для ссылок, которыми делятся в мессенджерах
     const put = (sel, attr, v) => { const el = $(sel); if (el && v) el.setAttribute(attr, v); };
     if (CONFIG.siteUrl) {
-      const q = [];
-      let path = '';
-      if (lang !== LANGS[0]) q.push('lang=' + lang);
-      if (PATHS) path = p ? 'product/' + encodeURIComponent(p.id) : v ? encodeURIComponent(state.view) + (state.post ? '/' + encodeURIComponent(state.post) : '') : '';
-      else {
-        if (p) q.push('product=' + encodeURIComponent(p.id));
-        if (v) { q.push('page=' + encodeURIComponent(state.view)); if (state.post) q.push('post=' + encodeURIComponent(state.post)); }
-      }
-      if (inCat) q.push('cat=' + encodeURIComponent(inCat));
-      if (v && state.view === 'catalog' && state.aud) q.push('aud=' + encodeURIComponent(state.aud));
-      const url = String(CONFIG.siteUrl).replace(/\/+$/, '') + '/' + path + (q.length ? '?' + q.join('&') : '');
+      // На сайте с обычными адресами язык стоит в пути (https://asioptik.az/ru/catalog), в версии одним файлом — в параметре
+      const route = PATHS ? (p ? 'product/' + encodeURIComponent(p.id) : v ? encodeURIComponent(state.view) + (state.post ? '/' + encodeURIComponent(state.post) : '') : '') : '';
+      const urlIn = l => {
+        const q = [];
+        if (!PATHS) {
+          if (l !== LANGS[0]) q.push('lang=' + l);
+          if (p) q.push('product=' + encodeURIComponent(p.id));
+          if (v) { q.push('page=' + encodeURIComponent(state.view)); if (state.post) q.push('post=' + encodeURIComponent(state.post)); }
+        }
+        if (inCat) q.push('cat=' + encodeURIComponent(inCat));
+        if (v && state.view === 'catalog' && state.aud) q.push('aud=' + encodeURIComponent(state.aud));
+        const path = PATHS ? [l !== LANGS[0] ? l : '', route].filter(Boolean).join('/') : '';
+        return String(CONFIG.siteUrl).replace(/\/+$/, '') + '/' + path + (q.length ? '?' + q.join('&') : '');
+      };
+      const url = urlIn(lang);
       put('link[rel="canonical"]', 'href', url);
       put('meta[property="og:url"]', 'content', url);
+      // адреса этой же страницы на других языках
+      $$('link[rel="alternate"][hreflang]').forEach(el => { if (LANGS.indexOf(el.hreflang) !== -1) el.setAttribute('href', urlIn(el.hreflang)); });
     }
     put('meta[property="og:title"]', 'content', known ? title : '');
     put('meta[property="og:description"]', 'content', known ? desc : '');
@@ -5138,7 +5180,8 @@ const THEME = (function () {
     if (LANGS.indexOf(l) === -1 || l === lang) return;
     lang = l;
     store.set(LANG_KEY, l);
-    try { const u = new URL(window.location.href); u.searchParams.set('lang', l); window.history.replaceState(null, '', u.toString()); } catch (e) { /* ничего */ }
+    if (LANG_BASE) syncLangURL();   // язык в пути: /ru/catalog → /en/catalog
+    else { try { const u = new URL(window.location.href); u.searchParams.set('lang', l); window.history.replaceState(null, '', u.toString()); } catch (e) { /* ничего */ } }
     applyLang();
   }
 
@@ -5343,6 +5386,7 @@ const THEME = (function () {
     });
     // Кнопки «Назад» и «Вперёд» в браузере переключают главную, страницы товаров и страницы сайта
     window.addEventListener('popstate', e => {
+      syncLangURL();   // запись истории могла быть сделана на другом языке
       if (!state.page && !state.view && !pageFromURL() && !viewFromURL().view) return;
       showPage({ restore: true, hash: window.location.hash, y: e.state && typeof e.state.y === 'number' ? e.state.y : null });
     });
@@ -5365,6 +5409,7 @@ const THEME = (function () {
     },
   };
   function init() {
+    syncLangURL();   // посетитель с выбранным раньше языком открыл адрес без языка — адрес получает /ru или /en
     injectDefs();
     const wrap = document.createElement('div');
     wrap.innerHTML = layersHTML();
