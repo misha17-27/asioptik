@@ -181,9 +181,41 @@
       });
     }).catch(function () { return file; });
   }
+  /* Несколько фото сразу (раздел «Изображения»): каждое готовится так же, затем сверяются число и общий размер */
+  function prepMany(input) {
+    var files = [].slice.call(input.files || []);
+    var max = parseInt(input.getAttribute('data-max'), 10) || 0, total = parseInt(input.getAttribute('data-max-total'), 10) || 0, many = parseInt(input.getAttribute('data-max-files'), 10) || 20;
+    if (!files.length) return note(input, '');
+    var odd = files.filter(function (f) { return !/^image\/(jpeg|png|webp)$/.test(f.type); })[0];
+    if (odd) {
+      input.value = '';
+      return note(input, tx('fileBad', 'Файл «{name}» не подходит: нужна картинка JPG, PNG или WebP.', { name: odd.name }), true);
+    }
+    if (files.length > many) {
+      input.value = '';
+      return note(input, tx('filesMany', 'За один раз можно загрузить не больше {n} фото. Выберите меньше.', { n: many }), true);
+    }
+    note(input, tx('filePrep', 'Готовлю фото…'));
+    input._prep = Promise.all(files.map(shrink)).then(function (out) {
+      input._prep = null;
+      try {
+        var dt = new DataTransfer();
+        out.forEach(function (f) { dt.items.add(f); });
+        input.dataset.busy = '1';
+        input.files = dt.files;
+        delete input.dataset.busy;
+      } catch (err) { out = files; }
+      var sum = out.reduce(function (a, f) { return a + f.size; }, 0);
+      var big = out.filter(function (f) { return max && f.size > max; })[0];
+      if (big) return note(input, tx('fileBig', 'Файл {size} — больше, чем принимает хостинг ({max}). Уменьшите фото и выберите его снова.', { size: size(big.size), max: size(max) }), true);
+      if (total && sum > total) return note(input, tx('filesBig', 'Выбрано {size} — больше, чем хостинг принимает за один раз ({max}). Выберите меньше фото.', { size: size(sum), max: size(total) }), true);
+      note(input, tx('filesOk', 'Выбрано фото: {n}, всего {size}. Нажмите «Загрузить».', { n: out.length, size: size(sum) }));
+    });
+  }
   document.addEventListener('change', function (e) {
     var input = e.target;
     if (!input.matches || !input.matches('input[type=file][data-max]') || input.dataset.busy) return;
+    if (input.multiple) return prepMany(input);
     var file = input.files && input.files[0];
     if (!file) return note(input, '');
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
@@ -224,5 +256,37 @@
     }
     el.addEventListener('input', update);
     update();
+  });
+
+  /* Меню листается отдельно от страницы: открытый раздел должен быть на виду, а не под краем экрана */
+  var cur = document.querySelector('#adm-nav a[aria-current]');
+  if (cur && cur.scrollIntoView) { try { cur.scrollIntoView({ block: 'nearest' }); } catch (err) { /* старый браузер */ } }
+
+  /* Копирование по нажатию: путь к фото в разделе «Изображения». Кнопка на секунду показывает «Скопировано». */
+  function copyText(text, done) {
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+      document.body.removeChild(ta);
+      done(ok);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+    else fallback();
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-copy]') : null;
+    if (!b) return;
+    e.preventDefault();
+    copyText(b.getAttribute('data-copy'), function (ok) {
+      var label = b.querySelector('[data-copy-label]') || b, was = b.getAttribute('data-was') || label.textContent;
+      b.setAttribute('data-was', was);
+      label.textContent = ok ? tx('copied', 'Скопировано') : tx('copyFail', 'Не скопировалось — выделите и скопируйте вручную');
+      b.classList.toggle('is-copied', ok);
+      clearTimeout(b._t);
+      b._t = setTimeout(function () { label.textContent = was; b.classList.remove('is-copied'); }, 1600);
+    });
   });
 })();

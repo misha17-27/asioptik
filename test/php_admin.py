@@ -192,10 +192,10 @@ async def main():
         await pg.goto(B + f'/admin/?p=edit&type=product&id={cid}'); print('copy link on product page:', await pg.locator('p.danger a').inner_text())
         await pg.locator('form.danger button').click(); await pg.wait_for_timeout(500); print('delete product from its page:', await flash(), '| left:', sql(f"SELECT COUNT(*) FROM ao_items WHERE id={cid}"))
         # смена пароля
-        await pg.goto(B + '/admin/?p=password'); await pg.fill('#old', 'not-the-password'); await pg.fill('#new', 'New-Pass-2026'); await pg.fill('#new2', 'New-Pass-2026'); await pg.locator('form.narrow .btn').click(); print('password, wrong old:', await flash())
-        await pg.fill('#old', PW); await pg.fill('#new', 'short'); await pg.fill('#new2', 'short'); await pg.evaluate("document.querySelector('#new').removeAttribute('minlength')"); await pg.locator('form.narrow .btn').click(); print('password, short:', await flash())
-        await pg.fill('#old', PW); await pg.fill('#new', 'New-Pass-2026'); await pg.fill('#new2', 'New-Pass-2026'); await pg.locator('form.narrow .btn').click(); print('password changed:', await flash())
-        await pg.fill('#old', 'New-Pass-2026'); await pg.fill('#new', PW); await pg.fill('#new2', PW); await pg.locator('form.narrow .btn').click(); print('password back:', await flash())
+        await pg.goto(B + '/admin/?p=profile'); await pg.fill('#old', 'not-the-password'); await pg.fill('#new', 'New-Pass-2026'); await pg.fill('#new2', 'New-Pass-2026'); await pg.locator('form.narrow:has(#old) .btn').click(); print('password, wrong old:', await flash())
+        await pg.fill('#old', PW); await pg.fill('#new', 'short'); await pg.fill('#new2', 'short'); await pg.evaluate("document.querySelector('#new').removeAttribute('minlength')"); await pg.locator('form.narrow:has(#old) .btn').click(); print('password, short:', await flash())
+        await pg.fill('#old', PW); await pg.fill('#new', 'New-Pass-2026'); await pg.fill('#new2', 'New-Pass-2026'); await pg.locator('form.narrow:has(#old) .btn').click(); print('password changed:', await flash())
+        await pg.fill('#old', 'New-Pass-2026'); await pg.fill('#new', PW); await pg.fill('#new2', PW); await pg.locator('form.narrow:has(#old) .btn').click(); print('password back:', await flash())
         # удаление записи заказа и выход
         mid = sql("SELECT id FROM ao_orders WHERE kind='message' ORDER BY id DESC LIMIT 1")
         await pg.goto(B + f'/admin/?p=order&id={mid}'); await pg.locator('.danger button').click(); await pg.wait_for_timeout(400); print('delete message:', await flash(), '| left:', sql("SELECT COUNT(*) FROM ao_orders"))

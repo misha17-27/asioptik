@@ -104,7 +104,8 @@ def urls():
     u += ['/admin/?p=list&type=product&cat=sun&q=a', '/admin/?p=list&type=product&q=zzzzzz', '/admin/?p=edit&type=product', '/admin/?p=edit&type=product&cat=frames',
           '/admin/?p=edit&type=brand', '/admin/?p=edit&type=service', '/admin/?p=edit&type=post']
     u += [f"/admin/?p=edit&type={t}&id={one(t)}" for t in ('product', 'category', 'brand', 'service', 'post')]
-    u += [f"/admin/?p=edit&type=product&copy={one('product')}", '/admin/?p=doc&name=config', '/admin/?p=doc&name=about', '/admin/?p=banners', '/admin/?p=security', '/admin/?p=password']
+    u += [f"/admin/?p=edit&type=product&copy={one('product')}", '/admin/?p=doc&name=config', '/admin/?p=doc&name=about', '/admin/?p=banners', '/admin/?p=security', '/admin/?p=password',
+          '/admin/?p=profile', '/admin/?p=users', '/admin/?p=media', '/admin/?p=mail']   # новые разделы: профиль, пользователи, изображения, почта
     u += [f"/admin/?p=order&id={i}" for i in sql('SELECT id FROM ao_orders ORDER BY id').split()]
     return u
 

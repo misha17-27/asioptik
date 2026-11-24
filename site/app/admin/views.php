@@ -39,7 +39,7 @@ function preview_note(): string
     };
     return '<p class="note note-top">' . strtr(e(__('Сайт открыт по временному адресу {here}. Поисковики его не показывают — так в поиске не окажется двух копий сайта. Когда сайт откроется на основном адресе {main}, поисковики увидят его сами: переключать ничего не нужно.')),
         ['{here}' => $show(site_here_url()), '{main}' => $show(site_main_url())])
-        . ' <a href="' . e(admin_url('doc', ['name' => 'config'])) . '">' . e(__('Основной адрес задаётся в «Настройках сайта».')) . '</a></p>';
+        . (can('settings') ? ' <a href="' . e(admin_url('doc', ['name' => 'config'])) . '">' . e(__('Основной адрес задаётся в «Настройках сайта».')) . '</a>' : '') . '</p>';
 }
 
 function csrf_field(): string
@@ -64,6 +64,10 @@ function icon(string $name): string
         'pin' => '<path d="M10 17.500s5.500-5 5.500-9.300a5.500 5.500 0 0 0-11 0c0 4.300 5.500 9.300 5.500 9.300z"/><circle cx="10" cy="8.200" r="2"/>',
         'tool' => '<path d="M16.500 5.500 13.800 8.200l-2-2 2.700-2.700a4 4 0 0 0-5.100 5L3.500 14.400a1.500 1.500 0 0 0 2.100 2.100l5.900-5.900a4 4 0 0 0 5-5.100z"/>',
         'gear' => '<circle cx="10" cy="10" r="2.500"/><path d="M10 2.500v2.300M10 15.200v2.300M2.500 10h2.300M15.200 10h2.300M4.700 4.700l1.600 1.600M13.700 13.700l1.600 1.600M4.700 15.300l1.600-1.600M13.700 6.300l1.600-1.600"/>',
+        'user' => '<circle cx="10" cy="7" r="3.200"/><path d="M3.500 17c.700-3.400 3.300-5 6.500-5s5.800 1.600 6.500 5"/>',
+        'team' => '<circle cx="7.500" cy="7.500" r="2.700"/><path d="M2.500 16.500c.500-2.900 2.500-4.300 5-4.300s4.500 1.400 5 4.300"/><path d="M12.800 5.200a2.600 2.600 0 0 1 0 5"/><path d="M14.600 12.500c1.700.400 2.700 1.700 3 3.700"/><path d="M15.500 2.500v3M14 4h3"/>',
+        'mail' => '<rect x="2.500" y="4.500" width="15" height="11" rx="2"/><path d="m3 6 7 5.500L17 6"/>',
+        'photos' => '<rect x="2.500" y="5.500" width="12" height="10.500" rx="1.800"/><path d="M5.500 5.500V4.300c0-.700.600-1.300 1.300-1.300h9.400c.700 0 1.300.600 1.300 1.300v8c0 .700-.600 1.300-1.300 1.300h-1.700"/><path d="m3 14 3.300-3.300 2.400 2.400 1.800-1.800 4 3.700"/>',
         'key' => '<circle cx="7" cy="13" r="3.500"/><path d="m9.500 10.500 7-7M13.500 6.500l2 2M11.500 8.500l1.500 1.500"/>',
         'shield' => '<path d="M10 2.500 16 5v4.500c0 3.700-2.500 6.600-6 8-3.500-1.400-6-4.300-6-8V5z"/><path d="m7.300 10 2 2 3.500-3.800"/>',
         'out' => '<path d="M8 3H4v14h4"/><path d="M12.500 6.500 16 10l-3.500 3.500M16 10H7.500"/>',
@@ -103,6 +107,11 @@ function admin_js_texts(): array
         'countAuto' => __('{n} из {max} знаков — текст сайта'),
         'mb' => __('МБ'),
         'kb' => __('КБ'),
+        'filesMany' => __('За один раз можно загрузить не больше {n} фото. Выберите меньше.'),
+        'filesBig' => __('Выбрано {size} — больше, чем хостинг принимает за один раз ({max}). Выберите меньше фото.'),
+        'filesOk' => __('Выбрано фото: {n}, всего {size}. Нажмите «Загрузить».'),
+        'copied' => __('Скопировано'),
+        'copyFail' => __('Не скопировалось — выделите и скопируйте вручную'),
     ];
 }
 
@@ -163,15 +172,22 @@ function form_close(string $after = ''): string
 function admin_page(string $title, string $body, string $current = '', string $actions = '', string $doc = ''): void
 {
     $c = admin_counts();
+    // Пункт меню: ключ, название, значок, число рядом и что нужно роли, чтобы его видеть (пусто — виден всем; см. ROLE_CAN)
     $groups = [
-        __('Магазин') => [['home', __('Обзор'), 'home', null], ['orders', __('Заказы'), 'orders', $c['new'] ?: null], ['clients', __('Клиенты'), 'users', $c['clients'] ?: null]],
-        __('Контент') => [['pages', __('Страницы'), 'page', null], ['list:post', __('Блог'), 'blog', $c['post'] ?? null], ['banners', __('Баннеры и фото'), 'image', null]],
-        __('Каталог') => [['list:product', __('Товары'), 'box', $c['product'] ?? null], ['list:category', __('Разделы'), 'grid', $c['category'] ?? null],
-            ['list:brand', __('Бренды'), 'tag', $c['brand'] ?? null], ['list:service', __('Услуги мастерской'), 'tool', $c['service'] ?? null]],
-        __('Настройки') => [['doc:config', __('Настройки сайта'), 'gear', null], ['list:branch', __('Филиалы'), 'pin', $c['branch'] ?? null], ['security', __('Безопасность'), 'shield', null], ['password', __('Пароль'), 'key', null]],
+        __('Магазин') => [['home', __('Обзор'), 'home', null, ''], ['orders', __('Заказы'), 'orders', $c['new'] ?: null, 'orders'], ['clients', __('Клиенты'), 'users', $c['clients'] ?: null, 'orders']],
+        __('Контент') => [['pages', __('Страницы'), 'page', null, 'content'], ['list:post', __('Блог'), 'blog', $c['post'] ?? null, 'content'], ['banners', __('Баннеры и фото'), 'image', null, 'content'],
+            ['media', __('Изображения'), 'photos', null, 'content']],
+        __('Каталог') => [['list:product', __('Товары'), 'box', $c['product'] ?? null, 'content'], ['list:category', __('Разделы'), 'grid', $c['category'] ?? null, 'content'],
+            ['list:brand', __('Бренды'), 'tag', $c['brand'] ?? null, 'content'], ['list:service', __('Услуги мастерской'), 'tool', $c['service'] ?? null, 'content']],
+        __('Настройки') => [['doc:config', __('Настройки сайта'), 'gear', null, 'settings'], ['list:branch', __('Филиалы'), 'pin', $c['branch'] ?? null, 'content'],
+            ['mail', __('Почта (SMTP)'), 'mail', null, 'settings'], ['security', __('Безопасность'), 'shield', null, 'settings'], ['users', __('Пользователи'), 'team', null, 'settings'], ['profile', __('Мой профиль'), 'user', null, '']],
     ];
     $links = '';
     foreach ($groups as $group => $items) {
+        $items = array_values(array_filter($items, function ($it) {
+            return $it[4] === '' || can($it[4]);
+        }));
+        if (!$items) continue;
         $links .= '<p class="nav-group">' . e($group) . '</p>';
         foreach ($items as [$key, $label, $ic, $n]) {
             $p = explode(':', $key);
@@ -188,7 +204,8 @@ function admin_page(string $title, string $body, string $current = '', string $a
         . '<title>' . e($doc !== '' ? $doc : $title) . ' ' . __('— админ-панель Asioptik') . '</title><link rel="icon" href="' . e($base) . 'favicon.ico"><link rel="stylesheet" href="' . e($base) . 'assets/css/admin.css?v=' . $ver . '"></head><body>'
         . '<div class="adm"><aside class="side"><a class="brand" href="' . e(admin_url()) . '">asi<b>optik</b><small>Admin</small></a>'
         . '<button type="button" class="menu-btn" aria-expanded="false" aria-controls="adm-nav">' . __('Меню') . '</button>'
-        . '<nav id="adm-nav" aria-label="' . e(__('Разделы админ-панели')) . '">' . $links . '</nav></aside>'
+        . '<nav id="adm-nav" aria-label="' . e(__('Разделы админ-панели')) . '">' . $links . '</nav>'
+        . '<p class="who">' . e(__('Вы вошли как')) . ' <b>' . e(user_name(me())) . '</b><span class="role">' . e(role_names()[me()['role'] ?? ''] ?? '') . '</span></p></aside>'
         . '<main class="main"><header class="top"><h1>' . e($title) . '</h1><div class="top-acts">' . $actions . ui_switch()
         . '<a class="btn btn-line" href="' . e($base) . '" target="_blank" rel="noopener">' . icon('ext') . __('Сайт') . '</a>'
         . '<form method="post" class="logout" action="' . e(admin_url('logout')) . '">' . csrf_field() . '<button type="submit" class="btn">' . icon('out') . __('Выйти') . '</button></form></div></header>'

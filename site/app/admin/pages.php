@@ -140,11 +140,13 @@ function admin_home(): void
         [$c['category'] ?? 0, n__($c['category'] ?? 0, 'раздел', 'раздела', 'разделов'), admin_url('list', ['type' => 'category']), false],
         [$c['brand'] ?? 0, n__($c['brand'] ?? 0, 'бренд', 'бренда', 'брендов'), admin_url('list', ['type' => 'brand']), false],
     ];
+    if (!can('orders')) $tiles = array_slice($tiles, 3);   // заказы и клиенты — не для всех ролей
     $out = preview_note() . '<div class="tiles">';
     foreach ($tiles as [$n, $label, $url, $hot]) {
         $out .= '<a class="tile' . ($hot && $n ? ' tile-hot' : '') . '" href="' . e($url) . '"><b>' . (int) $n . '</b><span>' . e($label) . '</span></a>';
     }
     $out .= '</div>';
+    if (!can('orders')) admin_page(__('Обзор'), $out, 'home');
     $rows = q('SELECT id, number, kind, status, created_at, name, phone, total, data FROM ao_orders ORDER BY created_at DESC, id DESC LIMIT 8')->fetchAll();
     $out .= '<section class="card">' . card_head(__('Последние заказы'), '<a href="' . e(admin_url('orders')) . '">' . __('Все →') . '</a>')
         . ($rows ? orders_table($rows) : '<p class="empty">' . __('Заказов пока нет. Когда покупатель оформит заказ, оставит заявку на ремонт или напишет с сайта, запись появится здесь.') . '</p>')

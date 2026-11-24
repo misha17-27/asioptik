@@ -61,14 +61,35 @@ function admin_run(): void
     // Только свои скрипты, без встроенных (политика целиком — в app/core/bootstrap.php, её же повторяет admin/.htaccess)
     header('Content-Security-Policy: ' . CSP_ADMIN);
     admin_session();
+    // Таблицы базы доводятся до нынешнего вида (новые столбцы пользователей) раньше, чем к ним обратится вход
+    if (($fault = db_upgrade()) !== '') {
+        error_log('[asioptik] db upgrade: ' . $fault);
+        http_response_code(500);
+        admin_bare(__('База данных не обновилась'), '<p class="flash flash-err" role="alert">'
+            . e(__('Новой версии сайта нужны новые столбцы в таблице пользователей, а база не дала их добавить. В панели хостинга дайте пользователю базы данных все права на эту базу (в cPanel — «MySQL Databases» → «Add User To Database» → «All Privileges») и обновите страницу. Сайт для покупателей при этом работает как обычно.'))
+            . '</p>');   // сам ответ базы — только в журнале storage/logs: в нём бывает имя пользователя базы
+    }
     if ($p === 'login') admin_login();
     if (empty($_SESSION['uid'])) redirect(admin_url('login'));
-    if (time() - (int) ($_SESSION['seen'] ?? 0) > 8 * 3600) {   // восемь часов без действий — входим заново
+    $u = q('SELECT * FROM ao_users WHERE id = ?', [(int) $_SESSION['uid']])->fetch();
+    // Сеанс заканчивается: через восемь часов без действий; когда пользователя отключили или убрали;
+    // когда ему сменили пароль (отметка пароля в сеансе перестала совпадать)
+    $gone = !$u || (int) $u['active'] !== 1 || !isset(ROLE_CAN[$u['role']])
+        || (isset($_SESSION['pm']) && !hash_equals(pass_mark((string) $u['pass_hash']), (string) $_SESSION['pm']));
+    if ($gone || time() - (int) ($_SESSION['seen'] ?? 0) > 8 * 3600) {
         $_SESSION = [];
         session_destroy();
         redirect(admin_url('login'));
     }
+    if (!isset($_SESSION['pm'])) $_SESSION['pm'] = pass_mark((string) $u['pass_hash']);   // сеанс открыт до появления отметки
     $_SESSION['seen'] = time();
+    me($u);
+    // Что нужно роли, чтобы открыть раздел (см. ROLE_CAN в users.php). Обзор, свой профиль и выход доступны всем.
+    $need = ['orders' => 'orders', 'order' => 'orders', 'clients' => 'orders',
+        'pages' => 'content', 'page' => 'content', 'list' => 'content', 'edit' => 'content', 'delete' => 'content', 'banners' => 'content', 'media' => 'content',
+        'security' => 'settings', 'users' => 'settings', 'mail' => 'settings'][$p] ?? '';
+    if ($p === 'doc') $need = ($_GET['name'] ?? '') === 'config' ? 'settings' : 'content';   // «Настройки сайта» — администратору, «О нас» — всем
+    if ($need !== '' && !can($need)) admin_denied();
     if (is_post()) csrf_check();
     switch ($p) {
         case '': admin_home(); break;
@@ -82,8 +103,12 @@ function admin_run(): void
         case 'delete': admin_delete(); break;
         case 'doc': admin_doc(); break;
         case 'banners': admin_banners(); break;
+        case 'media': admin_media(); break;
         case 'security': admin_security(); break;
-        case 'password': admin_password(); break;
+        case 'mail': admin_mail(); break;
+        case 'users': admin_users(); break;
+        case 'profile': admin_profile(); break;
+        case 'password': admin_profile(); break;   // прежний адрес страницы «Пароль»
         case 'logout': admin_logout(); break;
     }
     redirect(admin_url());
@@ -109,20 +134,27 @@ function admin_login(): void
             // пароль не проверяем и попытку не считаем: человек мог просто не дождаться отметки
             $error = __('Подтвердите, что вы не робот: дождитесь зелёной отметки под паролем и нажмите «Войти» ещё раз.');
         } else {
-            $u = q('SELECT * FROM ao_users WHERE login = ?', [$login])->fetch();
+            $u = q('SELECT * FROM ao_users WHERE LOWER(login) = ?', [mb_strtolower($login)])->fetch();   // регистр букв в логине не важен
             // проверяем пароль и для несуществующего логина, чтобы по времени ответа нельзя было подобрать логин
             $hash = $u ? $u['pass_hash'] : '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG';
-            if (password_verify($pass, $hash) && $u) {
+            $ok = password_verify($pass, $hash) && $u;
+            if ($ok && (int) $u['active'] !== 1) {
+                // об отключении говорим только тому, кто знает пароль
+                $error = __('Эта учётная запись отключена. Обратитесь к администратору сайта.');
+            } elseif ($ok) {
                 session_regenerate_id(true);
-                $_SESSION = ['uid' => (int) $u['id'], 'login' => $u['login'], 'seen' => time()];
-                q('DELETE FROM ao_logins WHERE ip_hash = ?', [$ip]);
-                if (password_needs_rehash($u['pass_hash'], PASSWORD_DEFAULT)) {
-                    q('UPDATE ao_users SET pass_hash = ? WHERE id = ?', [password_hash($pass, PASSWORD_DEFAULT), $u['id']]);
+                if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
+                    $hash = password_hash($pass, PASSWORD_DEFAULT);
+                    q('UPDATE ao_users SET pass_hash = ? WHERE id = ?', [$hash, $u['id']]);
                 }
+                q('UPDATE ao_users SET last_login = ? WHERE id = ?', [now(), $u['id']]);
+                $_SESSION = ['uid' => (int) $u['id'], 'login' => $u['login'], 'seen' => time(), 'pm' => pass_mark($hash)];
+                q('DELETE FROM ao_logins WHERE ip_hash = ?', [$ip]);
                 redirect(admin_url());
+            } else {
+                q('INSERT INTO ao_logins (ip_hash, created_at) VALUES (?, ?)', [$ip, now()]);
+                $error = __('Неверный логин или пароль.');
             }
-            q('INSERT INTO ao_logins (ip_hash, created_at) VALUES (?, ?)', [$ip, now()]);
-            $error = __('Неверный логин или пароль.');
         }
     }
     admin_bare(__('Вход в админ-панель'),
@@ -140,33 +172,6 @@ function admin_logout(): void
     $_SESSION = [];
     session_destroy();
     redirect(admin_url('login'));
-}
-
-function admin_password(): void
-{
-    $error = '';
-    if (is_post()) {
-        $u = q('SELECT * FROM ao_users WHERE id = ?', [(int) $_SESSION['uid']])->fetch();
-        $old = (string) ($_POST['old'] ?? '');
-        $new = (string) ($_POST['new'] ?? '');
-        if (!$u || !password_verify($old, $u['pass_hash'])) $error = __('Текущий пароль указан неверно.');
-        elseif (mb_strlen($new) < 8) $error = __('Новый пароль должен быть не короче 8 символов.');
-        elseif (weak_password($new, (string) $u['login'])) $error = __('Слишком простой пароль: такие подбирают первыми. Придумайте другой.');
-        elseif ($new !== (string) ($_POST['new2'] ?? '')) $error = __('Новый пароль и его повтор не совпадают.');
-        else {
-            q('UPDATE ao_users SET pass_hash = ? WHERE id = ?', [password_hash($new, PASSWORD_DEFAULT), $u['id']]);
-            session_regenerate_id(true);
-            flash(__('Пароль изменён.'));
-            redirect(admin_url('password'));
-        }
-    }
-    admin_page(__('Пароль'),
-        ($error ? '<p class="flash flash-err" role="alert">' . e($error) . '</p>' : '')
-        . '<form method="post" class="form narrow">' . csrf_field()
-        . '<div class="field"><label class="lbl" for="old">' . __('Текущий пароль') . '</label><input id="old" name="old" type="password" autocomplete="current-password" required></div>'
-        . '<div class="field"><label class="lbl" for="new">' . __('Новый пароль') . '</label><input id="new" name="new" type="password" autocomplete="new-password" required minlength="8"><p class="hint">' . __('Не короче 8 символов.') . '</p></div>'
-        . '<div class="field"><label class="lbl" for="new2">' . __('Новый пароль ещё раз') . '</label><input id="new2" name="new2" type="password" autocomplete="new-password" required></div>'
-        . '<button type="submit" class="btn">' . __('Изменить пароль') . '</button></form>', 'password');
 }
 
 /* ---------- заказы, заявки и сообщения ---------- */

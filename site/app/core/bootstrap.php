@@ -145,6 +145,30 @@ function json_out($data, int $code = 200): void
     exit;
 }
 
+/**
+ * Отвечает и отпускает посетителя, но работу не завершает: дальше можно отправить письмо о заказе,
+ * не заставляя покупателя ждать почтовый сервер. После вызова нужно самому закончить скрипт (exit).
+ */
+function json_flush($data, int $code = 200): void
+{
+    $out = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
+    ignore_user_abort(true);   // покупатель может уже уйти в WhatsApp — письмо всё равно отправится
+    @ini_set('zlib.output_compression', '0');
+    if (function_exists('apache_setenv')) @apache_setenv('no-gzip', '1');
+    http_response_code($code);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    header('Content-Length: ' . strlen($out));
+    header('Connection: close');
+    echo $out;
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    elseif (function_exists('litespeed_finish_request')) litespeed_finish_request();
+    else {
+        while (ob_get_level() > 0) @ob_end_flush();
+        @flush();
+    }
+}
+
 function now(): string
 {
     return date('Y-m-d H:i:s');
@@ -191,3 +215,4 @@ require APP . '/core/i18n.php';
 require APP . '/core/db.php';
 require APP . '/core/store.php';
 require APP . '/core/captcha.php';
+require APP . '/core/mail.php';

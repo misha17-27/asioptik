@@ -470,10 +470,26 @@ function upload_orient($img, string $path)
     return $img;
 }
 
-/** Удаляет картинку, если она лежит в uploads (чужие и внешние адреса не трогаем). */
-function delete_upload(?string $path): void
+/**
+ * Удаляет картинку, если она лежит в uploads (чужие и внешние адреса не трогаем) и больше нигде не используется.
+ * Путь к фото можно вставить в текст статьи (раздел «Изображения»), поэтому одно фото бывает нужно в нескольких местах:
+ * файл убирается, только когда упоминаний в базе не больше $own — столько их у самой записи, из которой фото убирают
+ * (она в этот момент ещё хранит прежние данные).
+ */
+function delete_upload(?string $path, int $own = 1): void
 {
     if (!$path || !preg_match('~^uploads/[a-z0-9]+/[a-f0-9]{16}\.(jpg|png|webp)$~', $path)) return;
+    if (upload_refs($path) > $own) return;
     $f = ROOT . '/' . $path;
     if (is_file($f)) @unlink($f);
+}
+
+/** Сколько раз фото упоминается в базе: в записях (товары, статьи, бренды…) и в настройках (баннеры, страницы). */
+function upload_refs(string $path): int
+{
+    $name = basename($path);   // имя файла — 16 случайных знаков: его достаточно, и в нём нет знаков, особых для LIKE
+    $n = 0;
+    foreach (q('SELECT data AS v FROM ao_items WHERE data LIKE ?', ['%' . $name . '%'])->fetchAll() as $r) $n += substr_count((string) $r['v'], $name);
+    foreach (q('SELECT value AS v FROM ao_settings WHERE value LIKE ?', ['%' . $name . '%'])->fetchAll() as $r) $n += substr_count((string) $r['v'], $name);
+    return $n;
 }

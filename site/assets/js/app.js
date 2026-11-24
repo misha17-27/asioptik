@@ -510,9 +510,12 @@ const THEME = (function () {
     let out = '', inList = false;
     (lines || []).forEach(line => {
       const li = /^- /.test(line), h = /^## /.test(line);
+      // строка с путём к фото из раздела «Изображения» админ-панели — фото в тексте; после пути может стоять подпись
+      const pic = /^\s*(uploads\/[a-z0-9]+\/[a-f0-9]{16}\.(?:jpg|png|webp))(?:\s+(\S.*))?$/.exec(line);
       if (li && !inList) { out += '<ul>'; inList = true; }
       if (!li && inList) { out += '</ul>'; inList = false; }
-      out += li ? `<li>${Shop.esc(line.slice(2))}</li>` : h ? `<h2>${Shop.esc(line.slice(3))}</h2>` : `<p>${Shop.esc(line)}</p>`;
+      if (pic) out += `<figure class="post-fig"><img src="${Shop.esc((Shop.CONFIG.basePath || '') + pic[1])}" alt="${Shop.esc(pic[2] || '')}" loading="lazy">${pic[2] ? `<figcaption>${Shop.esc(pic[2])}</figcaption>` : ''}</figure>`;
+      else out += li ? `<li>${Shop.esc(line.slice(2))}</li>` : h ? `<h2>${Shop.esc(line.slice(3))}</h2>` : `<p>${Shop.esc(line)}</p>`;
     });
     return out + (inList ? '</ul>' : '');
   };

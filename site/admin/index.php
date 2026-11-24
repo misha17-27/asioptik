@@ -7,5 +7,8 @@ require APP . '/admin/schema.php';
 require APP . '/admin/views.php';
 require APP . '/admin/pages.php';
 require APP . '/admin/security.php';
+require APP . '/admin/users.php';
+require APP . '/admin/media.php';
+require APP . '/admin/mail.php';
 require APP . '/admin/admin.php';
 admin_run();

@@ -97,9 +97,10 @@ if ($posted && $ready) {
         $st = $pdo->prepare('SELECT id FROM ao_users WHERE login = ?');
         $st->execute([$v['login']]);
         if ($st->fetch()) {
-            $pdo->prepare('UPDATE ao_users SET pass_hash = ? WHERE login = ?')->execute([password_hash($p1, PASSWORD_DEFAULT), $v['login']]);
+            // установка поверх прежней базы возвращает доступ: пароль новый, запись снова действующий администратор
+            $pdo->prepare("UPDATE ao_users SET pass_hash = ?, role = 'admin', active = 1 WHERE login = ?")->execute([password_hash($p1, PASSWORD_DEFAULT), $v['login']]);
         } else {
-            $pdo->prepare('INSERT INTO ao_users (login, pass_hash, created_at) VALUES (?, ?, ?)')->execute([$v['login'], password_hash($p1, PASSWORD_DEFAULT), now()]);
+            $pdo->prepare("INSERT INTO ao_users (login, pass_hash, created_at, name, role, active) VALUES (?, ?, ?, '', 'admin', 1)")->execute([$v['login'], password_hash($p1, PASSWORD_DEFAULT), now()]);
         }
         $conf = ['db' => $db, 'secret' => bin2hex(random_bytes(32)), 'installed' => now()];
         $code = "<?php\n/* Подключение к базе данных и секретный ключ сайта. Этот файл никому не передавайте. */\nreturn " . var_export($conf, true) . ";\n";

@@ -362,7 +362,11 @@ function api_order(): void
 
     q('INSERT INTO ao_orders (number, kind, status, created_at, name, phone, total, lang, data, ip_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [$number, $kind, 'new', now(), $name, $phone, $total, $lang, $json, $ip]);
-    json_out(['ok' => true, 'number' => $number]);
+    $id = (int) db()->lastInsertId();
+    // Покупателю отвечаем сразу; письмо о заказе (раздел «Почта (SMTP)») уходит уже после ответа
+    json_flush(['ok' => true, 'number' => $number]);
+    order_mail(['id' => $id, 'kind' => $kind, 'number' => $number, 'name' => $name, 'phone' => $phone, 'total' => $total, 'text' => $text]);
+    exit;
 }
 
 /**
