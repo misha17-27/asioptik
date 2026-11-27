@@ -185,12 +185,16 @@ for a in sorted(set(re.findall(r'(?:href|src)="(' + PRE + r'/assets/[^"?]*)', ho
     s, h, t = req(SUB, 'GET', a)
     check(f'asset {a.replace(PRE, "")}', s == 200 and not is_main_site(h) and len(t) > 1000, s)
 s, h, t = req(SUB, 'GET', PRE + '/favicon.ico'); check('site icon is served from the folder', s == 200 and 'icon' in one(h, 'content-type'))
-for p, to in [('/?page=about', '/about'), ('/?product=f-milan', '/product/f-milan'), ('/?page=blog&post=care&lang=ru', '/ru/blog/care'), ('/nope', '/'), ('/ru/nope/deeper', '/ru'), ('/product/no-such', '/catalog'), ('/blog/no-such', '/blog'), ('/?page=brands&post=asi-sun&lang=ru', '/ru/brands/asi-sun'), ('/ru/brands/no-such', '/ru/brands'),
+for p, to in [('/?page=about', '/about'), ('/?product=f-milan', '/product/f-milan'), ('/?page=blog&post=care&lang=ru', '/ru/blog/care'), ('/?page=brands&post=asi-sun&lang=ru', '/ru/brands/asi-sun'),
               # язык в адресе стоит сразу после папки сайта; прежние адреса с ?lang= ведут туда же
               ('/?lang=en', '/en'), ('/?lang=az', '/'), ('/catalog?cat=frames&lang=ru', '/ru/catalog?cat=frames'), ('/az/contacts', '/contacts'), ('/en//catalog', '/en/catalog'),
-              ('/az//evil.example', '/evil.example'), ('/en/nope', '/en')]:
+              ('/az//evil.example', '/evil.example')]:
     s, h, t = req(SUB, 'GET', PRE + p)
     check(f'redirect {p} stays in the folder', s in (301, 302) and one(h, 'location') == PRE + to, f'{s} {one(h, "location")}')
+# адреса, которых нет: ответ 404 и страница «не найдено» на языке адреса, без переадресации
+for p, l in [('/nope', 'az'), ('/ru/nope/deeper', 'ru'), ('/product/no-such', 'az'), ('/blog/no-such', 'az'), ('/ru/brands/no-such', 'ru'), ('/en/nope', 'en'), ('/evil.example', 'az')]:
+    s, h, t = req(SUB, 'GET', PRE + p)
+    check(f'{p}: 404 «not found» in the folder', s == 404 and not one(h, 'location') and f'<html lang="{l}"' in t and '"notFound":1' in t and PRE + '/assets/fonts/' in t and not is_main_site(h), s)
 print('--- закрытые папки и файлы')
 for p in ['/app/', '/app/core/bootstrap.php', '/app/data/seed.json', '/app/site/shell.html', '/storage/', '/storage/config.php', '/storage/cache/site.json', '/storage/logs/php-errors.log', '/storage/sessions/',
           '/.htaccess', '/.user.ini', '/uploads/', '/uploads/.htaccess', '/README.md', '/.git/config', '/backup.sql']:
@@ -315,8 +319,9 @@ async def browser():
         await ctx.route('https://images.pexels.com/**', lambda r: r.abort())
         tail = lambda: pg.url.replace(ORIGIN, '')
         await pg.goto(B + '/ru'); await pg.wait_for_timeout(1500)
-        alive = await pg.evaluate("({data: typeof CONFIG, shop: typeof Shop, tiles: document.querySelectorAll('#cats .ctile').length, fonts: [...document.styleSheets].some(s => (s.href || '').includes('fonts.googleapis.com'))})")
-        check('page data and script run under the site policy', alive == {'data': 'object', 'shop': 'object', 'tiles': 5, 'fonts': True}, alive)
+        # шрифты — с самого сайта (assets/fonts), не с Google Fonts: под политикой сайта они загружаются из папки
+        alive = await pg.evaluate("(async () => { await document.fonts.ready; return {data: typeof CONFIG, shop: typeof Shop, tiles: document.querySelectorAll('#cats .ctile').length, google: [...document.styleSheets].some(s => (s.href || '').includes('fonts.googleapis.com')), own: [...document.fonts].filter(f => f.status === 'loaded').length > 0 && document.fonts.check('300 40px \"Noto Serif Display\"')}; })()")
+        check('page data, script and own fonts work under the site policy', alive == {'data': 'object', 'shop': 'object', 'tiles': 5, 'google': False, 'own': True}, alive)
         nav = await pg.evaluate("[...document.querySelectorAll('#siteNav a[data-view]')].map(a => a.getAttribute('href'))")
         check('home in the browser, menu links in the folder', tail() == PRE + '/ru' and len(nav) >= 5 and all(u.startswith(PRE + '/') for u in nav), nav[:2])
         loose = await pg.evaluate("[...document.querySelectorAll('a[href], img[src], link[href], script[src]')].map(e => e.getAttribute('href') || e.getAttribute('src')).filter(u => u.startsWith('/') && !u.startsWith('//') && !u.startsWith('%s/'))" % PRE)
@@ -504,7 +509,7 @@ try:
     s, h, t = req(OWN, 'GET', '/', host=MAIN, headers=LIVE)
     check('moved: the main address itself opens, no circle', s == 200 and 'x-robots-tag' not in h and '"basePath":"/"' in t, s)
     s, h, t = req(OWN, 'GET', '/ru/catalog?cat=frames', host=MAIN, headers=LIVE)
-    check('moved: inner pages of the main address open', s == 200 and '<html lang="ru">' in t, s)
+    check('moved: inner pages of the main address open', s == 200 and '<html lang="ru"' in t, s)
     s, h, t = req(SUB, 'GET', PRE + '/admin/?p=login', host=TEMP)
     check('moved: the admin panel still opens at the temporary address', s == 200 and 'name="password"' in t, s)
     s, h, t = req(SUB, 'GET', PRE + '/robots.txt', host=TEMP)
@@ -514,7 +519,7 @@ try:
 finally:
     moved(False)
 s, h, t = req(SUB, 'GET', PRE + '/ru/catalog', host=TEMP)
-check('switch off: the temporary address shows the site again', s == 200 and '<html lang="ru">' in t, s)
+check('switch off: the temporary address shows the site again', s == 200 and '<html lang="ru"' in t, s)
 
 # ====================== ручной переключатель в storage/config.php ======================
 print('--- строка preview в config.php')
@@ -668,7 +673,8 @@ for a in ['/assets/js/app.js', '/assets/css/added-later.css', '/favicon.ico']:
     s, h, t = req(SUB, 'GET', PRE + a); check(f'after deployment {a} is served', s == 200, s)
 s, h, t = req(SUB, 'GET', PRE + '/admin/?p=login'); check('login page opens after deployment', s == 200 and 'name="password"' in t and csp(h) == [CSP['admin']], s)
 for a in ['/storage/config.php', '/app/added/later.php', '/install.php', '/.cpanel.yml', '/cpanel-deploy.sh', '/README.md']:
-    s, h, t = req(SUB, 'GET', PRE + a); check(f'after deployment {a} stays closed', s in (302, 403) and 'added by a later commit' not in t and 'DEPLOYPATH' not in t and 'set -eu' not in t, s)
+    # 403 — закрыто правилами; 404 — такого файла на сайте нет, и отвечает страница «не найдено»
+    s, h, t = req(SUB, 'GET', PRE + a); check(f'after deployment {a} stays closed', s in (403, 404) and 'added by a later commit' not in t and 'DEPLOYPATH' not in t and 'set -eu' not in t, s)
 
 check('after everything, the main site of the domain is byte for byte what it was', main_site_files() == MAIN_BEFORE, [k for k in set(MAIN_BEFORE) | set(main_site_files()) if MAIN_BEFORE.get(k) != main_site_files().get(k)][:5])
 s, h, t = req(SUB, 'GET', '/'); check('… and it answers as before', s == 200 and 'MAIN SITE' in t and len(csp(h)) == 1 and MAIN_CSP in csp(h)[0])

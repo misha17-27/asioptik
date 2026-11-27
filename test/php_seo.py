@@ -224,9 +224,9 @@ async def browser_checks(addrs, rows, P, BRANDS):
         s, h, t = get('/?page=brands&post=' + first['id'] + '&lang=ru')
         check('old address ?page=brands&post= → /brands/код', s == 301 and h.get('location') == f"/ru/brands/{first['id']}", (s, h.get('location')))
         s, h, t = get('/en/brands/no-such-brand')
-        check('unknown brand → list of brands', s in (301, 302) and h.get('location') == '/en/brands', (s, h.get('location')))
+        check('unknown brand: 404, not for search engines', s == 404 and not h.get('location') and 'noindex' in meta(t)['robots'], (s, h.get('location')))
         s, h, t = get('/brands/' + first['id'] + '/more')
-        check('extra path after a brand → home', s in (301, 302) and h.get('location') == '/', (s, h.get('location')))
+        check('extra path after a brand: 404', s == 404 and not h.get('location'), (s, h.get('location')))
         s, h, t = get('/catalog?brand=' + first['id'])
         check('catalog filtered by brand keeps the catalog address for search engines', s == 200 and meta(t)['canon'] == SITE + '/catalog', meta(t)['canon'])
         s, h, t = get('/ru/catalog?cat=lenses&aud=kids')   # детских линз для очков в наборе нет: раздел не открывается, как и на самой странице

@@ -1208,17 +1208,25 @@
         const seg = path.replace(/^\/+|\/+$/g, '').split('/');
         if (LANGS.indexOf(seg[0]) !== -1) seg.shift();   // язык: /ru/catalog
         if (seg[0] === 'product' && byId[seg[1]]) out.product = seg[1];
-        else if (VIEWS.indexOf(seg[0]) !== -1) { out.view = seg[0]; out.post = SUBPAGES[seg[0]] ? (seg[1] || '') : ''; }
+        else if (VIEWS.indexOf(seg[0]) !== -1 && seg[0] !== 'notfound') { out.view = seg[0]; out.post = SUBPAGES[seg[0]] ? (seg[1] || '') : ''; }
       } else {
         const sp = new URLSearchParams(window.location.search), id = sp.get('product'), v = sp.get('page');
         if (id && byId[id]) out.product = id;
-        else if (v && VIEWS.indexOf(v) !== -1) { out.view = v; out.post = SUBPAGES[v] ? (sp.get('post') || '') : ''; }
+        else if (v && VIEWS.indexOf(v) !== -1 && v !== 'notfound') { out.view = v; out.post = SUBPAGES[v] ? (sp.get('post') || '') : ''; }
       }
     } catch (e) { /* ничего */ }
     return out;
   }
-  function pageFromURL() { return locRoute().product; }
-  function viewFromURL() { const r = locRoute(); return { view: r.view, post: r.post }; }
+  // Адрес, которого на сайте нет (нет такой страницы, товара, статьи или бренда): сервер ответил на него кодом 404 и отметкой
+  // CONFIG.notFound. На нём — страница «не найдено», в том числе после смены языка и кнопок «Назад» и «Вперёд»
+  const LOST = CONFIG.notFound && VIEWS.indexOf('notfound') !== -1 ? routeTail() + window.location.search : '';
+  const isLost = () => !!LOST && routeTail() + window.location.search === LOST;
+  function pageFromURL() { return isLost() ? '' : locRoute().product; }
+  function viewFromURL() {
+    if (isLost()) return { view: 'notfound', post: '' };
+    const r = locRoute();
+    return { view: r.view, post: r.post };
+  }
   // Адрес страницы на нынешнем языке; прочие параметры адреса сохраняются
   function urlWith(set) {
     const sp = new URLSearchParams(window.location.search);
@@ -1381,7 +1389,7 @@
     if (md && known) md.setAttribute('content', desc);
     // Адрес страницы для поисковиков и для ссылок, которыми делятся в мессенджерах
     const put = (sel, attr, v) => { const el = $(sel); if (el && v) el.setAttribute(attr, v); };
-    if (CONFIG.siteUrl) {
+    if (CONFIG.siteUrl && state.view !== 'notfound') {
       // На сайте с обычными адресами язык стоит в пути (https://asioptik.az/ru/catalog), в версии одним файлом — в параметре
       const route = PATHS ? (p ? 'product/' + encodeURIComponent(p.id) : v ? encodeURIComponent(state.view) + (state.post ? '/' + encodeURIComponent(state.post) : '') : '') : '';
       const urlIn = l => {
@@ -2371,7 +2379,7 @@
     };
     $$('[data-cfg]').forEach(el => {
       const k = el.dataset.cfg;
-      if (map[k] != null) el.textContent = map[k];
+      if (map[k] != null && el.textContent !== map[k]) el.textContent = map[k];
     });
     $$('.js-delivery-note').forEach(el => { el.textContent = deliveryNote(); });
     const wa = waUrl(t('m.question', null, msgLang()));
@@ -2579,7 +2587,8 @@
   }
   function applyLang() {
     document.documentElement.lang = lang;
-    $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    // тот же текст заново не ставится: сервер уже прислал его, а перерисовка сдвинула бы для Google время показа (LCP)
+    $$('[data-i18n]').forEach(el => { const v = t(el.dataset.i18n); if (el.textContent !== v) el.textContent = v; });
     $$('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
     $$('[data-i18n-attr]').forEach(el => el.dataset.i18nAttr.split(';').forEach(pair => {
       const i = pair.indexOf(':');
@@ -2839,6 +2848,24 @@
     },
   };
   function init() {
+    try { start(); }
+    finally { reveal(); }
+  }
+  // Страница собрана (или сборка упала) — её середина и подвал становятся видны (правило .boot в оформлении).
+  // Шрифты, которые странице ещё нужны, сначала догружаются, но не дольше 0,7 секунды: иначе текст сменил бы шрифт
+  // уже на глазах и сдвинулся. Не дождались — текст стоит запасным шрифтом и потом сменится, как обычно.
+  function reveal() {
+    const root = document.documentElement;
+    if (!root.classList.contains('boot')) return;
+    let done = false;
+    const show = () => { if (!done) { done = true; root.classList.remove('boot'); } };
+    const fonts = document.fonts;
+    void document.body.offsetHeight;   // раскладка открытой страницы: браузер узнаёт, какие шрифты ей нужны, и начинает их грузить
+    if (!fonts || !fonts.ready || fonts.status !== 'loading') return show();
+    fonts.ready.then(show, show);
+    setTimeout(show, 700);
+  }
+  function start() {
     syncLangURL();   // посетитель с выбранным раньше языком открыл адрес без языка — адрес получает /ru или /en
     injectDefs();
     const wrap = document.createElement('div');

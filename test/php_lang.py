@@ -97,15 +97,15 @@ def server():
         s, h, t = get(path); loc = h.get('location', '')
         check(f'redirect stays on the site: {path}', s in (301, 302, 400, 403, 404) and (not loc or (loc.startswith('/') and not loc.startswith('//') and '\\' not in loc and '://' not in loc)), (s, loc))
 
-    # 4. неизвестная страница — на главную того же языка
-    for path, to in (('/en/nothing', '/en'), ('/ru/nothing/deeper', '/ru'), ('/nothing', '/'), ('/ru/product/no-such', '/ru/catalog'), ('/en/blog/no-such', '/en/blog'), ('/ru/brands/no-such', '/ru/brands'),
-                     ('/ru/en/catalog', '/ru'), ('/en/robots.txt', '/en'), ('/ru/sitemap.xml', '/ru'), ('/en/admin', '/en'), ('/en/catalog/extra', '/en')):
+    # 4. неизвестная страница — ответ 404 и страница «не найдено» на языке адреса (переадресацию на главную поисковик считает ошибкой)
+    for path, l in (('/en/nothing', 'en'), ('/ru/nothing/deeper', 'ru'), ('/nothing', 'az'), ('/ru/product/no-such', 'ru'), ('/en/blog/no-such', 'en'), ('/ru/brands/no-such', 'ru'),
+                    ('/ru/en/catalog', 'ru'), ('/en/robots.txt', 'en'), ('/ru/sitemap.xml', 'ru'), ('/en/admin', 'en'), ('/en/catalog/extra', 'en')):
         s, h, t = get(path)
-        check(f'unknown address {path} → {to}', s == 302 and h.get('location') == to, (s, h.get('location')))
+        check(f'unknown address {path}: 404 in its language', s == 404 and not h.get('location') and f'<html lang="{l}"' in t and '"notFound":1' in t, (s, h.get('location')))
 
     # 5. приём заказов — только по своему адресу, язык в адрес не добавляется
     s, h, t = get('/en/api/order', 'POST', '{}', {'Content-Type': 'application/json', 'Origin': B})
-    check('orders are accepted only at /api/order', s == 302 and h.get('location') == '/en', (s, h.get('location')))
+    check('orders are accepted only at /api/order', s == 404 and not h.get('location'), (s, h.get('location')))
     s, h, t = get('/api/order')
     check('/api/order itself is still the order endpoint', s == 405, s)
 
@@ -248,7 +248,8 @@ async def browser(pid, post, brand):
         await go('/en/'); await pg.wait_for_timeout(200)
         check('slash at the end is removed from the address', await tail() == '/en', await tail())
         await go('/en/nothing')
-        check('unknown page → home of the same language', await tail() == '/en' and (await doc())['lang'] == 'en', await tail())
+        check('unknown page: «not found» in the same language, the address stays', await tail() == '/en/nothing' and await pg.evaluate("document.documentElement.lang") == 'en'
+              and await pg.evaluate("document.body.classList.contains('is-view-notfound')"), await tail())
 
         # 7. телефон: язык переключается в меню, адрес меняется так же
         await pg.context.close()

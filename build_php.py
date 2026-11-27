@@ -7,6 +7,7 @@ PHP-файлы сайта и админ-панели лежат прямо в si
   site/assets/js/app.js    — работа сайта (корзина, страницы, формы)
   site/app/data/seed.json  — первые данные: товары, разделы, бренды, статьи, услуги, настройки
   site/favicon.ico         — значок сайта из папки logo/
+Шрифты (site/assets/fonts/) готовит build_fonts.py: их правила @font-face (src/fonts4.css) встают в начало app.css.
 Подключение к базе, загруженные фото, кэш и журналы (storage/, uploads/) скрипт не трогает.
 """
 import json
@@ -30,8 +31,11 @@ css = styles[0].group(1)
 
 shell = html
 shell = shell.replace(scripts[2].group(0), '')
-shell = shell.replace(scripts[1].group(0), '<script src="%%BASE%%assets/js/app.js?v=%%VER%%"></script>')
-shell = shell.replace(styles[0].group(0), '<link rel="stylesheet" href="%%BASE%%assets/css/app.css?v=%%VER%%">')
+shell = shell.replace(scripts[1].group(0), '')
+# Скрипт сайта — в <head> с defer: браузер берёт его сразу и не ждёт его, чтобы показать страницу (выполняется он после
+# разбора страницы, как прежде в конце <body>). Не загрузился — страница сразу становится видна (снимается отметка boot)
+shell = shell.replace(styles[0].group(0), '<link rel="stylesheet" href="%%BASE%%assets/css/app.css?v=%%VER%%">\n'
+                      '<script src="%%BASE%%assets/js/app.js?v=%%VER%%" defer onerror="document.documentElement.classList.remove(\'boot\')"></script>')
 shell = shell.replace(scripts[0].group(0), '<script>\n%%DATA%%</script>')
 
 
@@ -41,7 +45,7 @@ def sub1(pattern, repl, text, flags=0):
     return new
 
 
-shell = sub1(r'<html lang="az">', '<html lang="%%LANG%%">', shell)
+shell = sub1(r'<html lang="az"', '<html lang="%%LANG%%"', shell)
 shell = sub1(r'<title>[^<]*</title>', '<title>%%TITLE%%</title>', shell)
 shell = sub1(r'<meta name="description" content="[^"]*">', '<meta name="description" content="%%DESC%%">', shell)
 shell = sub1(r'<link rel="canonical" href="[^"]*">\n', '<link rel="canonical" href="%%CANON%%">\n%%ROBOTS%%', shell)
@@ -60,6 +64,16 @@ shell, n = re.subn(r'href="\?page=([a-z]+)&amp;([a-z]+=[a-z0-9-]+)"', r'href="%%
 assert n == 2, n
 assert 'href="?page=' not in shell
 shell = shell.replace('Адреса: ?page=catalog, ?page=about, ?page=blog, ?page=contacts', 'Адреса: /catalog, /about, /blog, /contacts')
+# Шрифты — свои, из assets/fonts (см. build_fonts.py), а не с Google Fonts: вместо трёх строк Google сервер ставит
+# предзагрузку главных шрифтов для языка страницы (%%FONTS%%), правила @font-face стоят в начале app.css
+shell, n = re.subn(r'<link rel="preconnect" href="https://fonts\.googleapis\.com">\n<link rel="preconnect" href="https://fonts\.gstatic\.com" crossorigin>\n<link href="https://fonts\.googleapis\.com/css2\?[^"]*" rel="stylesheet">\n', '%%FONTS%%', shell)
+assert n == 1, n
+assert 'fonts.googleapis' not in shell and 'fonts.gstatic' not in shell
+# Значки кнопок — сразу в разметке: кнопки с первой отрисовки своего размера (скрипт сайта потом ставит те же значки)
+ICONS = json.loads(subprocess.run(['node', str(ROOT / 'build_icons.js'), str(ROOT / 'src' / 'core4.js')], check=True, capture_output=True, text=True).stdout)
+shell, n = re.subn(r'(<span\b[^<>]*\sdata-icon="([a-z]+)"[^<>]*>)(</span>)', lambda m: m.group(1) + ICONS[m.group(2)] + m.group(3), shell)
+assert n >= 10, n
+assert re.search(r'data-icon="[a-z]+"[^<>]*></span>', shell) is None
 
 # ---------- первые данные из настроек сайта ----------
 node = subprocess.run(['node', '-e', '''
@@ -134,7 +148,7 @@ def put(rel, text):
 
 put('app/site/shell.html', shell)
 put('app/data/seed.json', json.dumps(seed, ensure_ascii=False, separators=(',', ':')))
-put('assets/css/app.css', css + '\n')
+put('assets/css/app.css', (ROOT / 'src' / 'fonts4.css').read_text(encoding='utf-8') + css + '\n')
 put('assets/js/app.js', theme_js + '\n' + core_js + '\n')
 # все надписи сайта на трёх языках — чтобы их можно было менять в админ-панели, раздел «Страницы»
 texts = subprocess.run(['node', str(ROOT / 'build_texts.js'), str(ROOT / 'src' / 'core4.js'), str(ROOT / 'src' / 'v4.html')], capture_output=True, text=True, check=True).stdout

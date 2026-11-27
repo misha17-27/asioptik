@@ -1,8 +1,11 @@
 <!doctype html>
-<html lang="%%LANG%%">
+<html lang="%%LANG%%" class="boot">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>/* посетитель выбрал раньше другой язык, а адрес — без языка (или с ?lang=): скрипт сайта переведёт страницу,
+   поэтому до его запуска первый экран тоже скрыт (правило .boot.boot-view в оформлении) */
+try{var h=document.documentElement,s=JSON.parse(localStorage.getItem('optika-lang')||'null'),q=/[?&]lang=(ru|en)\b/.exec(location.search);if((q&&q[1]!==h.lang)||(s&&s!==h.lang&&h.lang==='az'))h.classList.add('boot-view')}catch(e){}</script>
 <title>%%TITLE%%</title>
 <meta name="description" content="%%DESC%%">
 <meta name="theme-color" content="#F2F6FD">
@@ -16,10 +19,9 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%229%22 fill=%22%231D5FD1%22/%3E%3Cg transform=%22translate%285.9 -10.7%29 scale%280.03546%29%22%3E%3Ccircle cx=%22237.4%22 cy=%22741.0%22 r=%22194.2%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%2286.3%22/%3E%3Crect x=%22474.8%22 y=%22503.7%22 width=%2297.1%22 height=%22496.3%22 rx=%2248.6%22 fill=%22%23fff%22/%3E%3Cpath d=%22M129.5 708.7A118.7 118.7 0 0 1 205.0 633.1%22 fill=%22none%22 stroke=%22%23F0643C%22 stroke-width=%2248.6%22 stroke-linecap=%22round%22/%3E%3C/g%3E%3C/svg%3E">
 <script>
 %%DATA%%</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@300;400&family=Onest:wght@500;700&family=Ysabeau+Office:wght@400;500;600;700&display=swap" rel="stylesheet">
+%%FONTS%%<noscript><style>html.boot main>*,html.boot .site-footer,html.boot .loupe,html.boot .hero{visibility:visible!important;animation:none!important}</style></noscript>
 <link rel="stylesheet" href="%%BASE%%assets/css/app.css?v=%%VER%%">
+<script src="%%BASE%%assets/js/app.js?v=%%VER%%" defer onerror="document.documentElement.classList.remove('boot')"></script>
 </head>
 <body>
 <a class="skip" href="#catalog" data-i18n="skip">Kataloqa keçin</a>
@@ -33,7 +35,7 @@
     </a>
     <nav class="nav" id="siteNav" aria-label="Menu">
       <!-- На телефоне меню открывается на весь экран: сверху логотип (копируется из шапки) и кнопка закрытия -->
-      <div class="nav-head"><span class="nav-logo"></span><button type="button" class="icon-btn nav-close js-menu-toggle" aria-expanded="false" aria-controls="siteNav" aria-label="Bağlayın" data-i18n-attr="aria-label:close"><span data-icon="x"></span></button></div>
+      <div class="nav-head"><span class="nav-logo"></span><button type="button" class="icon-btn nav-close js-menu-toggle" aria-expanded="false" aria-controls="siteNav" aria-label="Bağlayın" data-i18n-attr="aria-label:close"><span data-icon="x"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></span></button></div>
       <div class="nav-links">
       <a href="%%LBASE%%catalog" data-view="catalog" data-goto="all" data-i18n="cat.title">Kataloq</a>
       <!-- «Взрослым» и «Детям» открывают страницу каталога с товарами и разделами только для них -->
@@ -53,7 +55,7 @@
         <div class="lang" data-lang-switch role="group" aria-label="Dil" data-i18n-attr="aria-label:lang.label"></div>
         <div class="nav-call">
           <a class="nav-tel" data-cfg-href="tel" href="#" data-cfg="phone">+994 00 000 00 00</a>
-          <a class="btn btn-primary nav-wa" data-cfg-href="wa" href="#" target="_blank" rel="noopener"><span data-icon="chat"></span><span data-i18n="c.waLink">WhatsApp-a yazın</span></a>
+          <a class="btn btn-primary nav-wa" data-cfg-href="wa" href="#" target="_blank" rel="noopener"><span data-icon="chat"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 4.5h14a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2h-7.5L7 20.5V17H5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2Z"/><path d="M8.3 10.8h.01M12 10.8h.01M15.7 10.8h.01" stroke-width="2.6"/></svg></span><span data-i18n="c.waLink">WhatsApp-a yazın</span></a>
         </div>
         <!-- адреса филиалов: нажатие открывает «Контакты» с картой на этом филиале; при одном филиале ниже — часы работы -->
         <div class="nav-locs" data-branches-mini></div>
@@ -62,8 +64,8 @@
     <div class="hdr-right">
       <div class="lang" data-lang-switch role="group" aria-label="Dil" data-i18n-attr="aria-label:lang.label"></div>
       <a class="hdr-phone" data-cfg-href="tel" href="#" data-cfg="phone">+994 00 000 00 00</a>
-      <button type="button" class="cart-btn" data-open-cart><span data-icon="bag"></span><span class="cart-btn-label" data-i18n="cart.label">Səbət</span><span class="count js-cart-count">0</span></button>
-      <button type="button" class="icon-btn menu-btn js-menu-toggle" aria-expanded="false" aria-controls="siteNav" aria-label="Menyu" data-i18n-attr="aria-label:nav.menu"><span data-icon="menu"></span></button>
+      <button type="button" class="cart-btn" data-open-cart><span data-icon="bag"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg></span><span class="cart-btn-label" data-i18n="cart.label">Səbət</span><span class="count js-cart-count is-zero">0</span></button>
+      <button type="button" class="icon-btn menu-btn js-menu-toggle" aria-expanded="false" aria-controls="siteNav" aria-label="Menyu" data-i18n-attr="aria-label:nav.menu"><span data-icon="menu"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span></button>
     </div>
   </div>
 </header>
@@ -112,7 +114,7 @@
         <aside class="cat-side" aria-label="Kataloq filtrləri" data-i18n-attr="aria-label:cat.filters">
           <div class="aud-box"><span data-i18n="aud.label">Kimin üçün</span><div class="aud-switch" data-aud-switch role="group" aria-label="Kimin üçün" data-i18n-attr="aria-label:aud.label"></div></div>
           <div class="tabs" id="catTabs" role="group" aria-label="Kataloq bölmələri" data-i18n-attr="aria-label:cat.tabs"></div>
-          <label class="search"><span class="vh" data-i18n="cat.searchLabel">Kataloqda axtarış</span><span data-icon="search"></span><input id="searchInput" type="search" placeholder="Axtarış" data-i18n-attr="placeholder:cat.searchPh" autocomplete="off"></label>
+          <label class="search"><span class="vh" data-i18n="cat.searchLabel">Kataloqda axtarış</span><span data-icon="search"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg></span><input id="searchInput" type="search" placeholder="Axtarış" data-i18n-attr="placeholder:cat.searchPh" autocomplete="off"></label>
           <!-- Бренды очков: список BRANDS в настройках, у товара поле brand; можно отметить несколько -->
           <div class="brand-box" id="brandBox" hidden><span data-i18n="brand.label">Brend</span><div class="brand-list" id="brandList" role="group" aria-label="Brend" data-i18n-attr="aria-label:brand.label"></div></div>
         </aside>
@@ -184,9 +186,9 @@
           <a class="btn btn-line" href="#repair" data-i18n="eye.cta2">Eynəyi təmirə verin</a>
         </div>
         <ul class="facts">
-          <li><span data-icon="tool"></span><span data-i18n="fact1">Kiçik təmir sizin yanınızda, 15 dəqiqəyə</span></li>
-          <li><span data-icon="truck"></span><span data-i18n="fact2">Şəhərdaxili çatdırılma, 150 ₼-dan pulsuz</span></li>
-          <li><span data-icon="eye"></span><span data-i18n="fact3">Reseptlə linzalar 1–3 günə</span></li>
+          <li><span data-icon="tool"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14.6 6.4a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a5.6 5.6 0 0 1-7.4 7.4l-6.4 6.4a2 2 0 0 1-2.9-2.9l6.4-6.4a5.6 5.6 0 0 1 7.4-7.4l-3.2 3Z"/></svg></span><span data-i18n="fact1">Kiçik təmir sizin yanınızda, 15 dəqiqəyə</span></li>
+          <li><span data-icon="truck"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6.5h11V16H3zM14 9.5h3.8L21 13v3h-7"/><circle cx="7" cy="17.5" r="1.7"/><circle cx="17" cy="17.5" r="1.7"/></svg></span><span data-i18n="fact2">Şəhərdaxili çatdırılma, 150 ₼-dan pulsuz</span></li>
+          <li><span data-icon="eye"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></svg></span><span data-i18n="fact3">Reseptlə linzalar 1–3 günə</span></li>
         </ul>
       </div>
     </div>
@@ -227,9 +229,9 @@
         <!-- филиалы: название, адрес, часы работы, телефон и «Маршрут»; нажатие на название показывает филиал на карте -->
         <div class="locs" data-branches></div>
         <ul class="c-list">
-          <li><span data-icon="phone"></span><div><b data-i18n="c.phone">Telefon</b><a data-cfg-href="tel" href="#" data-cfg="phone"></a></div></li>
-          <li><span data-icon="chat"></span><div><b>WhatsApp</b><a data-cfg-href="wa" href="#" target="_blank" rel="noopener" data-i18n="c.waLink">WhatsApp-a yazın</a></div></li>
-          <li data-cfg-wrap><span data-icon="at"></span><div><b>Instagram</b><a data-cfg-href="ig" href="#" target="_blank" rel="noopener" data-cfg="instagram"></a></div></li>
+          <li><span data-icon="phone"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.5 3.5h2.8l1.6 4.4-2 1.4a11.5 11.5 0 0 0 5.8 5.8l1.4-2 4.4 1.6v2.8a2 2 0 0 1-2.1 2A16.5 16.5 0 0 1 4.5 5.6a2 2 0 0 1 2-2.1Z"/></svg></span><div><b data-i18n="c.phone">Telefon</b><a data-cfg-href="tel" href="#" data-cfg="phone"></a></div></li>
+          <li><span data-icon="chat"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 4.5h14a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2h-7.5L7 20.5V17H5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2Z"/><path d="M8.3 10.8h.01M12 10.8h.01M15.7 10.8h.01" stroke-width="2.6"/></svg></span><div><b>WhatsApp</b><a data-cfg-href="wa" href="#" target="_blank" rel="noopener" data-i18n="c.waLink">WhatsApp-a yazın</a></div></li>
+          <li data-cfg-wrap><span data-icon="at"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.6"/><path d="M15.6 8.4v4.6a2.4 2.4 0 0 0 4.8 0V12a8.4 8.4 0 1 0-3.3 6.7"/></svg></span><div><b>Instagram</b><a data-cfg-href="ig" href="#" target="_blank" rel="noopener" data-cfg="instagram"></a></div></li>
         </ul>
       </div>
       <!-- карта с метками филиалов: у метки подпись — название филиала, по нажатию открывается карточка с адресом и маршрутом -->
@@ -262,7 +264,7 @@
   </div>
 </footer>
 
-<script src="%%BASE%%assets/js/app.js?v=%%VER%%"></script>
+
 
 </body>
 </html>

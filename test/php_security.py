@@ -183,7 +183,8 @@ for p in ['/?page=//evil.example', '/?page=https://evil.example', '/?product=//e
     s, h, t, raw = req('GET', p); loc = h.get('location', ''); check('no open redirect ' + p[:30], s == 301 and loc.startswith('/') and not loc.startswith('//') and 'set-cookie' not in h, loc)
 s, h, t, raw = req('GET', '/ru/catalog?cat=%22%3E%3Cscript%3Ealert(1)%3C/script%3E'); check('query text is escaped in the page', '<script>alert(1)' not in t, s)
 s, h, t, raw = req('GET', '/about', headers={'Host': 'evil.example'}); check('foreign Host header does not reach canonical', 'evil.example' not in t, re.search(r'rel="canonical" href="([^"]*)"', t).group(1))
-s, h, t, raw = req('GET', '/no-such-page', headers={'Host': 'evil.example'}); check('redirects are relative', h.get('location', '').startswith('/'), h.get('location'))
+s, h, t, raw = req('GET', '/?page=about', headers={'Host': 'evil.example'}); check('redirects are relative', s == 301 and h.get('location', '').startswith('/') and not h.get('location', '').startswith('//'), h.get('location'))
+s, h, t, raw = req('GET', '/no-such-page', headers={'Host': 'evil.example'}); check('«not found» page does not take a foreign Host', s == 404 and 'evil.example' not in t, s)
 
 print('--- поиск и фильтры в админ-панели')
 total = int(sql("SELECT COUNT(*) FROM ao_items WHERE type='product'"))

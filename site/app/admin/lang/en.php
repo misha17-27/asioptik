@@ -243,6 +243,7 @@ return [
     'Менеджер' => 'Manager',
     'Меню' => 'Menu',
     'Меню и подвал' => 'Menu and footer',
+    'Страница «не найдено» (адреса нет на сайте)' => 'Page “not found” (no such address on the site)',
     'Место на карте' => 'Place on the map',
     'Метка на карте' => 'Pin on the map',
     'Метка на фото' => 'Label on the photo',

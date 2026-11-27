@@ -243,6 +243,7 @@ return [
     'Менеджер' => 'Menecer',
     'Меню' => 'Menyu',
     'Меню и подвал' => 'Menyu və saytın alt hissəsi',
+    'Страница «не найдено» (адреса нет на сайте)' => '«Tapılmadı» səhifəsi (saytda belə ünvan yoxdur)',
     'Место на карте' => 'Xəritədə yer',
     'Метка на карте' => 'Xəritədə nişan',
     'Метка на фото' => 'Fotodakı nişan',

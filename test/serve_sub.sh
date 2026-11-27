@@ -84,6 +84,8 @@ LoadModule dir_module /usr/lib/apache2/modules/mod_dir.so
 LoadModule mime_module /usr/lib/apache2/modules/mod_mime.so
 LoadModule rewrite_module /usr/lib/apache2/modules/mod_rewrite.so
 LoadModule headers_module /usr/lib/apache2/modules/mod_headers.so
+LoadModule filter_module /usr/lib/apache2/modules/mod_filter.so
+LoadModule deflate_module /usr/lib/apache2/modules/mod_deflate.so
 LoadModule php_module $PHPMOD
 TypesConfig /etc/mime.types
 ErrorLog $RUN/logs/error.log

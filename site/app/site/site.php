@@ -12,7 +12,8 @@ function tr($v, string $lang): string
 /** Надпись сайта на нужном языке: сначала изменённая в админ-панели, потом встроенная; слова в {скобках} подставляются. */
 function site_text(string $key, string $lang, array $vars = []): string
 {
-    $own = setting('texts', []);
+    static $own = null;   // надписи из админ-панели читаются из базы один раз за запрос: каркас страницы берёт их десятками
+    if ($own === null) $own = setting('texts', []);
     $def = texts_default();
     $s = is_array($own) && isset($own[$lang][$key]) && is_string($own[$lang][$key]) && $own[$lang][$key] !== '' ? $own[$lang][$key] : (string) ($def[$key][$lang] ?? ($def[$key]['az'] ?? ''));
     // слова подставляются за один проход, как в скрипте сайта: подставленное значение второй раз не разбирается
@@ -63,7 +64,7 @@ function in_audience(array $p, ?array $aud): bool
 
 /**
  * Заголовок и описание, которые сайт ставит сам, пока свои не заданы: [title, description].
- * $kind — страница сайта: home, catalog, brands, blog, about, contacts, checkout;
+ * $kind — страница сайта: home, catalog, brands, blog, about, contacts, checkout, notfound (адреса нет, ответ 404);
  *         или то, у чего своя страница: product (товар), post (статья), brand (бренд), category (раздел каталога) — тогда $item.
  * $aud  — открытая страница «для кого» (у каталога и у раздела каталога).
  */
@@ -122,6 +123,8 @@ function seo_auto(string $kind, string $lang, array $data, ?array $item = null, 
             return [$H('seo.tPage', ['title' => $T('ct.title')], $T('ct.title')), seo_clip($addr !== '' ? $T(count($addrs) > 1 ? 'ct.seoMany' : 'ct.seo', ['lead' => seo_sentence($T('ct.lead')), 'address' => $addr]) : $T('ct.lead'))];
         case 'checkout':
             return [$H('seo.tPage', ['title' => $T('co.title')], $T('co.title')), ''];
+        case 'notfound':
+            return [$H('seo.tPage', ['title' => $T('nf.title')], $T('nf.title')), seo_clip($T('nf.lead'))];
     }
     return [$T('meta.title'), seo_clip($T('meta.desc'))];
 }
@@ -205,6 +208,100 @@ function site_ld(string $kind, string $lang, array $data, ?array $item, string $
     return '<script type="application/ld+json" data-ld>' . json_encode(['@context' => 'https://schema.org', '@graph' => $graph], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n";
 }
 
+/** Цена так, как её пишет скрипт сайта (функция money): «150 ₼», «12,50 ₼»; разделители разрядов и дробной части — по языку. */
+function site_money($n, string $lang, string $cur): string
+{
+    $v = round((float) $n, 2);
+    [$dec, $grp] = ['az' => [',', '.'], 'ru' => [',', "\u{00A0}"], 'en' => ['.', ',']][$lang] ?? ['.', ','];
+    return number_format($v, fmod($v, 1.0) != 0.0 ? 2 : 0, $dec, $grp) . "\u{00A0}" . $cur;
+}
+
+/** Названия языков на кнопках переключателя (подсказка при наведении) — те же, что LANG_NAMES в скрипте сайта. */
+const LANG_NAMES = ['az' => 'Azərbaycanca', 'ru' => 'Русский', 'en' => 'English'];
+
+/**
+ * Каркас страницы на её языке — таким, каким его делает скрипт сайта при запуске (applyLang, fillConfig и renderLangSwitch
+ * в assets/js/app.js): надписи, подписи кнопок для экранных дикторов, подсказки, телефон, переключатель языка, ссылка
+ * «Бренды». Поисковик получает страницу на её языке и без скрипта, а у посетителя при запуске скрипта ничего не меняется
+ * и не сдвигается. Совпадение с тем, что делает скрипт, проверяет test/php_shell.py.
+ */
+function site_shell(string $tpl, string $lang, array $data): string
+{
+    $cfg = is_array($data['CONFIG'] ?? null) ? $data['CONFIG'] : [];
+    $cur = (string) ($cfg['currency'] ?? '₼');
+    $vars = ['shop' => (string) ($cfg['shopName'] ?? ''), 'freeFrom' => site_money($cfg['freeDeliveryFrom'] ?? 0, $lang, $cur),
+        'deliveryPrice' => site_money($cfg['deliveryPrice'] ?? 0, $lang, $cur)];
+    $T = function (string $key) use ($lang, $vars): ?string {
+        $s = site_text($key, $lang, $vars);
+        return $s !== '' ? $s : null;
+    };
+    // <тег data-i18n="ключ">надпись</тег> — у таких тегов внутри только текст
+    $tpl = (string) preg_replace_callback('~(<([a-z][a-z0-9]*)\b[^<>]*\sdata-i18n="([\w.\-]+)"[^<>]*>)([^<]*)(</\2>)~', function (array $m) use ($T): string {
+        $s = $T($m[3]);
+        return $m[1] . ($s === null ? $m[4] : e($s)) . $m[5];
+    }, $tpl);
+    // подписи и подсказки: data-i18n-attr="aria-label:ключ;placeholder:ключ"
+    $tpl = (string) preg_replace_callback('~<[a-z][a-z0-9]*\b[^<>]*\sdata-i18n-attr="([^"]+)"[^<>]*>~', function (array $m) use ($T): string {
+        $tag = $m[0];
+        foreach (explode(';', $m[1]) as $pair) {
+            $i = strpos($pair, ':');
+            $attr = $i ? trim(substr($pair, 0, $i)) : '';
+            $s = $attr !== '' ? $T(trim(substr($pair, $i + 1))) : null;
+            if ($s === null || !preg_match('~^[a-z][a-z-]*$~', $attr)) continue;
+            $put = $attr . '="' . e($s) . '"';
+            $done = false;
+            $tag = (string) preg_replace_callback('~(\s)' . $attr . '="[^"]*"~', function (array $a) use ($put, &$done): string {
+                $done = true;
+                return $a[1] . $put;
+            }, $tag, 1);
+            if (!$done) $tag = (string) preg_replace_callback('~\s*/?>\z~', function (array $a) use ($put): string {
+                return ' ' . $put . $a[0];
+            }, $tag, 1);
+        }
+        return $tag;
+    }, $tpl);
+    // телефон, название салона, год, Instagram — data-cfg="…"; ссылки «позвонить» — data-cfg-href="tel"
+    $phone = (string) ($cfg['phone'] ?? '');
+    $put = ['shopName' => (string) ($cfg['shopName'] ?? ''), 'phone' => $phone, 'year' => date('Y'),
+        'instagram' => !empty($cfg['instagram']) && is_string($cfg['instagram']) ? '@' . $cfg['instagram'] : ''];
+    $tpl = (string) preg_replace_callback('~(<([a-z][a-z0-9]*)\b[^<>]*\sdata-cfg="(\w+)"[^<>]*>)([^<]*)(</\2>)~', function (array $m) use ($put): string {
+        return isset($put[$m[3]]) ? $m[1] . e($put[$m[3]]) . $m[5] : $m[0];
+    }, $tpl);
+    $tel = 'tel:' . preg_replace('~[^\d+]~', '', $phone);
+    $tpl = (string) preg_replace_callback('~<a\b[^<>]*\sdata-cfg-href="tel"[^<>]*>~', function (array $m) use ($tel): string {
+        return (string) preg_replace_callback('~\shref="[^"]*"~', function () use ($tel): string {
+            return ' href="' . e($tel) . '"';
+        }, $m[0], 1);
+    }, $tpl);
+    // переключатель языка: кнопки AZ RU EN, нажата — язык страницы
+    $sw = '';
+    foreach (LANGS as $l) {
+        $on = $l === $lang;
+        $sw .= '<button type="button" data-set-lang="' . $l . '" lang="' . $l . '" title="' . e(LANG_NAMES[$l] ?? $l) . '" aria-pressed="' . ($on ? 'true' : 'false') . '" class="' . ($on ? 'is-active' : '') . '">' . strtoupper($l) . '</button>';
+    }
+    $tpl = (string) preg_replace_callback('~(<div\b[^<>]*\sdata-lang-switch\b[^<>]*>)(</div>)~', function (array $m) use ($sw): string {
+        return $m[1] . $sw . $m[2];
+    }, $tpl);
+    // пока ни у одного бренда нет товаров, ссылка «Бренды» в меню и в подвале не показывается
+    $brands = array_column(array_filter(is_array($data['BRANDS'] ?? null) ? $data['BRANDS'] : [], 'is_array'), 'id');
+    $used = array_filter(array_column(array_filter(is_array($data['PRODUCTS'] ?? null) ? $data['PRODUCTS'] : [], 'is_array'), 'brand'), 'is_string');
+    if (!array_intersect($brands, $used)) $tpl = preg_replace('~<body>~', '<body class="no-brands">', $tpl, 1);
+    return $tpl;
+}
+
+/** Главные шрифты страницы (заголовки и основной текст) браузер просит сразу — с набором знаков её языка (см. build_fonts.py). */
+function site_fonts(string $base, string $lang): string
+{
+    $sets = array_merge(['latin'], ['az' => ['az'], 'ru' => ['cyrillic']][$lang] ?? []);
+    $out = '';
+    foreach (['noto-serif-display-%s-300', 'ysabeau-office-%s-400'] as $font) {
+        foreach ($sets as $set) {
+            $out .= '<link rel="preload" href="' . e($base) . 'assets/fonts/' . sprintf($font, $set) . '.woff2" as="font" type="font/woff2" crossorigin>' . "\n";
+        }
+    }
+    return $out;
+}
+
 function site_run(): void
 {
     if (!config()) redirect(base_path() . 'install.php');
@@ -276,6 +373,7 @@ function site_run(): void
     $page = 'home';
     $item = null;
     $aud = null;
+    $lost = false;   // адреса нет на сайте: ответ 404 и страница «не найдено»
     $find = function (array $rows, string $id): ?array {
         foreach ($rows as $x) {
             if (is_array($x) && (string) ($x['id'] ?? '') === $id) return $x;
@@ -288,16 +386,16 @@ function site_run(): void
         $route = '';
     } elseif ($first === 'product' && isset($seg[1]) && count($seg) === 2) {
         $item = $find($data['PRODUCTS'], $seg[1]);
-        if (!$item) redirect($link('catalog', $keep));
-        $route = 'product/' . rawurlencode($item['id']);
+        $lost = !$item;
+        $route = $item ? 'product/' . rawurlencode($item['id']) : '';
         $kind = 'product';
         $page = '';
     } elseif ($first === 'blog' && count($seg) <= 2) {
         $route = $kind = $page = 'blog';
         if (isset($seg[1])) {
             $item = $find($data['POSTS'], $seg[1]);
-            if (!$item) redirect($link('blog'));
-            $route = 'blog/' . rawurlencode($item['id']);
+            $lost = !$item;
+            $route = $item ? 'blog/' . rawurlencode($item['id']) : '';
             $kind = 'post';
             $page = '';
         }
@@ -308,11 +406,11 @@ function site_run(): void
         $noindex = !$filled;
         if (isset($seg[1])) {
             $item = $find($data['BRANDS'], $seg[1]);
-            if (!$item) redirect($link('brands'));
-            $route = 'brands/' . rawurlencode($item['id']);
+            $lost = !$item;
+            $route = $item ? 'brands/' . rawurlencode($item['id']) : '';
             $kind = 'brand';
             $page = '';
-            $noindex = !isset($filled[$item['id']]);
+            $noindex = !$item || !isset($filled[$item['id']]);
         }
     } elseif (in_array($first, ['about', 'catalog', 'contacts', 'checkout'], true) && count($seg) === 1) {
         $route = $kind = $page = $first;
@@ -340,7 +438,17 @@ function site_run(): void
             if ($cat || $aud) $page = '';
         }
     } else {
-        redirect($link());   // неизвестный адрес — на главную
+        $lost = true;
+    }
+    // Адреса нет (нет такой страницы, товара, статьи или бренда): поисковику — код 404 и «не показывать», посетителю — страница
+    // «не найдено» со ссылками на главную и каталог. Переадресация на главную поисковик считал бы «мягкой» ошибкой 404.
+    if ($lost) {
+        http_response_code(404);
+        $kind = 'notfound';
+        $page = $route = '';
+        $item = $aud = null;
+        $keep = [];
+        $noindex = true;
     }
     // Свои заголовок и описание: у товара, статьи, бренда и раздела каталога — из их карточки (на странице «для кого» у раздела своих нет),
     // у страниц сайта — из раздела «Страницы» админ-панели
@@ -355,9 +463,11 @@ function site_run(): void
         return $site . '/' . implode('/', array_filter([$l === LANGS[0] ? '' : $l, $route], 'strlen')) . $query($canonQ);
     };
     $hreflang = '';
-    foreach (LANGS as $l) $hreflang .= '<link rel="alternate" hreflang="' . $l . '" href="' . e($url($l)) . '">' . "\n";
-    // посетителю с другим языком поисковик покажет страницу на основном языке сайта
-    $hreflang .= '<link rel="alternate" hreflang="x-default" href="' . e($url(LANGS[0])) . '">' . "\n";
+    if (!$lost) {
+        foreach (LANGS as $l) $hreflang .= '<link rel="alternate" hreflang="' . $l . '" href="' . e($url($l)) . '">' . "\n";
+        // посетителю с другим языком поисковик покажет страницу на основном языке сайта
+        $hreflang .= '<link rel="alternate" hreflang="x-default" href="' . e($url(LANGS[0])) . '">' . "\n";
+    }
     // Картинка для ссылок в мессенджерах и соцсетях: фото товара или статьи, иначе карточка с логотипом салона
     $shot = $item && in_array($kind, ['product', 'post'], true) && is_string($item['img'] ?? null) && $item['img'] !== '' ? $item['img'] : 'assets/img/og.png';
     $hreflang .= '<meta property="og:image" content="' . e(preg_match('~^https?://~', $shot) ? $shot : $site . '/' . ltrim($shot, '/')) . '">' . "\n"
@@ -399,6 +509,7 @@ function site_run(): void
     $cap = captcha_allowed() && is_string($data['_cap'] ?? null) ? $data['_cap'] : '';
     if ($cap !== '') $data['CONFIG']['captchaKey'] = $cap;
     $data['CONFIG']['siteUrl'] = $site . '/';
+    if ($lost) $data['CONFIG']['notFound'] = 1;   // скрипт сайта показывает на этом адресе страницу «не найдено»
     $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP;
     $js = '';
     // TEXTS и SEO — надписи и заголовки страниц, изменённые в админ-панели (раздел «Страницы»)
@@ -409,7 +520,7 @@ function site_run(): void
     }
 
     $ver = substr(md5((string) @filemtime(ROOT . '/assets/js/app.js') . (string) @filemtime(ROOT . '/assets/css/app.css')), 0, 8);
-    $html = strtr((string) file_get_contents(APP . '/site/shell.html'), [
+    $html = strtr(site_shell((string) file_get_contents(APP . '/site/shell.html'), $lang, $data), [
         '%%LANG%%' => $lang,
         '%%TITLE%%' => e($title),
         '%%DESC%%' => e($desc),
@@ -420,8 +531,13 @@ function site_run(): void
         '%%BASE%%' => e($base),
         '%%LBASE%%' => e($base . ($lang === LANGS[0] ? '' : $lang . '/')),   // ссылки меню ведут на страницы того же языка
         '%%VER%%' => $ver,
+        '%%FONTS%%' => site_fonts($base, $lang),
         '%%DATA%%' => $js,
     ]);
+    // у страницы «не найдено» нет своего адреса для поисковиков и для ссылок в мессенджерах
+    if ($lost) $html = (string) preg_replace('~<link rel="canonical" href="[^"]*">\n|<meta property="og:url" content="[^"]*">\n~', '', $html);
+    // не главная: первый экран главной до запуска скрипта не показывается (правило .boot.boot-view в оформлении)
+    if ($kind !== 'home') $html = (string) preg_replace('~<html lang="([a-z]+)" class="boot">~', '<html lang="$1" class="boot boot-view">', $html, 1);
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: no-cache');
     site_headers();
